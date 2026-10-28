@@ -1,0 +1,23 @@
+{
+  "functions": {
+    "api/**/*.php": {
+      "runtime": "vercel-php@0.7.3"
+    },
+    "*.php": {
+      "runtime": "vercel-php@0.7.3"
+    },
+    "admin/**/*.php": {
+      "runtime": "vercel-php@0.7.3"
+    },
+    "dosen/**/*.php": {
+      "runtime": "vercel-php@0.7.3"
+    },
+    "mahasiswa/**/*.php": {
+      "runtime": "vercel-php@0.7.3"
+    }
+  },
+  "routes": [
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
