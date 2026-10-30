@@ -14,13 +14,28 @@
                 </a>
             </li>
             <li class="nav-item mb-1">
+                <a class="nav-link <?= ($current_page == 'jadwal_dosen') ? 'active' : 'text-dark'; ?>" href="jadwal_dosen.php">
+                    <i class="bi bi-calendar-week me-2"></i>Jadwal Dosen
+                </a>
+            </li>
+            <li class="nav-item mb-1">
                 <a class="nav-link <?= ($current_page == 'mahasiswa') ? 'active' : 'text-dark'; ?>" href="data_mahasiswa.php">
                     <i class="bi bi-people me-2"></i>Data Mahasiswa
                 </a>
             </li>
             <li class="nav-item mb-1">
                 <a class="nav-link <?= ($current_page == 'plotting') ? 'active' : 'text-dark'; ?>" href="plot_pembimbing.php">
-                    <i class="bi bi-diagram-3 me-2"></i>Plot Pembimbing
+                    <i class="bi bi-diagram-3 me-2"></i>Atur Pembimbing
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link <?= ($current_page == 'monitoring') ? 'active' : 'text-dark'; ?>" href="monitoring_kelulusan.php">
+                    <i class="bi bi-mortarboard me-2"></i>Monitoring Kelulusan
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link <?= ($current_page == 'laporan') ? 'active' : 'text-dark'; ?>" href="laporan_plotting.php">
+                    <i class="bi bi-printer me-2"></i>Rekap & Cetak Laporan
                 </a>
             </li>
         </ul>
