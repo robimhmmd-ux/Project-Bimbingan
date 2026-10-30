@@ -1,20 +1,17 @@
 {
   "functions": {
-    "*.php": {
-      "runtime": "vercel-php@0.7.3"
-    },
-    "admin/**/*.php": {
-      "runtime": "vercel-php@0.7.3"
-    },
-    "dosen/**/*.php": {
-      "runtime": "vercel-php@0.7.3"
-    },
-    "mahasiswa/**/*.php": {
+    "api/index.php": {
       "runtime": "vercel-php@0.7.3"
     }
   },
   "routes": [
-    { "src": "/assets/(.*)", "dest": "/assets/$1" },
-    { "src": "/(.*)", "dest": "/$1" }
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.php"
+    }
   ]
 }
