@@ -33,17 +33,17 @@ proyek-bimbingan/
 │   ├── sidebar_dosen.php    # Navigasi khusus Dosen
 │   ├── sidebar_mahasiswa.php# Navigasi khusus Mahasiswa
 │   └── footer.php           # Footer, JS Bootstrap CDN, penutup tag
-├── admin/                   # [WILAYAH KERJA QONITA - Modul Administrator]
+├── admin/                   # [WILAYAH KERJA TALITA - Modul Administrator]
 │   ├── index.php            # Dashboard ringkasan admin
 │   ├── data_mahasiswa.php   # CRUD data mahasiswa
 │   ├── data_dosen.php       # CRUD data dosen
 │   └── plot_pembimbing.php  # Pasangkan mahasiswa ke dosen pembimbing
-├── dosen/                   # [WILAYAH KERJA SALSA - Modul Dosen Pembimbing]
+├── dosen/                   # [WILAYAH KERJA QONITA - Modul Dosen Pembimbing]
 │   ├── index.php            # Dashboard ringkasan dosen
 │   ├── jadwal_saya.php      # Kelola ketersediaan hari/jam bimbingan
 │   ├── persetujuan.php      # Daftar bimbingan masuk (Setujui / Tolak / Reschedule)
 │   └── riwayat_bimbingan.php# Rekapan bimbingan, unduh draft skripsi, beri catatan & nilai
-├── mahasiswa/               # [WILAYAH KERJA TALITA - Modul Mahasiswa]
+├── mahasiswa/               # [WILAYAH KERJA SALSA - Modul Mahasiswa]
 │   ├── index.php            # Dashboard progres mahasiswa & info dosen
 │   ├── ajukan_jadwal.php    # Form reservasi jadwal bimbingan (validasi anti-bentrok)
 │   ├── upload_draft.php     # Form upload draft skripsi (PDF)

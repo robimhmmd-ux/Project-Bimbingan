@@ -23,9 +23,9 @@ git pull origin main
 # 2. Buka folder kerjaan Anda masing-masing:
 # - Yoga   : Ketua Kelompok & Lead Frontend (folder templates/ dan assets/)
 # - Robi   : Koordinator Teknis & Database (config/, login.php, index.php)
-# - Qonita : Modul Administrator (folder admin/)
-# - Salsa  : Modul Dosen Pembimbing (folder dosen/)
-# - Talita : Modul Mahasiswa (folder mahasiswa/)
+# - Qonita : Modul Dosen Pembimbing (folder dosen/)
+# - Salsa  : Modul Mahasiswa (folder mahasiswa/)
+# - Talita : Modul Administrator (folder admin/)
 
 # 3. Setelah selesai koding, simpan dan upload:
 git add .
