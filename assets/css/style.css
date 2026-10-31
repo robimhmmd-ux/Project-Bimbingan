@@ -11,7 +11,7 @@
     --primary-hover: #3730a3;
     --primary-subtle: #e0e7ff;
     --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
-    
+
     --success: #059669;
     --success-subtle: #d1fae5;
     --warning: #d97706;
@@ -41,7 +41,9 @@
 }
 
 /* --- GLOBAL RESETS & TYPOGRAPHY --- */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
@@ -56,27 +58,37 @@ body {
     flex-direction: column;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     font-weight: 700;
     letter-spacing: -0.025em;
     color: #0f172a;
 }
 
 /* Utility colors */
-.text-purple { color: var(--purple) !important; }
+.text-purple {
+    color: var(--purple) !important;
+}
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
+
 ::-webkit-scrollbar-track {
     background: #f1f5f9;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 9999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
@@ -104,6 +116,7 @@ h1, h2, h3, h4, h5, h6 {
 .user-profile-chip {
     transition: all 0.2s ease;
 }
+
 .user-profile-chip:hover {
     background-color: rgba(255, 255, 255, 0.15) !important;
 }
@@ -142,9 +155,20 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes pulseDot {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-    70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+    }
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
 }
 
 .btn-logout {
@@ -242,7 +266,7 @@ h1, h2, h3, h4, h5, h6 {
     bottom: -30px;
     width: 220px;
     height: 220px;
-    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
     border-radius: 50%;
     pointer-events: none;
 }
@@ -350,7 +374,8 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 2px 5px rgba(79, 70, 229, 0.28);
 }
 
-.btn-primary:hover, .btn-primary:focus {
+.btn-primary:hover,
+.btn-primary:focus {
     background: linear-gradient(135deg, #4338ca 0%, #312e81 100%);
     box-shadow: 0 6px 14px rgba(79, 70, 229, 0.4);
     transform: translateY(-1px);
@@ -362,7 +387,8 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 2px 5px rgba(16, 185, 129, 0.28);
 }
 
-.btn-success:hover, .btn-success:focus {
+.btn-success:hover,
+.btn-success:focus {
     background: linear-gradient(135deg, #059669 0%, #047857 100%);
     box-shadow: 0 6px 14px rgba(16, 185, 129, 0.4);
     transform: translateY(-1px);
@@ -387,7 +413,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* --- FORM CONTROLS & INPUTS --- */
-.form-control, .form-select {
+.form-control,
+.form-select {
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     padding: 0.65rem 0.9rem;
@@ -396,7 +423,8 @@ h1, h2, h3, h4, h5, h6 {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
     border-color: var(--border-focus);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     outline: none;
@@ -446,7 +474,8 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     font-size: 0.75rem;
     padding: 0.4em 0.8em;
-    border-radius: 9999px; /* Pill */
+    border-radius: 9999px;
+    /* Pill */
     letter-spacing: 0.02em;
     display: inline-flex;
     align-items: center;
@@ -544,19 +573,30 @@ h1, h2, h3, h4, h5, h6 {
 
 /* --- PRINT RULES (REPORTS & BIMBINGAN CARDS) --- */
 @media print {
-    .sidebar, .navbar, .btn, footer, .alert, .no-print, form, .hero-banner {
+
+    .sidebar,
+    .navbar,
+    .btn,
+    footer,
+    .alert,
+    .no-print,
+    form,
+    .hero-banner {
         display: none !important;
     }
+
     body {
         background-color: #ffffff !important;
         color: #000000 !important;
         font-size: 10.5pt;
     }
+
     main {
         width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
     }
+
     .card {
         border: none !important;
         box-shadow: none !important;
@@ -567,30 +607,6 @@ h1, h2, h3, h4, h5, h6 {
 /* ==========================================================================
    ADVANCED MODERN UI & DESIGN ENHANCEMENTS (SALSA - MODUL DOSEN)
    ========================================================================== */
-
-/* Hero Banner */
-.hero-banner {
-    background: linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%);
-    border-radius: var(--radius-xl);
-    color: #ffffff;
-    padding: 2rem 2.25rem;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 10px 25px -5px rgba(49, 46, 129, 0.25);
-    margin-bottom: 1.75rem;
-}
-
-.hero-banner::after {
-    content: '';
-    position: absolute;
-    right: -40px;
-    top: -40px;
-    width: 220px;
-    height: 220px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
-    border-radius: 50%;
-    pointer-events: none;
-}
 
 /* Stat Cards Elevated */
 .stat-card-modern {
