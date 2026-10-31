@@ -228,3 +228,4 @@ $info_sidang = $stmt_sidang->fetch();
 
 ---
 *Dokumen ini disusun untuk memastikan keselarasan kerja tim. Silakan lakukan `git pull origin main` secara berkala sebelum memulai pekerjaan.*
+
