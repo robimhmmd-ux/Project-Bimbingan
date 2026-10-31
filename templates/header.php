@@ -9,7 +9,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$user_initial = strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1));
+$css_ver = file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : time();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -24,67 +24,33 @@ $user_initial = strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1));
     <!-- Google Fonts Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link href="../assets/css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS with Cache Buster -->
+    <link href="../assets/css/style.css?v=<?= $css_ver; ?>" rel="stylesheet">
 </head>
-<body class="bg-surface-app">
+<body class="bg-light">
 
-<!-- Modern Frosted Glass Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-app-navbar sticky-top shadow-sm py-2">
+<!-- Topbar Navbar (Solid High-Contrast Navy Blue) -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm py-2" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;">
     <div class="container-fluid px-md-4">
         <!-- Logo & Brand Title -->
-        <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="#">
-            <div class="brand-icon-box">
-                <i class="bi bi-mortarboard-fill text-white fs-5"></i>
-            </div>
+        <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none" href="#">
+            <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning">
+                <i class="bi bi-mortarboard-fill"></i>
+            </span>
             <div class="d-flex flex-column">
-                <span class="fw-bold tracking-tight text-white fs-6 lh-sm">SIM-Bimbingan</span>
-                <span class="text-white-50 small lh-1" style="font-size: 0.725rem;">Portal Skripsi Akademik</span>
+                <span class="fs-6 lh-1">Bimbingan Skripsi</span>
+                <span class="text-white-50 small" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
             </div>
         </a>
 
         <!-- Right Side User & Status Pill -->
-        <div class="d-flex align-items-center gap-3">
-            <!-- Semester Badge -->
-            <div class="d-none d-lg-flex align-items-center px-3 py-1 rounded-pill bg-white bg-opacity-10 text-white border border-white border-opacity-10 small">
-                <i class="bi bi-calendar-check text-info me-2"></i>
-                <span>T.A. <?= date('Y'); ?>/<?= date('Y')+1; ?> • Ganjil</span>
-            </div>
-
-            <!-- User Profile Chip -->
-            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'mahasiswa'): ?>
-                <a href="profil.php" class="user-profile-chip d-flex align-items-center gap-2 ps-2 pe-3 py-1 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-10 text-decoration-none" title="Lihat & Edit Profil">
-                    <div class="avatar-circle">
-                        <?= $user_initial; ?>
-                    </div>
-                    <div class="d-none d-sm-flex flex-column text-start">
-                        <span class="text-white fw-bold small lh-1"><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
-                        <span class="user-role-badge mt-1">
-                            <span class="status-dot"></span>
-                            <?= ucfirst($_SESSION['role'] ?? ''); ?>
-                        </span>
-                    </div>
-                </a>
-            <?php else: ?>
-                <div class="user-profile-chip d-flex align-items-center gap-2 ps-2 pe-3 py-1 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-10">
-                    <div class="avatar-circle">
-                        <?= $user_initial; ?>
-                    </div>
-                    <div class="d-none d-sm-flex flex-column text-start">
-                        <span class="text-white fw-bold small lh-1"><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
-                        <span class="user-role-badge mt-1">
-                            <span class="status-dot"></span>
-                            <?= ucfirst($_SESSION['role'] ?? ''); ?>
-                        </span>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <!-- Logout Button -->
-            <a href="../logout.php" class="btn btn-sm btn-logout" onclick="return confirm('Apakah Anda yakin ingin keluar dari sistem?')" title="Logout">
-                <i class="bi bi-box-arrow-right"></i>
-                <span class="d-none d-md-inline ms-1">Keluar</span>
+        <div class="d-flex align-items-center gap-3 text-white">
+            <span class="small d-none d-md-inline text-white">
+                Halo, <strong><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></strong> (<?= ucfirst($_SESSION['role'] ?? ''); ?>)
+            </span>
+            <a href="../logout.php" class="btn btn-sm btn-outline-light px-3" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
+                <i class="bi bi-box-arrow-right me-1"></i>Logout
             </a>
         </div>
     </div>

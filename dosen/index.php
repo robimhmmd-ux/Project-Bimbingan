@@ -40,11 +40,6 @@ $stmt_jadwal = $pdo->prepare("SELECT COUNT(*) FROM jadwal_dosen WHERE dosen_id =
 $stmt_jadwal->execute([':did' => $dosen_id]);
 $count_jadwal = (int)$stmt_jadwal->fetchColumn();
 
-// Metrik 5: Pesan Belum Dibaca
-$stmt_unread = $pdo->prepare("SELECT COUNT(*) FROM pesan_chat WHERE penerima_id = :uid AND status_baca = 'belum_dibaca'");
-$stmt_unread->execute([':uid' => $user_id]);
-$count_unread = (int)$stmt_unread->fetchColumn();
-
 // Data 5 Pengajuan Bimbingan Terbaru
 $stmt_terbaru = $pdo->prepare("
     SELECT pb.*, m.nim, m.nama_lengkap 
@@ -56,43 +51,19 @@ $stmt_terbaru = $pdo->prepare("
 ");
 $stmt_terbaru->execute([':did' => $dosen_id]);
 $pengajuan_terbaru = $stmt_terbaru->fetchAll();
-
-// Cek foto profil
-$foto_path = '../assets/uploads/profile/' . ($dosen['foto_profil'] ?? '');
-$has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default.png' && file_exists($foto_path);
 ?>
 
-<!-- Hero Banner Dashboard -->
-<div class="hero-banner d-flex flex-wrap justify-content-between align-items-center gap-3">
-    <div class="d-flex align-items-center gap-3">
-        <div class="position-relative">
-            <?php if ($has_foto): ?>
-                <img src="<?= htmlspecialchars($foto_path); ?>" 
-                     alt="Foto Profil Dosen" 
-                     class="rounded-circle img-thumbnail shadow border-2 border-white object-fit-cover" 
-                     style="width: 70px; height: 70px;">
-            <?php else: ?>
-                <div class="avatar-circle avatar-primary shadow border border-2 border-white" style="width: 70px; height: 70px; font-size: 2rem;">
-                    <i class="bi bi-person-fill text-white"></i>
-                </div>
-            <?php endif; ?>
-            <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
-        </div>
-        <div>
-            <span class="badge bg-white bg-opacity-25 text-white mb-1 px-3 py-1 fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.72rem;">
-                Portal Dosen Pembimbing
-            </span>
-            <h2 class="fw-bold mb-1 text-white"><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Bapak/Ibu Dosen'); ?></h2>
-            <p class="mb-0 text-white text-opacity-75 small">
-                NIDN: <strong><?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></strong> &bull; Kuota: <strong><?= $count_mhs; ?> / <?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?> Mahasiswa</strong>
-            </p>
-        </div>
+<!-- Header Halaman -->
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-2 pb-2 mb-4 border-bottom">
+    <div>
+        <h1 class="h2 fw-bold text-dark mb-1">Dashboard Dosen Pembimbing</h1>
+        <p class="text-muted small mb-0">Selamat datang di portal pembimbing, <strong><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Bapak/Ibu Dosen'); ?></strong>.</p>
     </div>
-    <div class="d-flex flex-wrap gap-2">
-        <a href="profil.php" class="btn btn-sm btn-outline-light px-3 py-2">
+    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
+        <a href="profil.php" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-person-gear me-1"></i> Edit Profil
         </a>
-        <a href="jadwal_saya.php" class="btn btn-sm btn-light text-primary px-3 py-2 fw-bold shadow-sm">
+        <a href="jadwal_saya.php" class="btn btn-sm btn-primary">
             <i class="bi bi-calendar-plus me-1"></i> Atur Ketersediaan
         </a>
     </div>
@@ -100,90 +71,62 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 
 <!-- Alert Notifikasi Pengajuan Menunggu -->
 <?php if ($count_menunggu > 0): ?>
-    <div class="alert alert-warning d-flex align-items-center justify-content-between shadow-sm p-3 mb-4 border-warning">
-        <div class="d-flex align-items-center gap-2">
-            <span class="status-dot pending"></span>
-            <div>
-                <strong>Perhatian:</strong> Terdapat <strong><?= $count_menunggu; ?> permohonan bimbingan baru</strong> dari mahasiswa yang memerlukan konfirmasi Anda (Terima / Reschedule / Tolak).
-            </div>
+    <div class="alert alert-warning d-flex align-items-center justify-content-between shadow-sm p-3 mb-4">
+        <div>
+            <i class="bi bi-bell-fill me-2 fs-5"></i>
+            <span>Terdapat <strong><?= $count_menunggu; ?> permohonan bimbingan baru</strong> yang perlu Anda respon (Terima / Reschedule / Tolak).</span>
         </div>
-        <a href="persetujuan.php" class="btn btn-warning btn-sm fw-bold px-3">
-            Tinjau Permohonan &rarr;
-        </a>
+        <a href="persetujuan.php" class="btn btn-warning btn-sm fw-bold px-3">Tinjau Sekarang &rarr;</a>
     </div>
 <?php endif; ?>
 
-<!-- 4 Kartu Metrik Modern -->
+<!-- 4 Kartu Metrik Bersih & Tegas -->
 <div class="row g-3 mb-4">
-    <!-- Mahasiswa Bimbingan -->
+    <!-- Profil & Kuota Bimbingan -->
     <div class="col-sm-6 col-xl-3">
-        <div class="stat-card-modern p-3">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.04em;">Bimbingan Aktif</span>
-                    <h3 class="fw-bold my-1 text-dark"><?= $count_mhs; ?> <span class="fs-6 text-muted fw-normal">/ <?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?></span></h3>
-                    <a href="riwayat_bimbingan.php" class="small text-primary text-decoration-none fw-semibold">
-                        Daftar Mahasiswa &rarr;
-                    </a>
-                </div>
-                <div class="stat-icon-wrapper bg-primary-subtle text-primary">
-                    <i class="bi bi-people-fill"></i>
-                </div>
+        <div class="card p-3 shadow-sm border-0 border-start border-primary border-4 h-100 bg-white">
+            <h6 class="text-muted small text-uppercase fw-semibold mb-1">Profil & Kuota</h6>
+            <h4 class="fw-bold text-dark mb-1"><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Nama Dosen'); ?></h4>
+            <p class="text-muted small mb-0">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
+            <div class="mt-2 text-primary small fw-semibold">
+                <i class="bi bi-people-fill me-1"></i> Kuota: <?= $count_mhs; ?> / <?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?> Mahasiswa
             </div>
         </div>
     </div>
 
-    <!-- Menunggu Konfirmasi -->
+    <!-- Permintaan Menunggu Respon -->
     <div class="col-sm-6 col-xl-3">
-        <div class="stat-card-modern p-3">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.04em;">Menunggu Respon</span>
-                    <h3 class="fw-bold my-1 text-warning"><?= $count_menunggu; ?></h3>
-                    <a href="persetujuan.php" class="small text-warning text-decoration-none fw-semibold">
-                        Konfirmasi Jadwal &rarr;
-                    </a>
-                </div>
-                <div class="stat-icon-wrapper bg-warning-subtle text-warning">
-                    <i class="bi bi-hourglass-split"></i>
-                </div>
-            </div>
+        <div class="card p-3 shadow-sm border-0 border-start border-warning border-4 h-100 bg-white">
+            <h6 class="text-muted small text-uppercase fw-semibold mb-1">Menunggu Respon</h6>
+            <h3 class="fw-bold text-warning mb-1"><?= $count_menunggu; ?> <span class="fs-6 text-muted fw-normal">Permintaan</span></h3>
+            <p class="text-muted small mb-2">Perlu ditindaklanjuti dosen</p>
+            <a href="persetujuan.php" class="small text-decoration-none fw-bold text-warning">
+                Tinjau Pengajuan &rarr;
+            </a>
         </div>
     </div>
 
-    <!-- Jadwal Disetujui -->
+    <!-- Jadwal Bimbingan Disetujui -->
     <div class="col-sm-6 col-xl-3">
-        <div class="stat-card-modern p-3">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.04em;">Jadwal Disetujui</span>
-                    <h3 class="fw-bold my-1 text-success"><?= $count_aktif; ?></h3>
-                    <a href="riwayat_bimbingan.php" class="small text-success text-decoration-none fw-semibold">
-                        Beri Nilai & ACC &rarr;
-                    </a>
-                </div>
-                <div class="stat-icon-wrapper bg-success-subtle text-success">
-                    <i class="bi bi-calendar-check-fill"></i>
-                </div>
-            </div>
+        <div class="card p-3 shadow-sm border-0 border-start border-success border-4 h-100 bg-white">
+            <h6 class="text-muted small text-uppercase fw-semibold mb-1">Jadwal Disetujui</h6>
+            <h3 class="fw-bold text-success mb-1"><?= $count_aktif; ?> <span class="fs-6 text-muted fw-normal">Sesi</span></h3>
+            <p class="text-muted small mb-2">Siap untuk evaluasi naskah</p>
+            <a href="riwayat_bimbingan.php" class="small text-decoration-none fw-bold text-success">
+                Beri Nilai & ACC &rarr;
+            </a>
         </div>
     </div>
 
     <!-- Slot Waktu Aktif -->
     <div class="col-sm-6 col-xl-3">
-        <div class="stat-card-modern p-3">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.04em;">Slot Operasional</span>
-                    <h3 class="fw-bold my-1 text-info"><?= $count_jadwal; ?> Slot</h3>
-                    <a href="jadwal_saya.php" class="small text-info text-decoration-none fw-semibold">
-                        Kelola Slot &rarr;
-                    </a>
-                </div>
-                <div class="stat-icon-wrapper bg-info-subtle text-info">
-                    <i class="bi bi-clock-history"></i>
-                </div>
-            </div>
+        <div class="card p-3 shadow-sm border-0 border-start border-info border-4 h-100 bg-white">
+            <h6 class="text-muted small text-uppercase fw-semibold mb-1">Slot Waktu Aktif</h6>
+            <h3 class="fw-bold text-info mb-1"><?= $count_jadwal; ?> <span class="fs-6 text-muted fw-normal">Slot</span></h3>
+            <p class="text-muted small mb-2">Tampil pada jadwal mahasiswa</p>
+            <a href="jadwal_saya.php" class="small text-decoration-none fw-bold text-info">
+                Atur Slot Ketersediaan &rarr;
+            </a>
         </div>
     </div>
 </div>
@@ -192,162 +135,128 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 <div class="row g-4">
     <!-- Tabel Pengajuan Terbaru -->
     <div class="col-lg-8">
-        <div class="table-card-wrapper">
-            <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="mb-0 fw-bold text-dark">
-                        <i class="bi bi-activity text-primary me-2"></i>Aktivitas Pengajuan Bimbingan Terbaru
-                    </h6>
-                    <small class="text-muted">Pantau status reservasi jadwal bimbingan skripsi terbaru</small>
-                </div>
+        <div class="card shadow-sm border-0 bg-white">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-dark">
+                    <i class="bi bi-clock-history me-2 text-primary"></i>Aktivitas Pengajuan Bimbingan Terbaru
+                </h6>
                 <a href="persetujuan.php" class="btn btn-sm btn-outline-primary">Lihat Semua</a>
             </div>
-            <div class="table-responsive">
-                <table class="table table-modern table-hover align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Mahasiswa</th>
-                            <th>Bab</th>
-                            <th>Jadwal Bimbingan</th>
-                            <th>Status</th>
-                            <th class="text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($pengajuan_terbaru)): ?>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <td colspan="5" class="text-center py-5 text-muted">
-                                    <i class="bi bi-inbox fs-1 d-block mb-2 text-muted"></i>
-                                    Belum ada pengajuan bimbingan dari mahasiswa.
-                                </td>
+                                <th>Mahasiswa</th>
+                                <th>Bab</th>
+                                <th>Jadwal Bimbingan</th>
+                                <th>Status</th>
+                                <th class="text-center">Aksi</th>
                             </tr>
-                        <?php else: ?>
-                            <?php foreach ($pengajuan_terbaru as $row): ?>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($pengajuan_terbaru)): ?>
                                 <tr>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="avatar-circle avatar-sm avatar-primary">
-                                                <?= strtoupper(substr($row['nama_lengkap'], 0, 1)); ?>
-                                            </div>
-                                            <div>
-                                                <div class="fw-semibold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
-                                                <small class="text-muted"><?= htmlspecialchars($row['nim']); ?></small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark border"><?= htmlspecialchars($row['bab_pembahasan']); ?></span>
-                                    </td>
-                                    <td>
-                                        <div class="small fw-semibold text-dark">
-                                            <?= date('d M Y', strtotime($row['tanggal_bimbingan'])); ?>
-                                        </div>
-                                        <small class="text-muted"><?= substr($row['jam_bimbingan'], 0, 5); ?> WIB</small>
-                                    </td>
-                                    <td>
-                                        <?php
-                                        $st = $row['status'];
-                                        if ($st === 'menunggu') echo '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Menunggu</span>';
-                                        elseif ($st === 'disetujui') echo '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Disetujui</span>';
-                                        elseif ($st === 'ditolak') echo '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Ditolak</span>';
-                                        elseif ($st === 'revisi') echo '<span class="badge bg-info text-dark"><i class="bi bi-arrow-repeat me-1"></i>Revisi</span>';
-                                        else echo '<span class="badge bg-secondary">' . ucfirst($st) . '</span>';
-                                        ?>
-                                    </td>
-                                    <td class="text-center">
-                                        <?php if ($row['status'] === 'menunggu'): ?>
-                                            <a href="persetujuan.php" class="btn btn-sm btn-primary">Tinjau</a>
-                                        <?php else: ?>
-                                            <a href="riwayat_bimbingan.php" class="btn btn-sm btn-outline-secondary">Detail</a>
-                                        <?php endif; ?>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-2 d-block mb-1"></i>
+                                        Belum ada permohonan bimbingan masuk dari mahasiswa.
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
+                            <?php else: ?>
+                                <?php foreach ($pengajuan_terbaru as $row): ?>
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
+                                            <small class="text-muted">NIM: <?= htmlspecialchars($row['nim']); ?></small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border"><?= htmlspecialchars($row['bab_pembahasan']); ?></span>
+                                        </td>
+                                        <td>
+                                            <div class="small fw-semibold"><?= date('d M Y', strtotime($row['tanggal_bimbingan'])); ?></div>
+                                            <small class="text-muted"><?= substr($row['jam_bimbingan'], 0, 5); ?> WIB</small>
+                                        </td>
+                                        <td>
+                                            <?php
+                                            $st = $row['status'];
+                                            if ($st === 'menunggu') echo '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Menunggu</span>';
+                                            elseif ($st === 'disetujui') echo '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Disetujui</span>';
+                                            elseif ($st === 'ditolak') echo '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Ditolak</span>';
+                                            elseif ($st === 'revisi') echo '<span class="badge bg-info text-dark"><i class="bi bi-arrow-repeat me-1"></i>Revisi</span>';
+                                            else echo '<span class="badge bg-secondary">' . ucfirst($st) . '</span>';
+                                            ?>
+                                        </td>
+                                        <td class="text-center">
+                                            <?php if ($row['status'] === 'menunggu'): ?>
+                                                <a href="persetujuan.php" class="btn btn-sm btn-primary">Tinjau</a>
+                                            <?php else: ?>
+                                                <a href="riwayat_bimbingan.php" class="btn btn-sm btn-outline-secondary">Detail</a>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Panel Menu Cepat & Konsultasi -->
+    <!-- Panel Menu Cepat -->
     <div class="col-lg-4">
-        <div class="card shadow-sm border-0 mb-4">
+        <div class="card shadow-sm border-0 mb-4 bg-white">
             <div class="card-header bg-white py-3 border-bottom">
-                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-lightning-charge-fill me-2 text-warning"></i>Aksi Cepat Dosen</h6>
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-lightning-charge me-2 text-warning"></i>Aksi Cepat Dosen</h6>
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
                     <a href="jadwal_saya.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="avatar-circle avatar-sm avatar-primary">
-                                <i class="bi bi-calendar3"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold text-dark">Atur Ketersediaan Waktu</div>
-                                <small class="text-muted">Kelola slot konsultasi mingguan</small>
-                            </div>
+                        <div>
+                            <div class="fw-bold"><i class="bi bi-calendar-plus text-primary me-2"></i>Atur Ketersediaan Waktu</div>
+                            <small class="text-muted">Tentukan hari dan jam konsultasi mahasiswa</small>
                         </div>
-                        <i class="bi bi-chevron-right text-muted small"></i>
+                        <i class="bi bi-chevron-right text-muted"></i>
                     </a>
                     <a href="persetujuan.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="avatar-circle avatar-sm avatar-warning">
-                                <i class="bi bi-inbox"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold text-dark">Persetujuan & Reschedule</div>
-                                <small class="text-muted">Terima atau jadwalkan ulang</small>
-                            </div>
+                        <div>
+                            <div class="fw-bold"><i class="bi bi-inbox text-warning me-2"></i>Persetujuan & Reschedule</div>
+                            <small class="text-muted">Terima, tolak, atau atur ulang jadwal bimbingan</small>
                         </div>
                         <?php if ($count_menunggu > 0): ?>
                             <span class="badge bg-danger rounded-pill"><?= $count_menunggu; ?></span>
                         <?php else: ?>
-                            <i class="bi bi-chevron-right text-muted small"></i>
+                            <i class="bi bi-chevron-right text-muted"></i>
                         <?php endif; ?>
                     </a>
                     <a href="riwayat_bimbingan.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="avatar-circle avatar-sm avatar-success">
-                                <i class="bi bi-journal-check"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold text-dark">Evaluasi, Nilai & ACC</div>
-                                <small class="text-muted">Unduh draft & beri pengesahan</small>
-                            </div>
+                        <div>
+                            <div class="fw-bold"><i class="bi bi-journal-check text-success me-2"></i>Evaluasi, Nilai & ACC</div>
+                            <small class="text-muted">Unduh draft naskah & beri pengesahan bab</small>
                         </div>
-                        <i class="bi bi-chevron-right text-muted small"></i>
+                        <i class="bi bi-chevron-right text-muted"></i>
                     </a>
                     <a href="cetak_laporan.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="avatar-circle avatar-sm bg-info-subtle text-info">
-                                <i class="bi bi-printer"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold text-dark">Cetak Rekapitulasi Laporan</div>
-                                <small class="text-muted">Ekspor lembar bimbingan fisik</small>
-                            </div>
+                        <div>
+                            <div class="fw-bold"><i class="bi bi-printer text-info me-2"></i>Cetak Rekapitulasi Laporan</div>
+                            <small class="text-muted">Ekspor lembar bimbingan fisik</small>
                         </div>
-                        <i class="bi bi-chevron-right text-muted small"></i>
+                        <i class="bi bi-chevron-right text-muted"></i>
                     </a>
                     <a href="chat.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="avatar-circle avatar-sm avatar-primary">
-                                <i class="bi bi-chat-quote"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold text-dark">Konsultasi Chat Mahasiswa</div>
-                                <small class="text-muted">Pesan langsung & bimbingan online</small>
-                            </div>
+                        <div>
+                            <div class="fw-bold"><i class="bi bi-chat-dots text-primary me-2"></i>Konsultasi Chat Mahasiswa</div>
+                            <small class="text-muted">Pesan langsung & konsultasi online</small>
                         </div>
-                        <?php if ($count_unread > 0): ?>
-                            <span class="badge bg-primary rounded-pill"><?= $count_unread; ?></span>
-                        <?php else: ?>
-                            <i class="bi bi-chevron-right text-muted small"></i>
-                        <?php endif; ?>
+                        <i class="bi bi-chevron-right text-muted"></i>
                     </a>
                 </div>
             </div>
+        </div>
+
+        <div class="card shadow-sm border-0 bg-primary-subtle text-primary-emphasis p-3">
+            <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i> Informasi Pembimbing</h6>
+            <p class="small mb-0">Pastikan ketersediaan jadwal mingguan tetap diperbarui agar mahasiswa bimbingan dapat mengajukan permohonan bimbingan tanpa bentrok.</p>
         </div>
     </div>
 </div>

@@ -773,3 +773,62 @@ h1, h2, h3, h4, h5, h6 {
 .table-modern tbody tr:last-child td {
     border-bottom: none;
 }
+
+
+/* --- ROBUST TOP NAVBAR OVERRIDE --- */
+.navbar, .navbar.bg-primary, .bg-app-navbar {
+    background: #1e3a8a !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12) !important;
+}
+
+.navbar .navbar-brand {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+
+/* Card clean look */
+.card {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* High contrast border colors */
+.border-primary { border-color: #2563eb !important; }
+.border-warning { border-color: #f59e0b !important; }
+.border-success { border-color: #10b981 !important; }
+.border-info    { border-color: #06b6d4 !important; }
+
+/* Sidebar clean active */
+.sidebar {
+    background-color: #ffffff !important;
+    border-right: 1px solid #e2e8f0 !important;
+}
+
+.sidebar .nav-link {
+    font-weight: 600;
+    color: #334155 !important;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    padding: 0.65rem 1rem;
+    transition: all 0.15s ease;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #f1f5f9 !important;
+    color: #2563eb !important;
+}
+
+.sidebar .nav-link.active {
+    background-color: #2563eb !important;
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25) !important;
+}
+
+.sidebar .nav-link.active i {
+    color: #ffffff !important;
+}
