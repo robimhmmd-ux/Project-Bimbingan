@@ -74,17 +74,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tambah_jadwal'])) {
         $error_msg = "Jam mulai harus lebih awal dari jam selesai.";
     } else {
         try {
-            // Cek apakah slot hari dan jam bentrok dengan jadwal yang sudah ada
+            // Cek apakah slot hari dan jam bentrok dengan jadwal yang sudah ada (menggunakan single-placeholder tanpa duplikat untuk kompatibilitas PDO native)
             $stmt_check = $pdo->prepare("
                 SELECT COUNT(*) FROM jadwal_dosen 
                 WHERE dosen_id = :did AND hari = :hari 
-                  AND ((jam_mulai <= :jm AND jam_selesai > :jm) OR (jam_mulai < :js AND jam_selesai >= :js))
+                  AND (jam_mulai < :js AND jam_selesai > :jm)
             ");
             $stmt_check->execute([
                 ':did'  => $dosen_id,
                 ':hari' => $hari,
-                ':jm'   => $jam_mulai,
-                ':js'   => $jam_selesai
+                ':js'   => $jam_selesai,
+                ':jm'   => $jam_mulai
             ]);
             
             if ($stmt_check->fetchColumn() > 0) {

@@ -92,11 +92,16 @@ $pesan_list = [];
 if ($active_mhs_user_id > 0) {
     $stmt_chat = $pdo->prepare("
         SELECT * FROM pesan_chat 
-        WHERE (pengirim_id = :uid AND penerima_id = :mid) 
-           OR (pengirim_id = :mid AND penerima_id = :uid) 
+        WHERE (pengirim_id = :uid1 AND penerima_id = :mid1) 
+           OR (pengirim_id = :mid2 AND penerima_id = :uid2) 
         ORDER BY waktu_kirim ASC
     ");
-    $stmt_chat->execute([':uid' => $user_id, ':mid' => $active_mhs_user_id]);
+    $stmt_chat->execute([
+        ':uid1' => $user_id,
+        ':mid1' => $active_mhs_user_id,
+        ':mid2' => $active_mhs_user_id,
+        ':uid2' => $user_id
+    ]);
     $pesan_list = $stmt_chat->fetchAll();
 }
 ?>
@@ -129,11 +134,16 @@ if ($active_mhs_user_id > 0) {
                         // Cek pesan terakhir & unread count
                         $stmt_last = $pdo->prepare("
                             SELECT pesan, waktu_kirim FROM pesan_chat 
-                            WHERE (pengirim_id = :uid AND penerima_id = :mid) 
-                               OR (pengirim_id = :mid AND penerima_id = :uid) 
+                            WHERE (pengirim_id = :uid1 AND penerima_id = :mid1) 
+                               OR (pengirim_id = :mid2 AND penerima_id = :uid2) 
                             ORDER BY waktu_kirim DESC LIMIT 1
                         ");
-                        $stmt_last->execute([':uid' => $user_id, ':mid' => $mhs['mhs_user_id']]);
+                        $stmt_last->execute([
+                            ':uid1' => $user_id,
+                            ':mid1' => $mhs['mhs_user_id'],
+                            ':mid2' => $mhs['mhs_user_id'],
+                            ':uid2' => $user_id
+                        ]);
                         $last_msg = $stmt_last->fetch();
 
                         $stmt_unread = $pdo->prepare("
@@ -274,4 +284,3 @@ if ($active_mhs_user_id > 0) {
 <?php
 require_once '../templates/footer.php';
 ?>
-
