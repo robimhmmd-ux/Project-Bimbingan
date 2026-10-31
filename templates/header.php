@@ -53,18 +53,33 @@ $user_initial = strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1));
             </div>
 
             <!-- User Profile Chip -->
-            <div class="user-profile-chip d-flex align-items-center gap-2 ps-2 pe-3 py-1 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-10">
-                <div class="avatar-circle">
-                    <?= $user_initial; ?>
+            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'mahasiswa'): ?>
+                <a href="profil.php" class="user-profile-chip d-flex align-items-center gap-2 ps-2 pe-3 py-1 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-10 text-decoration-none" title="Lihat & Edit Profil">
+                    <div class="avatar-circle">
+                        <?= $user_initial; ?>
+                    </div>
+                    <div class="d-none d-sm-flex flex-column text-start">
+                        <span class="text-white fw-bold small lh-1"><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
+                        <span class="user-role-badge mt-1">
+                            <span class="status-dot"></span>
+                            <?= ucfirst($_SESSION['role'] ?? ''); ?>
+                        </span>
+                    </div>
+                </a>
+            <?php else: ?>
+                <div class="user-profile-chip d-flex align-items-center gap-2 ps-2 pe-3 py-1 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-10">
+                    <div class="avatar-circle">
+                        <?= $user_initial; ?>
+                    </div>
+                    <div class="d-none d-sm-flex flex-column text-start">
+                        <span class="text-white fw-bold small lh-1"><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
+                        <span class="user-role-badge mt-1">
+                            <span class="status-dot"></span>
+                            <?= ucfirst($_SESSION['role'] ?? ''); ?>
+                        </span>
+                    </div>
                 </div>
-                <div class="d-none d-sm-flex flex-column text-start">
-                    <span class="text-white fw-bold small lh-1"><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
-                    <span class="user-role-badge mt-1">
-                        <span class="status-dot"></span>
-                        <?= ucfirst($_SESSION['role'] ?? ''); ?>
-                    </span>
-                </div>
-            </div>
+            <?php endif; ?>
 
             <!-- Logout Button -->
             <a href="../logout.php" class="btn btn-sm btn-logout" onclick="return confirm('Apakah Anda yakin ingin keluar dari sistem?')" title="Logout">

@@ -105,3 +105,17 @@ INSERT INTO jadwal_dosen (dosen_id, hari, jam_mulai, jam_selesai, status_aktif) 
 (1, 'Senin', '09:00:00', '12:00:00', 'aktif'),
 (1, 'Kamis', '13:00:00', '16:00:00', 'aktif'),
 (2, 'Selasa', '10:00:00', '14:00:00', 'aktif');
+
+
+-- 7. TABEL PESAN CHAT (KOMUNIKASI INTERNAL MAHASISWA & DOSEN)
+CREATE TABLE IF NOT EXISTS pesan_chat (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pengirim_user_id INT NOT NULL,
+    penerima_user_id INT NOT NULL,
+    pesan TEXT NOT NULL,
+    lampiran VARCHAR(255) NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (pengirim_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (penerima_user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
