@@ -34,6 +34,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </a>
             </li>
             <li class="nav-item mb-1">
+                <a class="nav-link <?= ($current_page == 'mahasiswa_bimbingan') ? 'active' : 'text-dark'; ?>" href="mahasiswa_bimbingan.php">
+                    <i class="bi bi-people-fill me-2"></i>Mahasiswa Bimbingan
+                </a>
+            </li>
+            <li class="nav-item mb-1">
                 <a class="nav-link <?= ($current_page == 'jadwal') ? 'active' : 'text-dark'; ?>" href="jadwal_saya.php">
                     <i class="bi bi-calendar3 me-2"></i>Atur Ketersediaan
                 </a>

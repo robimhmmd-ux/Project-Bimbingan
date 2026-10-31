@@ -60,8 +60,8 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
         <p class="text-muted small mb-0">Selamat datang di portal pembimbing, <strong><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Bapak/Ibu Dosen'); ?></strong>.</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0 gap-2">
-        <a href="profil.php" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-person-gear me-1"></i> Edit Profil
+        <a href="mahasiswa_bimbingan.php" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-people me-1"></i> Mahasiswa Bimbingan
         </a>
         <a href="jadwal_saya.php" class="btn btn-sm btn-primary">
             <i class="bi bi-calendar-plus me-1"></i> Atur Ketersediaan
@@ -85,12 +85,12 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
     <!-- Profil & Kuota Bimbingan -->
     <div class="col-sm-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-primary border-4 h-100 bg-white">
-            <h6 class="text-muted small text-uppercase fw-semibold mb-1">Profil & Kuota</h6>
-            <h4 class="fw-bold text-dark mb-1"><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Nama Dosen'); ?></h4>
-            <p class="text-muted small mb-0">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
-            <div class="mt-2 text-primary small fw-semibold">
-                <i class="bi bi-people-fill me-1"></i> Kuota: <?= $count_mhs; ?> / <?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?> Mahasiswa
-            </div>
+            <h6 class="text-muted small text-uppercase fw-semibold mb-1">Mahasiswa Bimbingan</h6>
+            <h3 class="fw-bold text-dark mb-1"><?= $count_mhs; ?> <span class="fs-6 text-muted fw-normal">/ <?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?> Kuota</span></h3>
+            <p class="text-muted small mb-2">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
+            <a href="mahasiswa_bimbingan.php" class="small text-decoration-none fw-bold text-primary">
+                Cek Progres Mahasiswa &rarr;
+            </a>
         </div>
     </div>
 
@@ -211,6 +211,13 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
+                    <a href="mahasiswa_bimbingan.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <div class="fw-bold"><i class="bi bi-people-fill text-primary me-2"></i>Mahasiswa Bimbingan & Progres</div>
+                            <small class="text-muted">Cek capaian dan riwayat seluruh mahasiswa</small>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </a>
                     <a href="jadwal_saya.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
                         <div>
                             <div class="fw-bold"><i class="bi bi-calendar-plus text-primary me-2"></i>Atur Ketersediaan Waktu</div>
