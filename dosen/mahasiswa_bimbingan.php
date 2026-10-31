@@ -391,3 +391,4 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
 <?php
 require_once '../templates/footer.php';
 ?>
+
