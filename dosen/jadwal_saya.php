@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tambah_jadwal'])) {
         $error_msg = "Jam mulai harus lebih awal dari jam selesai.";
     } else {
         try {
-            // Cek apakah slot hari dan jam bentrok dengan jadwal yang sudah ada (menggunakan single-placeholder tanpa duplikat untuk kompatibilitas PDO native)
+            // Cek apakah slot hari dan jam bentrok dengan jadwal yang sudah ada
             $stmt_check = $pdo->prepare("
                 SELECT COUNT(*) FROM jadwal_dosen 
                 WHERE dosen_id = :did AND hari = :hari 
@@ -119,10 +119,10 @@ $stmt_list->execute([':did' => $dosen_id]);
 $jadwal_list = $stmt_list->fetchAll();
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
     <div>
-        <h1 class="h2 fw-bold">Atur Ketersediaan Waktu Bimbingan</h1>
-        <p class="text-muted small mb-0">Tentukan hari dan jam operasional bimbingan Anda. Slot aktif akan otomatis tampil pada pilihan jadwal mahasiswa saat mengajukan bimbingan.</p>
+        <h1 class="h3 fw-bold mb-1">Atur Ketersediaan Waktu Bimbingan</h1>
+        <p class="text-muted small mb-0">Tentukan hari dan jam operasional bimbingan Anda. Slot aktif akan otomatis tampil pada pilihan mahasiswa saat mengajukan jadwal.</p>
     </div>
 </div>
 
@@ -145,8 +145,8 @@ $jadwal_list = $stmt_list->fetchAll();
     <!-- Formulir Tambah Slot Ketersediaan -->
     <div class="col-lg-4">
         <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-primary text-white py-3">
-                <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-plus me-2"></i>Tambah Ketersediaan Waktu</h6>
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calendar-plus-fill me-2 text-primary"></i>Tambah Slot Waktu</h6>
             </div>
             <div class="card-body p-4">
                 <form action="jadwal_saya.php" method="POST">
@@ -176,7 +176,7 @@ $jadwal_list = $stmt_list->fetchAll();
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-4">
                         <label for="status_aktif" class="form-label fw-semibold">Status Ketersediaan</label>
                         <select name="status_aktif" id="status_aktif" class="form-select">
                             <option value="aktif">Aktif (Dapat dipilih Mahasiswa)</option>
@@ -185,89 +185,97 @@ $jadwal_list = $stmt_list->fetchAll();
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                        <i class="bi bi-save me-1"></i> Terbitkan Slot Jadwal
+                        <i class="bi bi-plus-circle me-1"></i> Terbitkan Slot Jadwal
                     </button>
                 </form>
             </div>
         </div>
 
         <!-- Kartu Edukasi Alur Mahasiswa -->
-        <div class="card shadow-sm border-0 bg-info-subtle text-info-emphasis p-3">
-            <h6 class="fw-bold mb-2"><i class="bi bi-info-circle-fill me-1"></i> Bagaimana Mahasiswa Melihat Ini?</h6>
-            <p class="small mb-0">Saat mahasiswa bimbingan Anda membuka menu <strong>Ajukan Jadwal</strong>, sistem akan secara otomatis memuat daftar slot aktif yang telah Anda terbitkan di sini, sehingga waktu konsultasi terkoordinasi rapi dan terhindar dari jadwal bentrok.</p>
+        <div class="card shadow-sm border-0 bg-primary-subtle text-primary-emphasis p-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb-fill me-1 text-warning"></i> Info Integrasi Mahasiswa</h6>
+            <p class="small mb-0">Saat mahasiswa bimbingan Anda membuka menu <strong>Ajukan Jadwal</strong>, mereka hanya dapat memilih slot operasional yang bertanda status <strong>Aktif</strong>.</p>
         </div>
     </div>
 
     <!-- Tabel Daftar Slot Ketersediaan -->
     <div class="col-lg-8">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calendar-check me-2 text-primary"></i>Daftar Slot Ketersediaan Anda</h6>
-                <span class="badge bg-secondary"><?= count($jadwal_list); ?> Slot Terdaftar</span>
+        <div class="table-card-wrapper">
+            <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calendar-check-fill me-2 text-primary"></i>Daftar Slot Ketersediaan Bimbingan</h6>
+                    <small class="text-muted">Total slot operasional ketersediaan Anda</small>
+                </div>
+                <span class="badge bg-primary rounded-pill"><?= count($jadwal_list); ?> Slot</span>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+            <div class="table-responsive">
+                <table class="table table-modern table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;" class="text-center">No</th>
+                            <th>Hari</th>
+                            <th>Rentang Waktu Operasional</th>
+                            <th>Status Akses</th>
+                            <th style="width: 180px;" class="text-center">Aksi / Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($jadwal_list)): ?>
                             <tr>
-                                <th style="width: 50px;" class="text-center">No</th>
-                                <th>Hari</th>
-                                <th>Rentang Jam Operasional</th>
-                                <th>Status di Mahasiswa</th>
-                                <th style="width: 170px;" class="text-center">Aksi / Tindakan</th>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="bi bi-calendar-x fs-1 d-block mb-2 text-muted"></i>
+                                    Belum ada jadwal ketersediaan bimbingan yang diatur. Silakan tambahkan melalui form di samping.
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($jadwal_list)): ?>
+                        <?php else: ?>
+                            <?php foreach ($jadwal_list as $index => $row): ?>
                                 <tr>
-                                    <td colspan="5" class="text-center py-5 text-muted">
-                                        <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
-                                        Belum ada jadwal ketersediaan bimbingan yang diatur. Silakan tambahkan pada formulir di sebelah kiri.
-                                    </td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($jadwal_list as $index => $row): ?>
-                                    <tr>
-                                        <td class="text-center fw-semibold"><?= $index + 1; ?></td>
-                                        <td>
-                                            <span class="fw-bold text-dark fs-6"><?= htmlspecialchars($row['hari']); ?></span>
-                                        </td>
-                                        <td>
-                                            <div class="fw-semibold text-primary">
-                                                <i class="bi bi-clock me-1"></i>
-                                                <?= htmlspecialchars(substr($row['jam_mulai'], 0, 5)); ?> - <?= htmlspecialchars(substr($row['jam_selesai'], 0, 5)); ?> WIB
+                                    <td class="text-center fw-semibold text-muted"><?= $index + 1; ?></td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="avatar-circle avatar-sm avatar-primary">
+                                                <i class="bi bi-calendar-day"></i>
                                             </div>
-                                        </td>
-                                        <td>
-                                            <?php if ($row['status_aktif'] === 'aktif'): ?>
-                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                                                    <i class="bi bi-check-circle-fill me-1"></i>Aktif (Terbuka)
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">
-                                                    <i class="bi bi-pause-circle-fill me-1"></i>Libur (Tertutup)
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-center">
+                                            <span class="fw-bold text-dark"><?= htmlspecialchars($row['hari']); ?></span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold text-primary">
+                                            <i class="bi bi-clock me-1"></i>
+                                            <?= htmlspecialchars(substr($row['jam_mulai'], 0, 5)); ?> - <?= htmlspecialchars(substr($row['jam_selesai'], 0, 5)); ?> WIB
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <?php if ($row['status_aktif'] === 'aktif'): ?>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">
+                                                <span class="status-dot active"></span> Aktif
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1">
+                                                <span class="status-dot rejected"></span> Libur
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
                                             <a href="jadwal_saya.php?aksi=toggle&id=<?= $row['id']; ?>" 
-                                               class="btn btn-sm btn-outline-secondary me-1" 
+                                               class="btn btn-outline-secondary" 
                                                title="Ubah Status Aktif / Libur">
-                                                <i class="bi bi-arrow-repeat"></i> <?= ($row['status_aktif'] === 'aktif') ? 'Liburkan' : 'Aktifkan'; ?>
+                                                <i class="bi bi-arrow-repeat me-1"></i><?= ($row['status_aktif'] === 'aktif') ? 'Liburkan' : 'Aktifkan'; ?>
                                             </a>
                                             <a href="jadwal_saya.php?aksi=hapus&id=<?= $row['id']; ?>" 
-                                               class="btn btn-sm btn-outline-danger" 
+                                               class="btn btn-outline-danger" 
                                                onclick="return confirm('Apakah Anda yakin ingin menghapus slot hari <?= htmlspecialchars($row['hari']); ?> ini?');"
                                                title="Hapus Slot">
                                                 <i class="bi bi-trash"></i>
                                             </a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

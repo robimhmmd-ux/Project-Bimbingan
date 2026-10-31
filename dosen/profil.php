@@ -136,10 +136,10 @@ $foto_path = '../assets/uploads/profile/' . ($dosen['foto_profil'] ?? '');
 $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default.png' && file_exists($foto_path);
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
     <div>
-        <h1 class="h2 fw-bold">Profil & Pengaturan Akun</h1>
-        <p class="text-muted small mb-0">Kelola informasi biodata akademik, perbarui foto profil, dan ubah kata sandi akun dosen Anda.</p>
+        <h1 class="h3 fw-bold mb-1">Profil & Pengaturan Akun</h1>
+        <p class="text-muted small mb-0">Kelola informasi biodata akademik, perbarui foto profil, dan ubah kata sandi akun pembimbing Anda.</p>
     </div>
 </div>
 
@@ -158,45 +158,48 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
     </div>
 <?php endif; ?>
 
-<div class="row g-4">
+<div class="row g-4 mb-4">
     <!-- Kartu Info Foto Profil -->
     <div class="col-lg-4">
         <div class="card shadow-sm border-0 text-center p-4">
-            <div class="mb-3 position-relative d-inline-block">
+            <div class="mb-3 position-relative d-inline-block mx-auto">
                 <?php if ($has_foto): ?>
                     <img src="<?= htmlspecialchars($foto_path); ?>" 
                          alt="Foto Profil Dosen" 
-                         class="rounded-circle img-thumbnail shadow-sm object-fit-cover" 
-                         style="width: 150px; height: 150px;">
+                         class="rounded-circle img-thumbnail shadow object-fit-cover" 
+                         style="width: 140px; height: 140px;">
                 <?php else: ?>
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-sm" 
+                    <div class="avatar-circle avatar-primary shadow mx-auto" 
                          style="width: 140px; height: 140px; font-size: 3.5rem;">
                         <i class="bi bi-person-fill"></i>
                     </div>
                 <?php endif; ?>
+                <span class="position-absolute bottom-0 end-0 p-2 bg-success border border-3 border-white rounded-circle shadow-sm"></span>
             </div>
             
-            <h5 class="fw-bold mb-1"><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Nama Dosen'); ?></h5>
+            <h5 class="fw-bold mb-1 text-dark"><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Nama Dosen'); ?></h5>
             <p class="text-muted small mb-2">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 mb-3">
-                Dosen Pembimbing Skripsi
-            </span>
+            <div>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 mb-3">
+                    <span class="status-dot active"></span> Dosen Pembimbing Skripsi
+                </span>
+            </div>
 
-            <div class="list-group list-group-flush text-start small border-top pt-2">
-                <div class="list-group-item d-flex justify-content-between px-0">
-                    <span class="text-muted"><i class="bi bi-person me-1"></i> Username:</span>
+            <div class="list-group list-group-flush text-start small border-top pt-3">
+                <div class="list-group-item d-flex justify-content-between px-0 bg-transparent">
+                    <span class="text-muted"><i class="bi bi-person me-2 text-primary"></i> Username:</span>
                     <strong><?= htmlspecialchars($dosen['username'] ?? '-'); ?></strong>
                 </div>
-                <div class="list-group-item d-flex justify-content-between px-0">
-                    <span class="text-muted"><i class="bi bi-envelope me-1"></i> Email:</span>
-                    <span><?= htmlspecialchars($dosen['email'] ?? '-'); ?></span>
+                <div class="list-group-item d-flex justify-content-between px-0 bg-transparent">
+                    <span class="text-muted"><i class="bi bi-envelope me-2 text-primary"></i> Email:</span>
+                    <span class="text-truncate" style="max-width: 170px;"><?= htmlspecialchars($dosen['email'] ?? '-'); ?></span>
                 </div>
-                <div class="list-group-item d-flex justify-content-between px-0">
-                    <span class="text-muted"><i class="bi bi-whatsapp me-1"></i> WhatsApp:</span>
+                <div class="list-group-item d-flex justify-content-between px-0 bg-transparent">
+                    <span class="text-muted"><i class="bi bi-whatsapp me-2 text-success"></i> WhatsApp:</span>
                     <span><?= htmlspecialchars($dosen['no_whatsapp'] ?? '-'); ?></span>
                 </div>
-                <div class="list-group-item d-flex justify-content-between px-0">
-                    <span class="text-muted"><i class="bi bi-people me-1"></i> Kuota Bimbingan:</span>
+                <div class="list-group-item d-flex justify-content-between px-0 bg-transparent">
+                    <span class="text-muted"><i class="bi bi-people me-2 text-primary"></i> Kuota Bimbingan:</span>
                     <strong><?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?> Mahasiswa</strong>
                 </div>
             </div>
@@ -207,15 +210,15 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
     <div class="col-lg-8">
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white py-3 border-bottom">
-                <ul class="nav nav-tabs card-header-tabs" id="profileTab" role="tablist">
+                <ul class="nav nav-pills card-header-pills" id="profileTab" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-bold" id="biodata-tab" data-bs-toggle="tab" data-bs-target="#biodata-pane" type="button" role="tab">
+                        <button class="nav-link active fw-bold btn-sm px-3" id="biodata-tab" data-bs-toggle="tab" data-bs-target="#biodata-pane" type="button" role="tab">
                             <i class="bi bi-person-lines-fill me-1"></i> Edit Biodata & Foto
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold" id="password-tab" data-bs-toggle="tab" data-bs-target="#password-pane" type="button" role="tab">
-                            <i class="bi bi-key me-1"></i> Ganti Password Akun
+                        <button class="nav-link fw-bold btn-sm px-3 ms-2" id="password-tab" data-bs-toggle="tab" data-bs-target="#password-pane" type="button" role="tab">
+                            <i class="bi bi-key-fill me-1"></i> Ganti Password Akun
                         </button>
                     </li>
                 </ul>
@@ -259,8 +262,8 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
                                 </div>
                             </div>
 
-                            <div class="mt-4 pt-2 border-top text-end">
-                                <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                            <div class="mt-4 pt-3 border-top text-end">
+                                <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
                                     <i class="bi bi-save me-1"></i> Simpan Perubahan Biodata
                                 </button>
                             </div>
@@ -288,8 +291,8 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
                                 </div>
                             </div>
 
-                            <div class="mt-4 pt-2 border-top text-end">
-                                <button type="submit" class="btn btn-warning px-4 fw-semibold">
+                            <div class="mt-4 pt-3 border-top text-end">
+                                <button type="submit" class="btn btn-warning px-4 fw-semibold shadow-sm">
                                     <i class="bi bi-key-fill me-1"></i> Perbarui Kata Sandi
                                 </button>
                             </div>
@@ -304,4 +307,3 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 <?php
 require_once '../templates/footer.php';
 ?>
-
