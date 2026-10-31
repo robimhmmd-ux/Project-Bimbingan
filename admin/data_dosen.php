@@ -217,7 +217,7 @@ require_once '../templates/sidebar_admin.php';
 <!-- Hero Banner Header -->
 <div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
-        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-15 text-white small mb-2 border border-white border-opacity-10">
+        <div class="hero-tag">
             <i class="bi bi-person-badge-fill text-success"></i>
             <span>Direktori Tenaga Pengajar & Pembimbing</span>
         </div>

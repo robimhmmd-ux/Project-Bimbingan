@@ -247,6 +247,31 @@ h1, h2, h3, h4, h5, h6 {
     pointer-events: none;
 }
 
+.hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
+    color: #ffffff !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.025em;
+    margin-bottom: 0.65rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.hero-tag span {
+    color: #ffffff !important;
+}
+
+.hero-tag i {
+    font-size: 0.95rem;
+}
+
 /* --- METRIC CARDS --- */
 .metric-card {
     background: #ffffff;
