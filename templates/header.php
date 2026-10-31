@@ -19,6 +19,10 @@ if (!isset($_SESSION['user_id'])) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="../assets/css/style.css" rel="stylesheet">
 </head>
@@ -26,9 +30,10 @@ if (!isset($_SESSION['user_id'])) {
 
 <!-- Topbar Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
-    <div class="container-fluid">
+    <div class="container-fluid px-md-4">
         <a class="navbar-brand fw-bold" href="#">
-            <i class="bi bi-mortarboard-fill me-2"></i>Bimbingan Skripsi
+            <i class="bi bi-mortarboard-fill text-white"></i>
+            <span>Bimbingan Skripsi</span>
         </a>
         <div class="d-flex align-items-center text-white">
             <span class="me-3 small d-none d-md-inline">Halo, <strong><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></strong> (<?= ucfirst($_SESSION['role'] ?? ''); ?>)</span>
