@@ -138,17 +138,22 @@ require_once '../templates/header.php';
 require_once '../templates/sidebar_admin.php';
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<!-- Hero Banner Header -->
+<div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
-        <h1 class="h2 fw-bold text-dark mb-1">Monitoring & Evaluasi Kelulusan Mahasiswa</h1>
-        <p class="text-muted small mb-0">Pantau kemajuan skripsi, capaian nilai progres, kesiapan sidang munaqasyah, hingga kelulusan final.</p>
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-15 text-white small mb-2 border border-white border-opacity-10">
+            <i class="bi bi-award-fill text-purple"></i>
+            <span>Evaluasi Capaian & Kelulusan</span>
+        </div>
+        <h2 class="fw-bold text-white mb-1">Monitoring Kelulusan Mahasiswa</h2>
+        <p class="text-white-50 small mb-0">Pantau kemajuan skripsi, evaluasi capaian nilai progres, kesiapan sidang munaqasyah, hingga kelulusan final.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
-        <a href="data_mahasiswa.php" class="btn btn-outline-primary">
+    <div class="d-flex align-items-center gap-2">
+        <a href="data_mahasiswa.php" class="btn btn-outline-light">
             <i class="bi bi-people me-1"></i> Data Mahasiswa
         </a>
-        <button type="button" class="btn btn-success" onclick="window.print()">
-            <i class="bi bi-printer-fill me-1"></i> Cetak Rekap Kelulusan
+        <button type="button" class="btn btn-light shadow-sm fw-bold" onclick="window.print()">
+            <i class="bi bi-printer-fill text-primary me-1"></i> Cetak Rekap Kelulusan
         </button>
     </div>
 </div>
@@ -156,60 +161,62 @@ require_once '../templates/sidebar_admin.php';
 <!-- Alert Notifikasi -->
 <?php if (!empty($success_msg)): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($success_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($success_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($error_msg)): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($error_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($error_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
 <!-- Pipeline Metrik Kelulusan -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="card shadow-sm border-0 bg-secondary bg-opacity-10 border-start border-secondary border-4 p-3">
+        <div class="metric-card p-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="text-muted small fw-semibold text-uppercase">Tahap Bimbingan</span>
+                    <span class="text-muted small fw-bold text-uppercase">Tahap Bimbingan</span>
                     <h3 class="fw-bold text-dark mb-0 mt-1"><?= $count_bimbingan; ?> <small class="fs-6 fw-normal text-muted">(<?= $persen_bimb; ?>%)</small></h3>
                     <small class="text-muted">Masih aktif penulisan & revisi</small>
                 </div>
-                <div class="bg-secondary bg-opacity-25 rounded-circle p-3 text-secondary">
-                    <i class="bi bi-book fs-3"></i>
+                <div class="metric-icon-box bg-secondary-subtle text-secondary">
+                    <i class="bi bi-book"></i>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-4">
-        <div class="card shadow-sm border-0 bg-primary bg-opacity-10 border-start border-primary border-4 p-3">
+        <div class="metric-card p-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="text-primary small fw-semibold text-uppercase">Siap Sidang Munaqasyah</span>
+                    <span class="text-muted small fw-bold text-uppercase">Siap Sidang Munaqasyah</span>
                     <h3 class="fw-bold text-primary mb-0 mt-1"><?= $count_siap; ?> <small class="fs-6 fw-normal text-muted">(<?= $persen_siap; ?>%)</small></h3>
-                    <small class="text-muted">ACC Bab lengkap dari dosen</small>
+                    <small class="text-muted">ACC Bab lengkap dari pembimbing</small>
                 </div>
-                <div class="bg-primary bg-opacity-25 rounded-circle p-3 text-primary">
-                    <i class="bi bi-award-fill fs-3"></i>
+                <div class="metric-icon-box bg-primary-subtle text-primary">
+                    <i class="bi bi-award-fill"></i>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-4">
-        <div class="card shadow-sm border-0 bg-success bg-opacity-10 border-start border-success border-4 p-3">
+        <div class="metric-card p-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="text-success small fw-semibold text-uppercase">Telah Dinyatakan Lulus</span>
+                    <span class="text-muted small fw-bold text-uppercase">Telah Dinyatakan Lulus</span>
                     <h3 class="fw-bold text-success mb-0 mt-1"><?= $count_lulus; ?> <small class="fs-6 fw-normal text-muted">(<?= $persen_lulus; ?>%)</small></h3>
-                    <small class="text-muted">Tuntas yudisium & revisi final</small>
+                    <small class="text-muted">Tuntas ujian sidang & yudisium</small>
                 </div>
-                <div class="bg-success bg-opacity-25 rounded-circle p-3 text-success">
-                    <i class="bi bi-check2-all fs-3"></i>
+                <div class="metric-icon-box bg-success-subtle text-success">
+                    <i class="bi bi-check2-all"></i>
                 </div>
             </div>
         </div>
@@ -219,11 +226,11 @@ require_once '../templates/sidebar_admin.php';
 <!-- Progress Bar Akumulasi Tingkat Kelulusan -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-3">
-        <div class="d-flex justify-content-between small fw-semibold text-muted mb-2">
+        <div class="d-flex justify-content-between small fw-bold text-muted mb-2">
             <span>Tingkat Kemajuan Kelulusan Mahasiswa Angkatan</span>
             <span>Total: <?= $total_mhs; ?> Mahasiswa</span>
         </div>
-        <div class="progress" style="height: 12px;">
+        <div class="progress" style="height: 10px;">
             <div class="progress-bar bg-success" role="progressbar" style="width: <?= $persen_lulus; ?>%" title="Lulus: <?= $count_lulus; ?>"></div>
             <div class="progress-bar bg-primary" role="progressbar" style="width: <?= $persen_siap; ?>%" title="Siap Sidang: <?= $count_siap; ?>"></div>
             <div class="progress-bar bg-secondary" role="progressbar" style="width: <?= $persen_bimb; ?>%" title="Bimbingan: <?= $count_bimbingan; ?>"></div>
@@ -241,7 +248,10 @@ require_once '../templates/sidebar_admin.php';
     <div class="card-body p-3">
         <form method="GET" action="monitoring_kelulusan.php" class="row g-2 align-items-center">
             <div class="col-md-4">
-                <input type="text" class="form-control" name="q" value="<?= htmlspecialchars($search_q); ?>" placeholder="Cari NIM, Nama, atau Judul...">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" name="q" value="<?= htmlspecialchars($search_q); ?>" placeholder="Cari NIM, Nama, atau Judul...">
+                </div>
             </div>
             <div class="col-md-3">
                 <select name="status" class="form-select" onchange="this.form.submit()">
@@ -262,7 +272,7 @@ require_once '../templates/sidebar_admin.php';
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
                 <?php if ($filter_status !== 'all' || $filter_dosen > 0 || !empty($search_q)): ?>
                     <a href="monitoring_kelulusan.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
                 <?php endif; ?>
@@ -274,10 +284,15 @@ require_once '../templates/sidebar_admin.php';
 <!-- Tabel Monitoring Kelulusan -->
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0 text-dark">
-            <i class="bi bi-clipboard2-data-fill text-primary me-2"></i>
-            Daftar Monitoring Mahasiswa Tugas Akhir (<?= count($monitoring_list); ?> Mahasiswa)
-        </h6>
+        <div class="d-flex align-items-center gap-2">
+            <span class="p-2 rounded bg-primary-subtle text-primary">
+                <i class="bi bi-clipboard2-data-fill"></i>
+            </span>
+            <div>
+                <h6 class="fw-bold mb-0 text-dark">Daftar Monitoring Mahasiswa Tugas Akhir</h6>
+                <small class="text-muted">Total <?= count($monitoring_list); ?> mahasiswa dalam pantauan</small>
+            </div>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -285,39 +300,56 @@ require_once '../templates/sidebar_admin.php';
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3" style="width: 40px;">No</th>
-                        <th style="width: 130px;">NIM</th>
-                        <th>Mahasiswa & Judul Skripsi</th>
+                        <th>Mahasiswa</th>
+                        <th>Judul Penelitian Skripsi</th>
                         <th>Dosen Pembimbing</th>
-                        <th class="text-center" style="width: 140px;">Nilai & Capaian</th>
-                        <th class="text-center" style="width: 130px;">Status Kelulusan</th>
-                        <th class="text-center" style="width: 120px;">Aksi</th>
+                        <th class="text-center" style="width: 140px;">Capaian Nilai</th>
+                        <th class="text-center" style="width: 130px;">Status</th>
+                        <th class="text-center" style="width: 130px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($monitoring_list)): ?>
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">Tidak ada data mahasiswa sesuai filter.</td>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-2 d-block text-secondary mb-2"></i>
+                                Tidak ada data mahasiswa sesuai filter.
+                            </td>
                         </tr>
                     <?php else: ?>
                         <?php 
                         $no = 1;
                         foreach ($monitoring_list as $row): 
                             $nilai = (int)$row['nilai_progres_terakhir'];
+                            $initial = strtoupper(substr($row['nama_lengkap'], 0, 1));
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
-                                <td class="font-monospace fw-bold text-primary"><?= htmlspecialchars($row['nim']); ?></td>
                                 <td>
-                                    <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
-                                    <small class="text-muted d-block text-truncate" style="max-width: 320px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-initial bg-primary-subtle text-primary">
+                                            <?= $initial; ?>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
+                                            <span class="font-monospace text-primary small">NIM: <?= htmlspecialchars($row['nim']); ?></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted d-block text-truncate" style="max-width: 280px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
                                         <?= htmlspecialchars($row['judul_skripsi']); ?>
                                     </small>
                                 </td>
                                 <td>
                                     <?php if ($row['nama_dosen']): ?>
-                                        <span class="text-dark small fw-semibold"><i class="bi bi-person-check-fill text-success me-1"></i><?= htmlspecialchars($row['nama_dosen']); ?></span>
+                                        <span class="text-dark small fw-semibold">
+                                            <i class="bi bi-person-check-fill text-success me-1"></i><?= htmlspecialchars($row['nama_dosen']); ?>
+                                        </span>
                                     <?php else: ?>
-                                        <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Belum Diplot</span>
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Belum Diplot
+                                        </span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
@@ -325,11 +357,11 @@ require_once '../templates/sidebar_admin.php';
                                         <span class="fw-bold fs-6 <?= ($nilai >= 80) ? 'text-success' : (($nilai >= 60) ? 'text-primary' : 'text-warning'); ?>">
                                             <?= $nilai; ?>%
                                         </span>
-                                        <div class="progress" style="height: 5px; width: 85px;">
+                                        <div class="progress" style="height: 6px; width: 85px;">
                                             <div class="progress-bar <?= ($nilai >= 80) ? 'bg-success' : (($nilai >= 60) ? 'bg-primary' : 'bg-warning'); ?>" 
                                                  style="width: <?= $nilai; ?>%"></div>
                                         </div>
-                                        <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                                        <small class="text-muted d-block mt-1" style="font-size: 0.725rem;">
                                             <?= $row['total_acc_bab']; ?> Bab ACC / <?= $row['total_bimbingan']; ?> Bimb
                                         </small>
                                     </div>
@@ -374,11 +406,11 @@ require_once '../templates/sidebar_admin.php';
             <input type="hidden" name="action" value="update_status">
             <input type="hidden" name="mahasiswa_id" id="eval_mhs_id">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-award me-2"></i>Evaluasi Status Kelulusan Mahasiswa</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-award-fill me-2"></i>Evaluasi Kelulusan Mahasiswa</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="p-3 bg-light rounded border mb-3">
+            <div class="modal-body p-4">
+                <div class="p-3 bg-light rounded-3 border mb-3">
                     <div class="small text-muted">Mahasiswa Terpilih:</div>
                     <div class="fw-bold text-dark fs-6" id="eval_nama"></div>
                     <div class="small text-muted font-monospace" id="eval_nim"></div>
@@ -397,13 +429,13 @@ require_once '../templates/sidebar_admin.php';
                     <label class="form-label small fw-semibold">Nilai Progres / Evaluasi (0 - 100)</label>
                     <div class="input-group">
                         <input type="number" class="form-control" name="nilai_evaluasi" id="eval_nilai" min="0" max="100">
-                        <span class="input-group-text">%</span>
+                        <span class="input-group-text bg-white">%</span>
                     </div>
                     <div class="form-text">Nilai persentase kemajuan bimbingan skripsi.</div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Simpan Pembaruan</button>
             </div>
         </form>
@@ -428,4 +460,3 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php
 require_once '../templates/footer.php';
 ?>
-

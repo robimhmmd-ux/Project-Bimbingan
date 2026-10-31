@@ -206,14 +206,19 @@ require_once '../templates/header.php';
 require_once '../templates/sidebar_admin.php';
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<!-- Hero Banner Header -->
+<div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
-        <h1 class="h2 fw-bold text-dark mb-1">Konfigurasi Jadwal Kesibukan Harian Dosen</h1>
-        <p class="text-muted small mb-0">Atur ketersediaan hari, jam, serta status aktif/libur bimbingan dosen pembimbing.</p>
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-15 text-white small mb-2 border border-white border-opacity-10">
+            <i class="bi bi-calendar2-week-fill text-warning"></i>
+            <span>Manajemen Ketersediaan Waktu</span>
+        </div>
+        <h2 class="fw-bold text-white mb-1">Konfigurasi Jadwal Harian Dosen</h2>
+        <p class="text-white-50 small mb-0">Atur ketersediaan hari, jam, serta status aktif/libur bimbingan skripsi dosen pembimbing.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTambahJadwal">
-            <i class="bi bi-calendar-plus-fill me-1"></i> Tambah Slot Jadwal
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-light shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#modalTambahJadwal">
+            <i class="bi bi-calendar-plus-fill text-primary me-1"></i> Tambah Slot Jadwal
         </button>
     </div>
 </div>
@@ -221,15 +226,17 @@ require_once '../templates/sidebar_admin.php';
 <!-- Alert Notifikasi -->
 <?php if (!empty($success_msg)): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($success_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($success_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($error_msg)): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($error_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($error_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
@@ -240,8 +247,8 @@ require_once '../templates/sidebar_admin.php';
             <div class="col-md-6">
                 <label class="form-label small fw-semibold text-secondary mb-1">Pilih Dosen untuk Filter Jadwal:</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="bi bi-funnel text-muted"></i></span>
-                    <select name="dosen_id" class="form-select" onchange="this.form.submit()">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-funnel text-muted"></i></span>
+                    <select name="dosen_id" class="form-select border-start-0 ps-0" onchange="this.form.submit()">
                         <option value="0">-- Semua Dosen Pembimbing --</option>
                         <?php foreach ($dosen_list as $d): ?>
                             <option value="<?= $d['id']; ?>" <?= ($filter_dosen_id == $d['id']) ? 'selected' : ''; ?>>
@@ -263,9 +270,15 @@ require_once '../templates/sidebar_admin.php';
 <!-- Tabel Jadwal Dosen -->
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0 text-dark">
-            <i class="bi bi-clock-history text-primary me-2"></i>Daftar Slot Waktu & Kesibukan Bimbingan (<?= count($jadwal_list); ?> Slot)
-        </h6>
+        <div class="d-flex align-items-center gap-2">
+            <span class="p-2 rounded bg-warning-subtle text-warning">
+                <i class="bi bi-clock-history"></i>
+            </span>
+            <div>
+                <h6 class="fw-bold mb-0 text-dark">Daftar Slot Waktu & Kesibukan Bimbingan</h6>
+                <small class="text-muted">Total <?= count($jadwal_list); ?> slot jadwal terdaftar</small>
+            </div>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -283,36 +296,47 @@ require_once '../templates/sidebar_admin.php';
                 <tbody>
                     <?php if (empty($jadwal_list)): ?>
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Belum ada slot jadwal yang didaftarkan.</td>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-calendar-x fs-2 d-block text-secondary mb-2"></i>
+                                Belum ada slot jadwal yang didaftarkan.
+                            </td>
                         </tr>
                     <?php else: ?>
                         <?php 
                         $no = 1;
                         foreach ($jadwal_list as $row): 
                             $is_aktif = ($row['status_aktif'] === 'aktif');
+                            $initial  = strtoupper(substr($row['nama_dosen'], 0, 1));
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
                                 <td>
-                                    <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_dosen']); ?></div>
-                                    <small class="text-muted font-monospace">NIDN: <?= htmlspecialchars($row['nidn']); ?></small>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-initial bg-warning-subtle text-warning">
+                                            <?= $initial; ?>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_dosen']); ?></div>
+                                            <span class="text-muted font-monospace small">NIDN: <?= htmlspecialchars($row['nidn']); ?></span>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark border px-2 py-1 fs-6">
+                                    <span class="badge bg-light text-dark border px-3 py-1 fs-6">
                                         <i class="bi bi-calendar-event me-1 text-primary"></i><?= htmlspecialchars($row['hari']); ?>
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="font-monospace fw-semibold">
+                                    <span class="font-monospace fw-semibold text-dark">
                                         <i class="bi bi-clock me-1 text-secondary"></i>
                                         <?= substr($row['jam_mulai'], 0, 5); ?> - <?= substr($row['jam_selesai'], 0, 5); ?> WIB
                                     </span>
                                 </td>
                                 <td class="text-center">
                                     <?php if ($is_aktif): ?>
-                                        <span class="badge bg-success px-2 py-1"><i class="bi bi-check-circle me-1"></i>Aktif (Tersedia)</span>
+                                        <span class="badge bg-success px-3 py-1"><i class="bi bi-check-circle me-1"></i>Aktif (Tersedia)</span>
                                     <?php else: ?>
-                                        <span class="badge bg-danger px-2 py-1"><i class="bi bi-dash-circle me-1"></i>Libur / Sibuk</span>
+                                        <span class="badge bg-danger px-3 py-1"><i class="bi bi-dash-circle me-1"></i>Libur / Sibuk</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
@@ -368,11 +392,11 @@ require_once '../templates/sidebar_admin.php';
     <div class="modal-dialog">
         <form method="POST" action="jadwal_dosen.php" class="modal-content">
             <input type="hidden" name="action" value="create">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bi bi-calendar-plus text-primary me-2"></i>Tambah Slot Jadwal Dosen</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-calendar-plus-fill me-2"></i>Tambah Slot Jadwal Dosen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Pilih Dosen <span class="text-danger">*</span></label>
                     <select name="dosen_id" class="form-select" required>
@@ -414,7 +438,7 @@ require_once '../templates/sidebar_admin.php';
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Simpan Jadwal</button>
             </div>
         </form>
@@ -429,11 +453,11 @@ require_once '../templates/sidebar_admin.php';
         <form method="POST" action="jadwal_dosen.php" class="modal-content">
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="jadwal_id" id="edit_jadwal_id">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i>Perbarui Slot Jadwal</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Perbarui Slot Jadwal</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Dosen Pembimbing <span class="text-danger">*</span></label>
                     <select name="dosen_id" id="edit_jadwal_dosen_id" class="form-select" required>
@@ -472,7 +496,7 @@ require_once '../templates/sidebar_admin.php';
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Simpan Perubahan</button>
             </div>
         </form>
@@ -498,4 +522,3 @@ document.addEventListener('DOMContentLoaded', function () {
 <?php
 require_once '../templates/footer.php';
 ?>
-

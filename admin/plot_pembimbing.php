@@ -127,13 +127,18 @@ require_once '../templates/header.php';
 require_once '../templates/sidebar_admin.php';
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<!-- Hero Banner Header -->
+<div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
-        <h1 class="h2 fw-bold text-dark mb-1">Mekanisme Plotting & Distribusi Pembimbing</h1>
-        <p class="text-muted small mb-0">Petakan, tetapkan, atau alihkan dosen pembimbing tugas akhir bagi mahasiswa secara terkoordinasi.</p>
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-15 text-white small mb-2 border border-white border-opacity-10">
+            <i class="bi bi-diagram-3-fill text-primary"></i>
+            <span>Pemetaan Akademik & Kuota Bimbingan</span>
+        </div>
+        <h2 class="fw-bold text-white mb-1">Mekanisme Plotting Pembimbing</h2>
+        <p class="text-white-50 small mb-0">Petakan, tetapkan, atau alihkan dosen pembimbing skripsi mahasiswa secara akurat & transparan.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
-        <a href="laporan_plotting.php" class="btn btn-outline-success">
+    <div class="d-flex align-items-center gap-2">
+        <a href="laporan_plotting.php" class="btn btn-light shadow-sm fw-bold">
             <i class="bi bi-printer me-1"></i> Rekap & Cetak Laporan
         </a>
     </div>
@@ -142,15 +147,17 @@ require_once '../templates/sidebar_admin.php';
 <!-- Alert Notifikasi -->
 <?php if (!empty($success_msg)): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($success_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($success_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($error_msg)): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($error_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($error_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
@@ -159,25 +166,31 @@ require_once '../templates/sidebar_admin.php';
     <?php foreach ($dosen_list as $dl): 
         $persen = $dl['kuota_bimbingan'] > 0 ? min(100, round(($dl['total_bimbingan'] / $dl['kuota_bimbingan']) * 100)) : 0;
         $is_full = ($dl['sisa_kuota'] <= 0);
+        $initial = strtoupper(substr($dl['nama_dosen'], 0, 1));
     ?>
         <div class="col-md-6 col-xl-4">
             <div class="card h-100 shadow-sm border-0 <?= $is_full ? 'border-danger' : ''; ?>">
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div>
-                            <h6 class="fw-bold text-dark mb-0"><?= htmlspecialchars($dl['nama_dosen']); ?></h6>
-                            <small class="text-muted font-monospace">NIDN: <?= htmlspecialchars($dl['nidn']); ?></small>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-initial bg-primary-subtle text-primary">
+                                <?= $initial; ?>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><?= htmlspecialchars($dl['nama_dosen']); ?></h6>
+                                <span class="text-muted font-monospace small">NIDN: <?= htmlspecialchars($dl['nidn']); ?></span>
+                            </div>
                         </div>
                         <span class="badge <?= $is_full ? 'bg-danger' : 'bg-success'; ?>">
                             <?= $is_full ? 'Penuh' : "Sisa {$dl['sisa_kuota']}"; ?>
                         </span>
                     </div>
-                    <div class="d-flex justify-content-between small text-muted mb-1">
-                        <span>Bimbingan: <strong><?= $dl['total_bimbingan']; ?></strong> / <?= $dl['kuota_bimbingan']; ?></span>
-                        <span><?= $persen; ?>%</span>
+                    <div class="d-flex justify-content-between small text-muted mb-1 mt-3">
+                        <span>Beban: <strong><?= $dl['total_bimbingan']; ?></strong> / <?= $dl['kuota_bimbingan']; ?> Mahasiswa</span>
+                        <span class="fw-semibold"><?= $persen; ?>%</span>
                     </div>
                     <div class="progress" style="height: 6px;">
-                        <div class="progress-bar <?= $is_full ? 'bg-danger' : (($persen >= 75) ? 'bg-warning' : 'bg-primary'); ?>" 
+                        <div class="progress-bar <?= $is_full ? 'bg-danger' : (($persen >= 75) ? 'bg-warning' : 'bg-success'); ?>" 
                              style="width: <?= $persen; ?>%"></div>
                     </div>
                 </div>
@@ -189,11 +202,16 @@ require_once '../templates/sidebar_admin.php';
 <!-- Bagian 1: Mahasiswa yang Belum Diplot -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-warning bg-opacity-25 py-3 d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0 text-dark">
-            <i class="bi bi-exclamation-circle-fill text-warning me-2"></i>
-            Mahasiswa Menunggu Penetapan Pembimbing (<?= count($mhs_belum_plot); ?> Mahasiswa)
-        </h6>
-        <span class="badge bg-warning text-dark">Prioritas Penetapan</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="p-2 rounded bg-warning-subtle text-warning">
+                <i class="bi bi-exclamation-circle-fill"></i>
+            </span>
+            <div>
+                <h6 class="fw-bold mb-0 text-dark">Mahasiswa Menunggu Penetapan Pembimbing</h6>
+                <small class="text-muted">Terdapat <?= count($mhs_belum_plot); ?> mahasiswa yang belum memiliki dosen pembimbing</small>
+            </div>
+        </div>
+        <span class="badge bg-warning text-dark px-3 py-1">Prioritas Akademik</span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -201,17 +219,17 @@ require_once '../templates/sidebar_admin.php';
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3" style="width: 50px;">No</th>
-                        <th>NIM & Nama Mahasiswa</th>
+                        <th>Mahasiswa</th>
                         <th>Judul Skripsi</th>
                         <th style="min-width: 320px;">Pilih Dosen Pembimbing</th>
-                        <th class="text-center" style="width: 130px;">Aksi</th>
+                        <th class="text-center" style="width: 140px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($mhs_belum_plot)): ?>
                         <tr>
-                            <td colspan="5" class="text-center text-success py-4">
-                                <i class="bi bi-check-circle-fill fs-4 d-block mb-1"></i>
+                            <td colspan="5" class="text-center text-success py-5">
+                                <i class="bi bi-check-circle-fill fs-2 d-block text-success mb-2"></i>
                                 Semua mahasiswa yang terdaftar sudah memiliki dosen pembimbing!
                             </td>
                         </tr>
@@ -219,12 +237,20 @@ require_once '../templates/sidebar_admin.php';
                         <?php 
                         $no = 1;
                         foreach ($mhs_belum_plot as $m): 
+                            $initial = strtoupper(substr($m['nama_lengkap'], 0, 1));
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
                                 <td>
-                                    <div class="font-monospace fw-bold text-primary"><?= htmlspecialchars($m['nim']); ?></div>
-                                    <div class="fw-semibold text-dark"><?= htmlspecialchars($m['nama_lengkap']); ?></div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-initial bg-warning-subtle text-warning">
+                                            <?= $initial; ?>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark"><?= htmlspecialchars($m['nama_lengkap']); ?></div>
+                                            <span class="font-monospace text-primary small">NIM: <?= htmlspecialchars($m['nim']); ?></span>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="text-muted small d-block" style="max-width: 350px;">
@@ -264,10 +290,15 @@ require_once '../templates/sidebar_admin.php';
 <!-- Bagian 2: Mahasiswa yang Sudah Memiliki Pembimbing -->
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0 text-dark">
-            <i class="bi bi-person-check-fill text-success me-2"></i>
-            Daftar Mahasiswa yang Telah Diplot (<?= count($mhs_sudah_plot); ?> Mahasiswa)
-        </h6>
+        <div class="d-flex align-items-center gap-2">
+            <span class="p-2 rounded bg-success-subtle text-success">
+                <i class="bi bi-person-check-fill"></i>
+            </span>
+            <div>
+                <h6 class="fw-bold mb-0 text-dark">Daftar Mahasiswa yang Telah Diplot</h6>
+                <small class="text-muted">Total <?= count($mhs_sudah_plot); ?> mahasiswa sudah memiliki pembimbing aktif</small>
+            </div>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -275,7 +306,7 @@ require_once '../templates/sidebar_admin.php';
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3" style="width: 50px;">No</th>
-                        <th>NIM & Nama Mahasiswa</th>
+                        <th>Mahasiswa</th>
                         <th>Judul Skripsi</th>
                         <th>Dosen Pembimbing Aktif</th>
                         <th>Status Kelulusan</th>
@@ -285,21 +316,32 @@ require_once '../templates/sidebar_admin.php';
                 <tbody>
                     <?php if (empty($mhs_sudah_plot)): ?>
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Belum ada mahasiswa yang diplot ke dosen.</td>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-2 d-block text-secondary mb-2"></i>
+                                Belum ada mahasiswa yang diplot ke dosen.
+                            </td>
                         </tr>
                     <?php else: ?>
                         <?php 
                         $no = 1;
                         foreach ($mhs_sudah_plot as $m): 
+                            $initial = strtoupper(substr($m['nama_lengkap'], 0, 1));
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
                                 <td>
-                                    <div class="font-monospace fw-bold text-primary"><?= htmlspecialchars($m['nim']); ?></div>
-                                    <div class="fw-semibold text-dark"><?= htmlspecialchars($m['nama_lengkap']); ?></div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-initial bg-success-subtle text-success">
+                                            <?= $initial; ?>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark"><?= htmlspecialchars($m['nama_lengkap']); ?></div>
+                                            <span class="font-monospace text-primary small">NIM: <?= htmlspecialchars($m['nim']); ?></span>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
-                                    <small class="text-muted d-block text-truncate" style="max-width: 280px;">
+                                    <small class="text-muted d-block text-truncate" style="max-width: 280px;" title="<?= htmlspecialchars($m['judul_skripsi']); ?>">
                                         <?= htmlspecialchars($m['judul_skripsi']); ?>
                                     </small>
                                 </td>
@@ -312,7 +354,7 @@ require_once '../templates/sidebar_admin.php';
                                     <?php elseif ($m['status_kelulusan'] === 'siap_sidang'): ?>
                                         <span class="badge bg-primary">Siap Sidang</span>
                                     <?php else: ?>
-                                        <span class="badge bg-secondary">Proses Bimbingan</span>
+                                        <span class="badge bg-secondary">Bimbingan</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
@@ -356,13 +398,13 @@ require_once '../templates/sidebar_admin.php';
         <form method="POST" action="plot_pembimbing.php" class="modal-content">
             <input type="hidden" name="action" value="reassign">
             <input type="hidden" name="mahasiswa_id" id="pindah_mid">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right text-primary me-2"></i>Alihkan Dosen Pembimbing</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-arrow-left-right me-2"></i>Alihkan Dosen Pembimbing</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="p-3 bg-light rounded border mb-3">
-                    <div class="small text-muted">Mahasiswa:</div>
+            <div class="modal-body p-4">
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="small text-muted">Mahasiswa Terpilih:</div>
                     <div class="fw-bold text-dark fs-6" id="pindah_nama"></div>
                     <div class="small text-muted font-monospace" id="pindah_nim"></div>
                 </div>
@@ -379,11 +421,11 @@ require_once '../templates/sidebar_admin.php';
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <div class="form-text">Dosen yang kuotanya telah penuh dinonaktifkan secara otomatis.</div>
+                    <div class="form-text">Dosen dengan kuota yang sudah penuh dinonaktifkan secara otomatis.</div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Simpan Pengalihan</button>
             </div>
         </form>

@@ -8,6 +8,8 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: ../login.php");
     exit;
 }
+
+$user_initial = strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1));
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -26,19 +28,48 @@ if (!isset($_SESSION['user_id'])) {
     <!-- Custom CSS -->
     <link href="../assets/css/style.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body class="bg-surface-app">
 
-<!-- Topbar Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
+<!-- Modern Frosted Glass Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-app-navbar sticky-top shadow-sm py-2">
     <div class="container-fluid px-md-4">
-        <a class="navbar-brand fw-bold" href="#">
-            <i class="bi bi-mortarboard-fill text-white"></i>
-            <span>Bimbingan Skripsi</span>
+        <!-- Logo & Brand Title -->
+        <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="#">
+            <div class="brand-icon-box">
+                <i class="bi bi-mortarboard-fill text-white fs-5"></i>
+            </div>
+            <div class="d-flex flex-column">
+                <span class="fw-bold tracking-tight text-white fs-6 lh-sm">SIM-Bimbingan</span>
+                <span class="text-white-50 small lh-1" style="font-size: 0.725rem;">Portal Skripsi Akademik</span>
+            </div>
         </a>
-        <div class="d-flex align-items-center text-white">
-            <span class="me-3 small d-none d-md-inline">Halo, <strong><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></strong> (<?= ucfirst($_SESSION['role'] ?? ''); ?>)</span>
-            <a href="../logout.php" class="btn btn-outline-light btn-sm" onclick="return confirm('Yakin ingin logout?')">
-                <i class="bi bi-box-arrow-right me-1"></i>Logout
+
+        <!-- Right Side User & Status Pill -->
+        <div class="d-flex align-items-center gap-3">
+            <!-- Semester Badge -->
+            <div class="d-none d-lg-flex align-items-center px-3 py-1 rounded-pill bg-white bg-opacity-10 text-white border border-white border-opacity-10 small">
+                <i class="bi bi-calendar-check text-info me-2"></i>
+                <span>T.A. <?= date('Y'); ?>/<?= date('Y')+1; ?> • Ganjil</span>
+            </div>
+
+            <!-- User Profile Chip -->
+            <div class="user-profile-chip d-flex align-items-center gap-2 ps-2 pe-3 py-1 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-10">
+                <div class="avatar-circle">
+                    <?= $user_initial; ?>
+                </div>
+                <div class="d-none d-sm-flex flex-column text-start">
+                    <span class="text-white fw-bold small lh-1"><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
+                    <span class="user-role-badge mt-1">
+                        <span class="status-dot"></span>
+                        <?= ucfirst($_SESSION['role'] ?? ''); ?>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Logout Button -->
+            <a href="../logout.php" class="btn btn-sm btn-logout" onclick="return confirm('Apakah Anda yakin ingin keluar dari sistem?')" title="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="d-none d-md-inline ms-1">Keluar</span>
             </a>
         </div>
     </div>

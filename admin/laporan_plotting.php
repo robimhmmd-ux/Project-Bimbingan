@@ -110,7 +110,7 @@ require_once '../templates/sidebar_admin.php';
 <style>
 @media print {
     /* Sembunyikan elemen navigasi dan tombol interaktif saat cetak */
-    .sidebar, .navbar, .btn, .no-print, footer, form, .badge-filter {
+    .sidebar, .navbar, .btn, .no-print, footer, form, .badge-filter, .hero-banner {
         display: none !important;
     }
     body {
@@ -156,13 +156,13 @@ require_once '../templates/sidebar_admin.php';
 
 <!-- KOP SURAT RESMI (HANYA MUNCUL DI CETAK) -->
 <div class="print-header mb-4 text-center">
-    <div style="font-size: 14pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+    <div style="font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
         KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI
     </div>
-    <div style="font-size: 16pt; font-weight: bold; text-transform: uppercase;">
+    <div style="font-size: 15pt; font-weight: bold; text-transform: uppercase;">
         FAKULTAS ILMU KOMPUTER & SAINS DATA
     </div>
-    <div style="font-size: 12pt; font-style: italic;">
+    <div style="font-size: 11pt; font-style: italic;">
         Sistem Informasi Bimbingan Skripsi & Laporan Progres Akademik
     </div>
     <div style="font-size: 9pt; color: #555;">
@@ -173,18 +173,22 @@ require_once '../templates/sidebar_admin.php';
     <div class="small text-muted mb-3">Tahun Akademik <?= date('Y'); ?> / <?= date('Y')+1; ?> • Dicetak pada: <?= date('d F Y, H:i'); ?> WIB</div>
 </div>
 
-<!-- Header Non-Print -->
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom no-print">
+<!-- Hero Banner Header (Non-Print) -->
+<div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 no-print">
     <div>
-        <h1 class="h2 fw-bold text-dark mb-1">Rekapitulasi & Cetak Laporan Pembagian Bimbingan</h1>
-        <p class="text-muted small mb-0">Laporan resmi alokasi mahasiswa tugas akhir kepada masing-masing dosen pembimbing.</p>
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-15 text-white small mb-2 border border-white border-opacity-10">
+            <i class="bi bi-printer-fill text-danger"></i>
+            <span>Pelaporan & Pengesahan Resmi</span>
+        </div>
+        <h2 class="fw-bold text-white mb-1">Rekapitulasi Pembagian Pembimbing</h2>
+        <p class="text-white-50 small mb-0">Laporan resmi alokasi mahasiswa tugas akhir kepada masing-masing dosen pembimbing skripsi.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
-        <a href="plot_pembimbing.php" class="btn btn-outline-primary">
+    <div class="d-flex align-items-center gap-2">
+        <a href="plot_pembimbing.php" class="btn btn-outline-light">
             <i class="bi bi-diagram-3 me-1"></i> Atur Pembimbing
         </a>
-        <button type="button" class="btn btn-success" onclick="window.print()">
-            <i class="bi bi-printer-fill me-1"></i> Cetak Dokumen / Simpan PDF
+        <button type="button" class="btn btn-light shadow-sm fw-bold" onclick="window.print()">
+            <i class="bi bi-printer-fill text-primary me-1"></i> Cetak / Simpan PDF
         </button>
     </div>
 </div>
@@ -192,31 +196,31 @@ require_once '../templates/sidebar_admin.php';
 <!-- Kartu Ringkasan Metrik (Non-Print) -->
 <div class="row g-3 mb-4 no-print">
     <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0 bg-primary text-white">
-            <span class="small text-white-50 text-uppercase fw-semibold">Total Mahasiswa</span>
-            <h3 class="fw-bold mb-0"><?= $total_mhs_all; ?></h3>
-            <small class="text-white-50">Terdaftar di jurusan</small>
+        <div class="metric-card p-3">
+            <span class="small text-muted text-uppercase fw-bold">Total Mahasiswa</span>
+            <h3 class="fw-bold text-dark mb-0 mt-1"><?= $total_mhs_all; ?></h3>
+            <small class="text-muted">Terdaftar di jurusan</small>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0 bg-success text-white">
-            <span class="small text-white-50 text-uppercase fw-semibold">Sudah Terplot</span>
-            <h3 class="fw-bold mb-0"><?= $total_terplot; ?></h3>
-            <small class="text-white-50"><?= $total_mhs_all > 0 ? round(($total_terplot / $total_mhs_all) * 100) : 0; ?>% dari total</small>
+        <div class="metric-card p-3">
+            <span class="small text-muted text-uppercase fw-bold">Sudah Terplot</span>
+            <h3 class="fw-bold text-success mb-0 mt-1"><?= $total_terplot; ?></h3>
+            <small class="text-success"><?= $total_mhs_all > 0 ? round(($total_terplot / $total_mhs_all) * 100) : 0; ?>% terdistribusi</small>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0 bg-warning text-dark">
-            <span class="small text-dark-50 text-uppercase fw-semibold">Belum Memiliki Pembimbing</span>
-            <h3 class="fw-bold mb-0"><?= $total_belum; ?></h3>
+        <div class="metric-card p-3">
+            <span class="small text-muted text-uppercase fw-bold">Belum Terplot</span>
+            <h3 class="fw-bold text-warning mb-0 mt-1"><?= $total_belum; ?></h3>
             <small class="text-muted">Perlu alokasi admin</small>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0 bg-info text-white">
-            <span class="small text-white-50 text-uppercase fw-semibold">Total Daya Tampung Kuota</span>
-            <h3 class="fw-bold mb-0"><?= $total_kapasitas; ?></h3>
-            <small class="text-white-50">Kapasitas seluruh dosen</small>
+        <div class="metric-card p-3">
+            <span class="small text-muted text-uppercase fw-bold">Total Kuota Jurusan</span>
+            <h3 class="fw-bold text-info mb-0 mt-1"><?= $total_kapasitas; ?></h3>
+            <small class="text-muted">Kapasitas seluruh dosen</small>
         </div>
     </div>
 </div>
@@ -265,21 +269,28 @@ require_once '../templates/sidebar_admin.php';
                 $bimbingan_count = count($mhs_list);
                 $kuota = (int)$dosen['kuota_bimbingan'];
                 $sisa  = $kuota - $bimbingan_count;
+                $initial = strtoupper(substr($dosen['nama_dosen'], 0, 1));
             ?>
                 <div class="p-4 border-bottom">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-                        <div>
-                            <h5 class="fw-bold text-dark mb-0">
-                                <i class="bi bi-person-badge-fill text-primary me-2"></i>
-                                <?= htmlspecialchars($dosen['nama_dosen']); ?>
-                            </h5>
-                            <span class="small text-muted font-monospace">NIDN: <?= htmlspecialchars($dosen['nidn']); ?></span>
-                            <span class="mx-2 text-muted">•</span>
-                            <span class="small text-muted"><i class="bi bi-envelope me-1"></i><?= htmlspecialchars($dosen['email']); ?></span>
-                            <?php if (!empty($dosen['no_whatsapp'])): ?>
-                                <span class="mx-2 text-muted">•</span>
-                                <span class="small text-muted"><i class="bi bi-whatsapp me-1 text-success"></i><?= htmlspecialchars($dosen['no_whatsapp']); ?></span>
-                            <?php endif; ?>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-initial bg-primary-subtle text-primary fs-5" style="width: 44px; height: 44px;">
+                                <?= $initial; ?>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">
+                                    <?= htmlspecialchars($dosen['nama_dosen']); ?>
+                                </h5>
+                                <div class="small text-muted">
+                                    <span class="font-monospace">NIDN: <?= htmlspecialchars($dosen['nidn']); ?></span>
+                                    <span class="mx-2">•</span>
+                                    <span><i class="bi bi-envelope me-1"></i><?= htmlspecialchars($dosen['email']); ?></span>
+                                    <?php if (!empty($dosen['no_whatsapp'])): ?>
+                                        <span class="mx-2">•</span>
+                                        <span><i class="bi bi-whatsapp me-1 text-success"></i><?= htmlspecialchars($dosen['no_whatsapp']); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                         <div class="text-end mt-2 mt-md-0">
                             <span class="badge bg-light text-dark border px-3 py-2 fs-6">
@@ -302,7 +313,7 @@ require_once '../templates/sidebar_admin.php';
                                     <tr>
                                         <th style="width: 40px;" class="text-center">No</th>
                                         <th style="width: 120px;">NIM</th>
-                                        <th style="width: 200px;">Nama Mahasiswa</th>
+                                        <th style="width: 220px;">Nama Mahasiswa</th>
                                         <th>Judul Penelitian Skripsi</th>
                                         <th style="width: 90px;" class="text-center">Progres</th>
                                         <th style="width: 130px;" class="text-center">Status Kelulusan</th>
@@ -315,8 +326,8 @@ require_once '../templates/sidebar_admin.php';
                                     ?>
                                         <tr>
                                             <td class="text-center"><?= $no++; ?></td>
-                                            <td class="font-monospace fw-bold"><?= htmlspecialchars($m['nim']); ?></td>
-                                            <td class="fw-semibold"><?= htmlspecialchars($m['nama_lengkap']); ?></td>
+                                            <td class="font-monospace fw-bold text-primary"><?= htmlspecialchars($m['nim']); ?></td>
+                                            <td class="fw-semibold text-dark"><?= htmlspecialchars($m['nama_lengkap']); ?></td>
                                             <td><?= htmlspecialchars($m['judul_skripsi']); ?></td>
                                             <td class="text-center font-monospace fw-bold">
                                                 <?= (int)$m['nilai_terakhir']; ?>%
@@ -406,4 +417,3 @@ require_once '../templates/sidebar_admin.php';
 <?php
 require_once '../templates/footer.php';
 ?>
-

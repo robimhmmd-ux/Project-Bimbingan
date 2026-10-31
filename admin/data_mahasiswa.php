@@ -168,10 +168,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $stmtKelulusan = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = :st WHERE id = :mid");
                 $stmtKelulusan->execute([':st' => $status_kelulusan, ':mid' => $mahasiswa_id]);
 
-                // Jika nilai evaluasi diberikan, simpan pembaruan nilai pada bimbingan terakhir atau buat entri nilai
+                // Jika nilai evaluasi diberikan, simpan pembaruan nilai pada bimbingan terakhir
                 if ($nilai_evaluasi !== null) {
                     $nilai_evaluasi = max(0, min(100, $nilai_evaluasi));
-                    // Cari pengajuan bimbingan terakhir
                     $stmtBimb = $pdo->prepare("
                         SELECT id FROM pengajuan_bimbingan 
                         WHERE mahasiswa_id = :mid 
@@ -264,6 +263,12 @@ $stmt = $pdo->prepare($queryMhs);
 $stmt->execute($params);
 $mahasiswa_list = $stmt->fetchAll();
 
+// Metrik ringkasan
+$total_all_mhs = $pdo->query("SELECT COUNT(*) FROM mahasiswa")->fetchColumn();
+$count_bimb    = $pdo->query("SELECT COUNT(*) FROM mahasiswa WHERE status_kelulusan = 'proses_bimbingan'")->fetchColumn();
+$count_siap    = $pdo->query("SELECT COUNT(*) FROM mahasiswa WHERE status_kelulusan = 'siap_sidang'")->fetchColumn();
+$count_lulus   = $pdo->query("SELECT COUNT(*) FROM mahasiswa WHERE status_kelulusan = 'lulus'")->fetchColumn();
+
 // Ambil daftar dosen untuk dropdown form
 $dosen_dropdown = $pdo->query("SELECT id, nama_dosen, kuota_bimbingan FROM dosen ORDER BY nama_dosen ASC")->fetchAll();
 
@@ -274,14 +279,19 @@ require_once '../templates/header.php';
 require_once '../templates/sidebar_admin.php';
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<!-- Hero Banner Header -->
+<div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
-        <h1 class="h2 fw-bold text-dark mb-1">Manajemen Data Mahasiswa & Kelulusan</h1>
-        <p class="text-muted small mb-0">Kelola master data mahasiswa, pembimbing skripsi, dan evaluasi konfigurasi nilai kelulusan.</p>
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-15 text-white small mb-2 border border-white border-opacity-10">
+            <i class="bi bi-mortarboard-fill text-info"></i>
+            <span>Direktori Mahasiswa Tugas Akhir</span>
+        </div>
+        <h2 class="fw-bold text-white mb-1">Manajemen Mahasiswa & Kelulusan</h2>
+        <p class="text-white-50 small mb-0">Kelola master data mahasiswa, rencana judul skripsi, pembimbing, serta evaluasi status kelulusan.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTambahMhs">
-            <i class="bi bi-person-plus-fill me-1"></i> Tambah Mahasiswa Baru
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-light shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#modalTambahMhs">
+            <i class="bi bi-person-plus-fill text-primary me-1"></i> Tambah Mahasiswa Baru
         </button>
     </div>
 </div>
@@ -289,38 +299,96 @@ require_once '../templates/sidebar_admin.php';
 <!-- Alert Notifikasi -->
 <?php if (!empty($success_msg)): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($success_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($success_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($error_msg)): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($error_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($error_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
-<!-- Filter & Pencarian -->
+<!-- Stat Bar Status Kelulusan -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="small text-muted fw-bold text-uppercase">Total Mahasiswa</span>
+                    <h3 class="fw-bold text-dark mb-0 mt-1"><?= $total_all_mhs; ?></h3>
+                </div>
+                <div class="metric-icon-box bg-primary-subtle text-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="small text-muted fw-bold text-uppercase">Proses Bimbingan</span>
+                    <h3 class="fw-bold text-secondary mb-0 mt-1"><?= $count_bimb; ?></h3>
+                </div>
+                <div class="metric-icon-box bg-secondary-subtle text-secondary">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="small text-muted fw-bold text-uppercase">Siap Sidang</span>
+                    <h3 class="fw-bold text-primary mb-0 mt-1"><?= $count_siap; ?></h3>
+                </div>
+                <div class="metric-icon-box bg-primary-subtle text-primary">
+                    <i class="bi bi-award-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="small text-muted fw-bold text-uppercase">Telah Lulus</span>
+                    <h3 class="fw-bold text-success mb-0 mt-1"><?= $count_lulus; ?></h3>
+                </div>
+                <div class="metric-icon-box bg-success-subtle text-success">
+                    <i class="bi bi-check2-all"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter & Pencarian Modern -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-3">
         <form method="GET" action="data_mahasiswa.php" class="row g-2 align-items-center">
             <div class="col-md-5">
                 <div class="input-group">
-                    <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" class="form-control" name="q" value="<?= htmlspecialchars($search_query); ?>" placeholder="Cari NIM, Nama, atau Judul Skripsi...">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" name="q" value="<?= htmlspecialchars($search_query); ?>" placeholder="Cari NIM, Nama Mahasiswa, atau Judul Skripsi...">
                 </div>
             </div>
             <div class="col-md-4">
                 <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="all" <?= ($filter_status === 'all') ? 'selected' : ''; ?>>-- Semua Status Kelulusan --</option>
-                    <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Proses Bimbingan</option>
-                    <option value="siap_sidang" <?= ($filter_status === 'siap_sidang') ? 'selected' : ''; ?>>Siap Sidang</option>
-                    <option value="lulus" <?= ($filter_status === 'lulus') ? 'selected' : ''; ?>>Lulus</option>
+                    <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Proses Bimbingan (Aktif)</option>
+                    <option value="siap_sidang" <?= ($filter_status === 'siap_sidang') ? 'selected' : ''; ?>>Siap Sidang Munaqasyah</option>
+                    <option value="lulus" <?= ($filter_status === 'lulus') ? 'selected' : ''; ?>>Telah Lulus</option>
                 </select>
             </div>
             <div class="col-md-3 d-flex gap-2">
-                <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
+                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
                 <?php if ($filter_status !== 'all' || !empty($search_query)): ?>
                     <a href="data_mahasiswa.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
                 <?php endif; ?>
@@ -332,9 +400,15 @@ require_once '../templates/sidebar_admin.php';
 <!-- Tabel Mahasiswa -->
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0 text-dark">
-            <i class="bi bi-mortarboard-fill text-primary me-2"></i>Daftar Mahasiswa Tugas Akhir (<?= count($mahasiswa_list); ?> Mahasiswa)
-        </h6>
+        <div class="d-flex align-items-center gap-2">
+            <span class="p-2 rounded bg-info-subtle text-info">
+                <i class="bi bi-mortarboard-fill"></i>
+            </span>
+            <div>
+                <h6 class="fw-bold mb-0 text-dark">Daftar Mahasiswa Tugas Akhir</h6>
+                <small class="text-muted">Total <?= count($mahasiswa_list); ?> mahasiswa ditampilkan</small>
+            </div>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -342,42 +416,57 @@ require_once '../templates/sidebar_admin.php';
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3" style="width: 50px;">No</th>
-                        <th>NIM & Akun</th>
-                        <th>Nama & Judul Skripsi</th>
+                        <th>Mahasiswa & Akun</th>
+                        <th>Judul Penelitian Skripsi</th>
                         <th>Dosen Pembimbing</th>
-                        <th class="text-center">Nilai Progres</th>
-                        <th class="text-center">Status Kelulusan</th>
-                        <th class="text-center" style="width: 150px;">Aksi</th>
+                        <th class="text-center" style="width: 140px;">Progres</th>
+                        <th class="text-center" style="width: 130px;">Status</th>
+                        <th class="text-center" style="width: 160px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($mahasiswa_list)): ?>
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">Tidak ada data mahasiswa yang sesuai filter.</td>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-search fs-2 d-block text-secondary mb-2"></i>
+                                Tidak ada data mahasiswa yang sesuai dengan filter pencarian.
+                            </td>
                         </tr>
                     <?php else: ?>
                         <?php 
                         $no = 1;
                         foreach ($mahasiswa_list as $row): 
                             $nilai = (int)$row['nilai_terakhir'];
+                            $initial = strtoupper(substr($row['nama_lengkap'], 0, 1));
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
                                 <td>
-                                    <div class="font-monospace fw-bold text-primary"><?= htmlspecialchars($row['nim']); ?></div>
-                                    <small class="badge bg-light text-muted border">user: <?= htmlspecialchars($row['username']); ?></small>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-initial bg-primary-subtle text-primary">
+                                            <?= $initial; ?>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
+                                            <div class="font-monospace text-primary small fw-semibold">NIM: <?= htmlspecialchars($row['nim']); ?></div>
+                                            <small class="text-muted" style="font-size: 0.725rem;">user: <?= htmlspecialchars($row['username']); ?></small>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
-                                    <small class="text-muted d-block" style="max-width: 280px;">
+                                    <small class="text-dark fw-medium d-block text-truncate" style="max-width: 280px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
                                         <?= htmlspecialchars($row['judul_skripsi']); ?>
                                     </small>
                                 </td>
                                 <td>
                                     <?php if ($row['nama_dosen']): ?>
-                                        <span class="text-dark small fw-semibold"><i class="bi bi-person-check-fill text-success me-1"></i><?= htmlspecialchars($row['nama_dosen']); ?></span>
+                                        <span class="text-dark small fw-semibold">
+                                            <i class="bi bi-person-check-fill text-success me-1"></i><?= htmlspecialchars($row['nama_dosen']); ?>
+                                        </span>
                                     <?php else: ?>
-                                        <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>Belum Diplot</span>
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Belum Diplot
+                                        </span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
@@ -385,11 +474,11 @@ require_once '../templates/sidebar_admin.php';
                                         <span class="fw-bold fs-6 <?= ($nilai >= 80) ? 'text-success' : (($nilai >= 60) ? 'text-primary' : 'text-warning'); ?>">
                                             <?= $nilai; ?>%
                                         </span>
-                                        <div class="progress" style="height: 5px; width: 70px;">
+                                        <div class="progress" style="height: 6px; width: 75px;">
                                             <div class="progress-bar <?= ($nilai >= 80) ? 'bg-success' : (($nilai >= 60) ? 'bg-primary' : 'bg-warning'); ?>" 
                                                  style="width: <?= $nilai; ?>%"></div>
                                         </div>
-                                        <small class="text-muted" style="font-size: 0.75rem;"><?= $row['total_bimbingan']; ?> Bimb | <?= $row['total_acc']; ?> ACC</small>
+                                        <small class="text-muted d-block mt-1" style="font-size: 0.725rem;"><?= $row['total_bimbingan']; ?> Bimb | <?= $row['total_acc']; ?> ACC</small>
                                     </div>
                                 </td>
                                 <td class="text-center">
@@ -398,7 +487,7 @@ require_once '../templates/sidebar_admin.php';
                                     <?php elseif ($row['status_kelulusan'] === 'siap_sidang'): ?>
                                         <span class="badge bg-primary px-2 py-1"><i class="bi bi-award me-1"></i>Siap Sidang</span>
                                     <?php else: ?>
-                                        <span class="badge bg-secondary px-2 py-1"><i class="bi bi-clock-history me-1"></i>Proses Bimbingan</span>
+                                        <span class="badge bg-secondary px-2 py-1"><i class="bi bi-clock-history me-1"></i>Bimbingan</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
@@ -458,11 +547,11 @@ require_once '../templates/sidebar_admin.php';
     <div class="modal-dialog modal-lg">
         <form method="POST" action="data_mahasiswa.php" class="modal-content">
             <input type="hidden" name="action" value="create">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus text-primary me-2"></i>Tambah Mahasiswa Baru</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2"></i>Tambah Mahasiswa Baru</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Nomor Induk Mahasiswa (NIM) <span class="text-danger">*</span></label>
@@ -474,7 +563,7 @@ require_once '../templates/sidebar_admin.php';
                     </div>
                     <div class="col-12">
                         <label class="form-label small fw-semibold">Judul Rencana / Proposal Skripsi</label>
-                        <textarea class="form-control" name="judul_skripsi" rows="2" placeholder="Masukkan judul penelitian skripsi..."></textarea>
+                        <textarea class="form-control" name="judul_skripsi" rows="2" placeholder="Masukkan rencana topik penelitian skripsi..."></textarea>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Dosen Pembimbing</label>
@@ -494,21 +583,25 @@ require_once '../templates/sidebar_admin.php';
                         </select>
                     </div>
 
-                    <hr class="my-3">
-                    <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-key me-1"></i>Informasi Akun Login Mahasiswa</h6>
-
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="username" placeholder="Username untuk masuk sistem" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" name="password" placeholder="Minimal 6 karakter" required>
+                    <div class="col-12 mt-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-key-fill text-primary me-1"></i>Informasi Akun Login Mahasiswa</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="username" placeholder="Username untuk masuk sistem" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
+                                    <input type="password" class="form-control" name="password" placeholder="Minimal 6 karakter" required>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Simpan Data Mahasiswa</button>
             </div>
         </form>
@@ -524,11 +617,11 @@ require_once '../templates/sidebar_admin.php';
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="mahasiswa_id" id="edit_mhs_id">
             <input type="hidden" name="user_id" id="edit_user_id">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square text-primary me-2"></i>Perbarui Data Mahasiswa</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Perbarui Data Mahasiswa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">NIM <span class="text-danger">*</span></label>
@@ -560,22 +653,26 @@ require_once '../templates/sidebar_admin.php';
                         </select>
                     </div>
 
-                    <hr class="my-3">
-                    <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-key me-1"></i>Informasi Akun Login</h6>
-
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="username" id="edit_username" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Password Baru (Opsional)</label>
-                        <input type="password" class="form-control" name="password" placeholder="Kosongkan jika tidak diubah">
-                        <div class="form-text">Isi hanya bila ingin mereset password mahasiswa.</div>
+                    <div class="col-12 mt-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-key-fill text-primary me-1"></i>Informasi Akun Login</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="username" id="edit_username" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Password Baru (Opsional)</label>
+                                    <input type="password" class="form-control" name="password" placeholder="Kosongkan jika tidak diubah">
+                                    <div class="form-text">Isi hanya bila ingin mereset password mahasiswa.</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Simpan Perubahan</button>
             </div>
         </form>
@@ -583,7 +680,7 @@ require_once '../templates/sidebar_admin.php';
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL KONFIGURASI NILAI & STATUS KELULUSAN MAHASISWA (FITUR 3) -->
+<!-- MODAL KONFIGURASI NILAI & STATUS KELULUSAN MAHASISWA -->
 <!-- ========================================================================= -->
 <div class="modal fade" id="modalKelulusan" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
@@ -591,11 +688,11 @@ require_once '../templates/sidebar_admin.php';
             <input type="hidden" name="action" value="update_kelulusan">
             <input type="hidden" name="mahasiswa_id" id="kelulusan_mhs_id">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-award-fill me-2"></i>Konfigurasi Nilai & Status Kelulusan</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-award-fill me-2"></i>Konfigurasi Kelulusan & Nilai</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-3 p-3 bg-light rounded border">
+            <div class="modal-body p-4">
+                <div class="mb-3 p-3 bg-light rounded-3 border">
                     <div class="small text-muted">Mahasiswa Terpilih:</div>
                     <div class="fw-bold text-dark fs-6" id="kelulusan_nama"></div>
                     <div class="small text-muted font-monospace" id="kelulusan_nim"></div>
@@ -604,24 +701,23 @@ require_once '../templates/sidebar_admin.php';
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Status Kelulusan Akademik <span class="text-danger">*</span></label>
                     <select name="status_kelulusan" id="kelulusan_status" class="form-select" required>
-                        <option value="proses_bimbingan">Proses Bimbingan (Masih aktif revisi)</option>
-                        <option value="siap_sidang">Siap Sidang (ACC seluruh bab bimbingan)</option>
-                        <option value="lulus">Lulus (Telah menyelesaikan sidang & revisi final)</option>
+                        <option value="proses_bimbingan">Proses Bimbingan (Masih aktif bimbingan/revisi)</option>
+                        <option value="siap_sidang">Siap Sidang (ACC seluruh bab skripsi)</option>
+                        <option value="lulus">Lulus (Telah lulus sidang munaqasyah)</option>
                     </select>
-                    <div class="form-text">Pembaruan status ini akan tercermin langsung pada portal mahasiswa dan dosen.</div>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Konfigurasi Nilai Progres Bimbingan (0 - 100)</label>
                     <div class="input-group">
                         <input type="number" class="form-control" name="nilai_evaluasi" id="kelulusan_nilai" min="0" max="100" placeholder="0 - 100">
-                        <span class="input-group-text">%</span>
+                        <span class="input-group-text bg-white">%</span>
                     </div>
-                    <div class="form-text">Nilai akumulasi kemajuan/evaluasi skripsi mahasiswa.</div>
+                    <div class="form-text">Nilai persentase kemajuan bimbingan skripsi.</div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
                 <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle me-1"></i>Simpan Konfigurasi</button>
             </div>
         </form>
@@ -636,19 +732,19 @@ require_once '../templates/sidebar_admin.php';
         <form method="POST" action="data_mahasiswa.php" class="modal-content">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="user_id" id="delete_mhs_userid">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Konfirmasi Hapus</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Konfirmasi Hapus Mahasiswa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p>Apakah Anda yakin ingin menghapus data mahasiswa <strong id="delete_mhs_nama"></strong> (<span id="delete_mhs_nim" class="font-monospace"></span>)?</p>
+            <div class="modal-body p-4">
+                <p class="mb-3">Apakah Anda yakin ingin menghapus data mahasiswa <strong id="delete_mhs_nama" class="text-danger"></strong> (<span id="delete_mhs_nim" class="font-monospace"></span>)?</p>
                 <div class="alert alert-danger small mb-0">
-                    <i class="bi bi-exclamation-octagon me-1"></i>
+                    <i class="bi bi-exclamation-octagon-fill me-1"></i>
                     Tindakan ini akan menghapus akun login dan seluruh berkas riwayat bimbingan serta logbook mahasiswa tersebut secara permanen.
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Ya, Hapus Mahasiswa</button>
             </div>
         </form>
@@ -672,7 +768,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Populate Modal Kelulusan (Fitur 3)
+    // Populate Modal Kelulusan
     const kelulusanBtns = document.querySelectorAll('.btn-kelulusan');
     kelulusanBtns.forEach(btn => {
         btn.addEventListener('click', function () {

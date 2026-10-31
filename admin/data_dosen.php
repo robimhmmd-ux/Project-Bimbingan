@@ -198,6 +198,15 @@ $query = "
 ";
 $dosen_list = $pdo->query($query)->fetchAll();
 
+// Total akumulasi kuota
+$total_kapasitas = 0;
+$total_terisi = 0;
+foreach ($dosen_list as $row) {
+    $total_kapasitas += (int)$row['kuota_bimbingan'];
+    $total_terisi += (int)$row['total_mahasiswa'];
+}
+$total_sisa = $total_kapasitas - $total_terisi;
+
 $page_title   = "Kelola Data Dosen";
 $current_page = "dosen";
 
@@ -205,14 +214,19 @@ require_once '../templates/header.php';
 require_once '../templates/sidebar_admin.php';
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<!-- Hero Banner Header -->
+<div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
-        <h1 class="h2 fw-bold text-dark mb-1">Manajemen Data Master Dosen</h1>
-        <p class="text-muted small mb-0">Kelola informasi dosen pembimbing, akun sistem, dan kapasitas kuota bimbingan.</p>
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-15 text-white small mb-2 border border-white border-opacity-10">
+            <i class="bi bi-person-badge-fill text-success"></i>
+            <span>Direktori Tenaga Pengajar & Pembimbing</span>
+        </div>
+        <h2 class="fw-bold text-white mb-1">Manajemen Data Master Dosen</h2>
+        <p class="text-white-50 small mb-0">Kelola informasi dosen pembimbing, akun sistem, jadwal bimbingan, dan kapasitas kuota.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTambahDosen">
-            <i class="bi bi-person-plus-fill me-1"></i> Tambah Dosen Baru
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-light shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#modalTambahDosen">
+            <i class="bi bi-person-plus-fill text-primary me-1"></i> Tambah Dosen Baru
         </button>
     </div>
 </div>
@@ -220,24 +234,75 @@ require_once '../templates/sidebar_admin.php';
 <!-- Alert Notifikasi -->
 <?php if (!empty($success_msg)): ?>
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i><?= htmlspecialchars($success_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($success_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($error_msg)): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i><?= htmlspecialchars($error_msg); ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div><?= htmlspecialchars($error_msg); ?></div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
+
+<!-- Stat Bar Kapasitas Kuota -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="metric-card p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="small text-muted fw-bold text-uppercase">Total Dosen Aktif</span>
+                    <h3 class="fw-bold text-dark mb-0 mt-1"><?= count($dosen_list); ?> Dosen</h3>
+                </div>
+                <div class="metric-icon-box bg-primary-subtle text-primary">
+                    <i class="bi bi-person-workspace"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="small text-muted fw-bold text-uppercase">Mahasiswa Dibimbing</span>
+                    <h3 class="fw-bold text-success mb-0 mt-1"><?= $total_terisi; ?> Mahasiswa</h3>
+                </div>
+                <div class="metric-icon-box bg-success-subtle text-success">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="small text-muted fw-bold text-uppercase">Sisa Kuota Jurusan</span>
+                    <h3 class="fw-bold text-info mb-0 mt-1"><?= $total_sisa; ?> Slot</h3>
+                </div>
+                <div class="metric-icon-box bg-info-subtle text-info">
+                    <i class="bi bi-pie-chart"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Tabel Daftar Dosen -->
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h6 class="fw-bold mb-0 text-dark">
-            <i class="bi bi-people-fill text-primary me-2"></i>Daftar Dosen Pembimbing (<?= count($dosen_list); ?> Dosen)
-        </h6>
+        <div class="d-flex align-items-center gap-2">
+            <span class="p-2 rounded bg-success-subtle text-success">
+                <i class="bi bi-people-fill"></i>
+            </span>
+            <div>
+                <h6 class="fw-bold mb-0 text-dark">Daftar Dosen Pembimbing Skripsi</h6>
+                <small class="text-muted">Total <?= count($dosen_list); ?> dosen terdaftar di sistem</small>
+            </div>
+        </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -245,17 +310,20 @@ require_once '../templates/sidebar_admin.php';
                 <thead class="table-light">
                     <tr>
                         <th class="ps-3" style="width: 50px;">No</th>
-                        <th>NIDN</th>
-                        <th>Nama Dosen & Kontak</th>
-                        <th>Akun Login</th>
-                        <th class="text-center">Kapasitas Bimbingan</th>
-                        <th class="text-center" style="width: 170px;">Aksi</th>
+                        <th>Dosen Pembimbing</th>
+                        <th>Kontak Akademik</th>
+                        <th>Akun Sistem</th>
+                        <th class="text-center" style="min-width: 170px;">Beban Bimbingan</th>
+                        <th class="text-center" style="width: 180px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($dosen_list)): ?>
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Belum ada data dosen tersimpan.</td>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-person-x fs-2 d-block text-secondary mb-2"></i>
+                                Belum ada data dosen tersimpan.
+                            </td>
                         </tr>
                     <?php else: ?>
                         <?php 
@@ -265,17 +333,26 @@ require_once '../templates/sidebar_admin.php';
                             $kuota     = (int)$row['kuota_bimbingan'];
                             $sisa      = $kuota - $bimbingan;
                             $persen    = $kuota > 0 ? min(100, round(($bimbingan / $kuota) * 100)) : 0;
+                            $initial   = strtoupper(substr($row['nama_dosen'], 0, 1));
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
-                                <td class="font-monospace fw-semibold"><?= htmlspecialchars($row['nidn']); ?></td>
                                 <td>
-                                    <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_dosen']); ?></div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-initial bg-success-subtle text-success">
+                                            <?= $initial; ?>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_dosen']); ?></div>
+                                            <span class="font-monospace text-muted small">NIDN: <?= htmlspecialchars($row['nidn']); ?></span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
                                     <div class="small text-muted">
-                                        <i class="bi bi-envelope me-1"></i><?= htmlspecialchars($row['email']); ?>
+                                        <div><i class="bi bi-envelope text-secondary me-1"></i><?= htmlspecialchars($row['email']); ?></div>
                                         <?php if (!empty($row['no_whatsapp'])): ?>
-                                            <span class="mx-1">•</span>
-                                            <i class="bi bi-whatsapp text-success me-1"></i><?= htmlspecialchars($row['no_whatsapp']); ?>
+                                            <div class="mt-1"><i class="bi bi-whatsapp text-success me-1"></i><?= htmlspecialchars($row['no_whatsapp']); ?></div>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -292,15 +369,17 @@ require_once '../templates/sidebar_admin.php';
                                         </span>
                                     </div>
                                     <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar <?= ($persen >= 100) ? 'bg-danger' : (($persen >= 75) ? 'bg-warning' : 'bg-primary'); ?>" 
+                                        <div class="progress-bar <?= ($persen >= 100) ? 'bg-danger' : (($persen >= 75) ? 'bg-warning' : 'bg-success'); ?>" 
                                              role="progressbar" style="width: <?= $persen; ?>%"></div>
                                     </div>
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
-                                        <a href="jadwal_dosen.php?dosen_id=<?= $row['id']; ?>" class="btn btn-outline-info" title="Atur Jadwal Dosen">
-                                            <i class="bi bi-calendar-week"></i>
+                                        <!-- Tombol Jadwal Dosen -->
+                                        <a href="jadwal_dosen.php?dosen_id=<?= $row['id']; ?>" class="btn btn-outline-warning" title="Atur Jadwal Bimbingan">
+                                            <i class="bi bi-calendar2-week"></i>
                                         </a>
+                                        <!-- Tombol Edit Dosen -->
                                         <button type="button" class="btn btn-outline-primary btn-edit" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#modalEditDosen"
@@ -315,6 +394,7 @@ require_once '../templates/sidebar_admin.php';
                                                 title="Edit Dosen">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
+                                        <!-- Tombol Hapus Dosen -->
                                         <button type="button" class="btn btn-outline-danger btn-delete" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#modalHapusDosen"
@@ -341,11 +421,11 @@ require_once '../templates/sidebar_admin.php';
     <div class="modal-dialog modal-lg">
         <form method="POST" action="data_dosen.php" class="modal-content">
             <input type="hidden" name="action" value="create">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="modalTambahDosenLabel"><i class="bi bi-person-plus text-primary me-2"></i>Tambah Dosen Baru</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalTambahDosenLabel"><i class="bi bi-person-plus-fill me-2"></i>Tambah Dosen Baru</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">NIDN <span class="text-danger">*</span></label>
@@ -369,21 +449,25 @@ require_once '../templates/sidebar_admin.php';
                         <div class="form-text">Batas maksimal kuota mahasiswa yang dapat dibimbing oleh dosen ini.</div>
                     </div>
 
-                    <hr class="my-3">
-                    <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-key me-1"></i>Informasi Akun Login Dosen</h6>
-
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="username" placeholder="Username untuk masuk sistem" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" name="password" placeholder="Minimal 6 karakter" required>
+                    <div class="col-12 mt-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-key-fill text-primary me-1"></i>Informasi Akun Login Dosen</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="username" placeholder="Username untuk masuk sistem" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
+                                    <input type="password" class="form-control" name="password" placeholder="Minimal 6 karakter" required>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Simpan Data Dosen</button>
             </div>
         </form>
@@ -399,11 +483,11 @@ require_once '../templates/sidebar_admin.php';
             <input type="hidden" name="action" value="update">
             <input type="hidden" name="dosen_id" id="edit_dosen_id">
             <input type="hidden" name="user_id" id="edit_user_id">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="modalEditDosenLabel"><i class="bi bi-pencil-square text-primary me-2"></i>Perbarui Data Dosen</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="modalEditDosenLabel"><i class="bi bi-pencil-square me-2"></i>Perbarui Data Dosen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">NIDN <span class="text-danger">*</span></label>
@@ -426,22 +510,26 @@ require_once '../templates/sidebar_admin.php';
                         <input type="number" class="form-control" name="kuota_bimbingan" id="edit_kuota_bimbingan" min="1" max="50" required>
                     </div>
 
-                    <hr class="my-3">
-                    <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-key me-1"></i>Informasi Akun Login</h6>
-
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="username" id="edit_username" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Password Baru (Opsional)</label>
-                        <input type="password" class="form-control" name="password" placeholder="Kosongkan jika tidak diubah">
-                        <div class="form-text">Isi hanya jika ingin mereset kata sandi dosen.</div>
+                    <div class="col-12 mt-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-key-fill text-primary me-1"></i>Informasi Akun Login</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" name="username" id="edit_username" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">Password Baru (Opsional)</label>
+                                    <input type="password" class="form-control" name="password" placeholder="Kosongkan jika tidak diubah">
+                                    <div class="form-text">Isi hanya jika ingin mereset kata sandi dosen.</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Simpan Perubahan</button>
             </div>
         </form>
@@ -456,19 +544,19 @@ require_once '../templates/sidebar_admin.php';
         <form method="POST" action="data_dosen.php" class="modal-content">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="user_id" id="delete_user_id">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Konfirmasi Hapus</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Konfirmasi Hapus Dosen</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p>Apakah Anda yakin ingin menghapus data dosen <strong id="delete_nama_dosen"></strong>?</p>
+            <div class="modal-body p-4">
+                <p class="mb-3">Apakah Anda yakin ingin menghapus data dosen <strong id="delete_nama_dosen" class="text-danger"></strong>?</p>
                 <div class="alert alert-warning small mb-0">
-                    <i class="bi bi-info-circle me-1"></i>
-                    Menghapus dosen akan menonaktifkan akun login terkait dan melepaskan plotting mahasiswa yang dibimbing (status plotting mahasiswa kembali kosong).
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    Menghapus dosen akan menonaktifkan akun login terkait dan melepaskan status plotting mahasiswa yang sedang dibimbing.
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                 <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-1"></i>Ya, Hapus Dosen</button>
             </div>
         </form>
