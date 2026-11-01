@@ -47,7 +47,7 @@ $css_ver = file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__
         <!-- Right Side User & Status Pill -->
         <div class="d-flex align-items-center gap-3 text-white">
             <span class="small d-none d-md-inline text-white">
-                Halo, <strong><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></strong> (<?= ucfirst($_SESSION['role'] ?? ''); ?>)
+                Halo, <strong><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></strong><?= (isset($_SESSION['role']) && $_SESSION['role'] !== 'mahasiswa') ? ' (' . ucfirst($_SESSION['role']) . ')' : ''; ?>
             </span>
             <a href="../logout.php" class="btn btn-sm btn-outline-light px-3" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
                 <i class="bi bi-box-arrow-right me-1"></i>Logout
