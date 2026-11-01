@@ -681,7 +681,7 @@ h6 {
     transform: translateY(-2px);
 }
 
-.form-check-input:checked ~ .form-check-label .decision-card,
+.form-check-input:checked~.form-check-label .decision-card,
 .decision-card.selected {
     border-color: var(--primary);
     background-color: #f5f3ff;
@@ -792,7 +792,9 @@ h6 {
 
 
 /* --- ROBUST TOP NAVBAR OVERRIDE --- */
-.navbar, .navbar.bg-primary, .bg-app-navbar {
+.navbar,
+.navbar.bg-primary,
+.bg-app-navbar {
     background: #1e3a8a !important;
     background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -813,10 +815,21 @@ h6 {
 }
 
 /* High contrast border colors */
-.border-primary { border-color: #2563eb !important; }
-.border-warning { border-color: #f59e0b !important; }
-.border-success { border-color: #10b981 !important; }
-.border-info    { border-color: #06b6d4 !important; }
+.border-primary {
+    border-color: #2563eb !important;
+}
+
+.border-warning {
+    border-color: #f59e0b !important;
+}
+
+.border-success {
+    border-color: #10b981 !important;
+}
+
+.border-info {
+    border-color: #06b6d4 !important;
+}
 
 /* Sidebar clean active */
 .sidebar {
@@ -835,14 +848,17 @@ h6 {
 
 .sidebar .nav-link:hover {
     background-color: #f1f5f9 !important;
-    color: #2563eb !important;
+    color: #1e3a8a !important;
 }
 
 .sidebar .nav-link.active {
-    background-color: #2563eb !important;
-    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%) !important;
+    background-color: #1e3a8a !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%) !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    font-weight: 700 !important;
     color: #ffffff !important;
-    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25) !important;
+    box-shadow: 0 4px 14px rgba(30, 58, 138, 0.35) !important;
 }
 
 .sidebar .nav-link.active i {
@@ -1151,6 +1167,7 @@ h6 {
     0% {
         box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5);
     }
+
     100% {
         box-shadow: 0 0 0 12px rgba(245, 158, 11, 0);
     }
@@ -1467,5 +1484,3 @@ h6 {
     padding: 0.95rem 1rem;
     vertical-align: middle;
 }
-
-
