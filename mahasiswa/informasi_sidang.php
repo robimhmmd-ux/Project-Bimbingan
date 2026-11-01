@@ -268,37 +268,48 @@ $is_eligible      = ($status_kelulusan === 'siap_sidang' || $total_acc >= 5);
                 <!-- Dewan Penguji 1, 2, 3 dan Pembimbing -->
                 <div class="col-lg-6">
                     <div class="p-3 bg-white rounded border shadow-sm h-100">
-                        <span class="text-muted small text-uppercase fw-bold d-block mb-2">Susunan Dewan Penguji & Pembimbing:</span>
-                        <ul class="list-group list-group-flush small mb-3">
-                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="bi bi-person-check-fill text-primary me-2"></i>
-                                    <strong>Ketua Penguji (Penguji 1):</strong>
+                        <span class="text-muted small text-uppercase fw-bold d-block mb-3">
+                            <i class="bi bi-people-fill text-primary me-1"></i>Susunan Dewan Penguji & Pembimbing:
+                        </span>
+                        
+                        <div class="d-flex flex-column gap-2 mb-3">
+                            <div class="penguji-chip">
+                                <div class="penguji-avatar ketua">
+                                    <i class="bi bi-star-fill"></i>
                                 </div>
-                                <span class="text-dark fw-semibold"><?= htmlspecialchars($info_sidang['penguji_1'] ?? 'Ditetapkan Admin'); ?></span>
-                            </li>
-                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="bi bi-person-check text-secondary me-2"></i>
-                                    <strong>Dosen Penguji 2:</strong>
+                                <div class="flex-grow-1">
+                                    <span class="text-warning-emphasis d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Ketua Penguji (Penguji 1)</span>
+                                    <strong class="text-dark"><?= htmlspecialchars($info_sidang['penguji_1'] ?? 'Ditetapkan Admin'); ?></strong>
                                 </div>
-                                <span class="text-dark fw-semibold"><?= htmlspecialchars($info_sidang['penguji_2'] ?? 'Ditetapkan Admin'); ?></span>
-                            </li>
-                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="bi bi-person-check text-secondary me-2"></i>
-                                    <strong>Sekretaris Sidang (Penguji 3):</strong>
+                            </div>
+                            <div class="penguji-chip">
+                                <div class="penguji-avatar" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                                    <i class="bi bi-person-fill"></i>
                                 </div>
-                                <span class="text-dark fw-semibold"><?= htmlspecialchars($info_sidang['penguji_3'] ?? 'Ditetapkan Admin'); ?></span>
-                            </li>
-                            <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
-                                <div>
-                                    <i class="bi bi-person-badge text-success me-2"></i>
-                                    <strong>Dosen Pembimbing:</strong>
+                                <div class="flex-grow-1">
+                                    <span class="text-primary d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Dosen Penguji 2</span>
+                                    <strong class="text-dark"><?= htmlspecialchars($info_sidang['penguji_2'] ?? 'Ditetapkan Admin'); ?></strong>
                                 </div>
-                                <span class="text-dark fw-semibold"><?= htmlspecialchars($info_sidang['dospem'] ?? $mhs['nama_dosen']); ?></span>
-                            </li>
-                        </ul>
+                            </div>
+                            <div class="penguji-chip">
+                                <div class="penguji-avatar" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span class="text-purple d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Sekretaris Sidang (Penguji 3)</span>
+                                    <strong class="text-dark"><?= htmlspecialchars($info_sidang['penguji_3'] ?? 'Ditetapkan Admin'); ?></strong>
+                                </div>
+                            </div>
+                            <div class="penguji-chip">
+                                <div class="penguji-avatar pembimbing">
+                                    <i class="bi bi-person-badge-fill"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span class="text-success d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Dosen Pembimbing</span>
+                                    <strong class="text-dark"><?= htmlspecialchars($info_sidang['dospem'] ?? $mhs['nama_dosen']); ?></strong>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Tata Tertib & Ketentuan -->
                         <div class="bg-light p-3 rounded small border">

@@ -183,33 +183,45 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
 }
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <div>
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <h1 class="h2 mb-0">Dashboard Mahasiswa</h1>
-            <span class="badge-kelas"><i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
+<!-- ============================================================
+     HERO BANNER MAHASISWA MODERN & BERWARNA
+============================================================ -->
+<div class="student-hero-banner">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center position-relative" style="z-index: 2;">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span class="badge-kelas">
+                    <i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
+                </span>
+                <span class="badge bg-white bg-opacity-25 text-white border border-white border-opacity-25 px-2 py-1 small rounded-pill">
+                    <i class="bi bi-person-fill me-1"></i>Portal Mahasiswa
+                </span>
+            </div>
+            <h2 class="fw-bold text-white mb-1">Selamat Datang Kembali, <?= htmlspecialchars($mhs['nama_lengkap'] ?? $_SESSION['username']); ?>!</h2>
+            <p class="text-white-50 small mb-0">
+                NIM: <strong class="text-white"><?= htmlspecialchars($mhs['nim'] ?? '-'); ?></strong> &bull; Pantau progres bimbingan, jadwal konsultasi, dan kesiapan ujian sidang tugas akhir Anda.
+            </p>
         </div>
-        <p class="text-muted small mb-0">Selamat datang kembali, <strong><?= htmlspecialchars($mhs['nama_lengkap'] ?? $_SESSION['username']); ?></strong> (NIM: <?= htmlspecialchars($mhs['nim'] ?? '-'); ?>)</p>
-    </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <?php if ($status_pembimbing === 'aktif'): ?>
-            <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm me-2">
-                <i class="bi bi-calendar-plus me-1"></i>Ajukan Jadwal
+        <div class="btn-toolbar mt-3 mt-md-0 gap-2 flex-wrap">
+            <?php if ($status_pembimbing === 'aktif'): ?>
+                <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm px-3 shadow-sm border-0" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                    <i class="bi bi-calendar-plus me-1"></i>Ajukan Jadwal
+                </a>
+                <a href="upload_draft.php" class="btn btn-light btn-sm px-3 shadow-sm text-primary fw-semibold border-0">
+                    <i class="bi bi-cloud-arrow-up me-1"></i>Upload Draft
+                </a>
+                <a href="chat.php" class="btn btn-success btn-sm px-3 shadow-sm border-0" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <i class="bi bi-chat-dots-fill me-1"></i>Chat Dosen
+                </a>
+            <?php else: ?>
+                <button class="btn btn-light btn-sm text-muted disabled shadow-sm" title="Konfirmasi SK terlebih dahulu">
+                    <i class="bi bi-lock me-1"></i>Ajukan Jadwal
+                </button>
+            <?php endif; ?>
+            <a href="cetak_laporan.php" target="_blank" class="btn btn-outline-light btn-sm px-3">
+                <i class="bi bi-printer me-1"></i>Cetak Laporan
             </a>
-            <a href="upload_draft.php" class="btn btn-outline-primary btn-sm me-2">
-                <i class="bi bi-cloud-arrow-up me-1"></i>Upload Draft
-            </a>
-            <a href="chat.php" class="btn btn-outline-success btn-sm me-2">
-                <i class="bi bi-chat-dots me-1"></i>Chat Dosen
-            </a>
-        <?php else: ?>
-            <button class="btn btn-secondary btn-sm me-2 disabled" title="Konfirmasi SK terlebih dahulu">
-                <i class="bi bi-lock me-1"></i>Ajukan Jadwal
-            </button>
-        <?php endif; ?>
-        <a href="cetak_laporan.php" target="_blank" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-printer me-1"></i>Cetak Laporan
-        </a>
+        </div>
     </div>
 </div>
 
@@ -340,25 +352,48 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
 
                 <div class="col-lg-6">
                     <div class="p-3 bg-white rounded border shadow-sm h-100">
-                        <span class="text-muted small text-uppercase fw-bold d-block mb-2">Dewan Penguji & Pembimbing:</span>
-                        <ul class="list-group list-group-flush small mb-3">
-                            <li class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-person-check text-primary me-2"></i><strong>Ketua Penguji (Penguji 1):</strong></span>
-                                <span class="text-dark"><?= htmlspecialchars($info_sidang['penguji_1'] ?? 'Akan Ditetapkan'); ?></span>
-                            </li>
-                            <li class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-person-check text-secondary me-2"></i><strong>Dosen Penguji 2:</strong></span>
-                                <span class="text-dark"><?= htmlspecialchars($info_sidang['penguji_2'] ?? 'Akan Ditetapkan'); ?></span>
-                            </li>
-                            <li class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-person-check text-secondary me-2"></i><strong>Sekretaris (Penguji 3):</strong></span>
-                                <span class="text-dark"><?= htmlspecialchars($info_sidang['penguji_3'] ?? 'Akan Ditetapkan'); ?></span>
-                            </li>
-                            <li class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-person-badge text-success me-2"></i><strong>Dosen Pembimbing:</strong></span>
-                                <span class="text-dark"><?= htmlspecialchars($info_sidang['dospem'] ?? $mhs['nama_dosen']); ?></span>
-                            </li>
-                        </ul>
+                        <span class="text-muted small text-uppercase fw-bold d-block mb-2">
+                            <i class="bi bi-people-fill text-primary me-1"></i>Dewan Penguji & Pembimbing:
+                        </span>
+                        
+                        <div class="d-flex flex-column gap-2 mb-3">
+                            <div class="penguji-chip">
+                                <div class="penguji-avatar ketua">
+                                    <i class="bi bi-star-fill"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span class="text-warning-emphasis d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Ketua Penguji (Penguji 1)</span>
+                                    <strong class="text-dark small"><?= htmlspecialchars($info_sidang['penguji_1'] ?? 'Akan Ditetapkan'); ?></strong>
+                                </div>
+                            </div>
+                            <div class="penguji-chip">
+                                <div class="penguji-avatar" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span class="text-primary d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Dosen Penguji 2</span>
+                                    <strong class="text-dark small"><?= htmlspecialchars($info_sidang['penguji_2'] ?? 'Akan Ditetapkan'); ?></strong>
+                                </div>
+                            </div>
+                            <div class="penguji-chip">
+                                <div class="penguji-avatar" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span class="text-purple d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Sekretaris (Penguji 3)</span>
+                                    <strong class="text-dark small"><?= htmlspecialchars($info_sidang['penguji_3'] ?? 'Akan Ditetapkan'); ?></strong>
+                                </div>
+                            </div>
+                            <div class="penguji-chip">
+                                <div class="penguji-avatar pembimbing">
+                                    <i class="bi bi-person-badge-fill"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <span class="text-success d-block" style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Dosen Pembimbing</span>
+                                    <strong class="text-dark small"><?= htmlspecialchars($info_sidang['dospem'] ?? $mhs['nama_dosen']); ?></strong>
+                                </div>
+                            </div>
+                        </div>
 
                         <?php if (!empty($info_sidang['ketentuan_sidang'])): ?>
                             <div class="bg-light p-2 rounded small border">
@@ -427,8 +462,8 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                     <span class="small fw-semibold text-secondary">Estimasi Progres Skripsi</span>
                     <span class="small fw-bold text-primary"><?= $persen_progres; ?>%</span>
                 </div>
-                <div class="progress" style="height: 12px;">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
+                <div class="progress progress-skripsi-vibrant">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated progress-skripsi-bar" 
                          role="progressbar" 
                          style="width: <?= $persen_progres; ?>%;" 
                          aria-valuenow="<?= $persen_progres; ?>" 
@@ -556,56 +591,56 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
     </div>
 </div>
 
-<!-- Statistik Ringkas Bimbingan -->
+<!-- Statistik Ringkas Bimbingan (Modern & Berwarna) -->
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
-        <div class="card p-3 shadow-sm border-0 bg-white">
+        <div class="student-stat-card stat-blue">
             <div class="d-flex align-items-center">
-                <div class="bg-primary-subtle text-primary rounded p-3 me-3">
-                    <i class="bi bi-journals fs-4"></i>
+                <div class="stat-icon-pill bg-gradient-blue me-3">
+                    <i class="bi bi-journals"></i>
                 </div>
                 <div>
-                    <span class="text-muted small">Total Bimbingan</span>
-                    <h4 class="fw-bold mb-0"><?= $total_bimbingan; ?></h4>
+                    <span class="text-muted small fw-semibold d-block">Total Bimbingan</span>
+                    <h3 class="fw-bold mb-0 text-dark"><?= $total_bimbingan; ?></h3>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="card p-3 shadow-sm border-0 bg-white">
+        <div class="student-stat-card stat-emerald">
             <div class="d-flex align-items-center">
-                <div class="bg-success-subtle text-success rounded p-3 me-3">
-                    <i class="bi bi-check-circle-fill fs-4"></i>
+                <div class="stat-icon-pill bg-gradient-emerald me-3">
+                    <i class="bi bi-check-circle-fill"></i>
                 </div>
                 <div>
-                    <span class="text-muted small">Disetujui / Selesai</span>
-                    <h4 class="fw-bold mb-0"><?= $bimbingan_acc; ?></h4>
+                    <span class="text-muted small fw-semibold d-block">Disetujui / ACC</span>
+                    <h3 class="fw-bold mb-0 text-dark"><?= $bimbingan_acc; ?></h3>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="card p-3 shadow-sm border-0 bg-white">
+        <div class="student-stat-card stat-amber">
             <div class="d-flex align-items-center">
-                <div class="bg-warning-subtle text-warning rounded p-3 me-3">
-                    <i class="bi bi-clock-history fs-4"></i>
+                <div class="stat-icon-pill bg-gradient-amber me-3">
+                    <i class="bi bi-clock-history"></i>
                 </div>
                 <div>
-                    <span class="text-muted small">Menunggu / Proses</span>
-                    <h4 class="fw-bold mb-0"><?= $bimbingan_menunggu; ?></h4>
+                    <span class="text-muted small fw-semibold d-block">Menunggu / Proses</span>
+                    <h3 class="fw-bold mb-0 text-dark"><?= $bimbingan_menunggu; ?></h3>
                 </div>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
-        <div class="card p-3 shadow-sm border-0 bg-white">
+        <div class="student-stat-card stat-purple">
             <div class="d-flex align-items-center">
-                <div class="bg-info-subtle text-info rounded p-3 me-3">
-                    <i class="bi bi-star-fill fs-4"></i>
+                <div class="stat-icon-pill bg-gradient-purple me-3">
+                    <i class="bi bi-star-fill"></i>
                 </div>
                 <div>
-                    <span class="text-muted small">Rata-rata Nilai</span>
-                    <h4 class="fw-bold mb-0"><?= $rata_nilai > 0 ? $rata_nilai . '/100' : '-'; ?></h4>
+                    <span class="text-muted small fw-semibold d-block">Rata-rata Nilai</span>
+                    <h3 class="fw-bold mb-0 text-dark"><?= $rata_nilai > 0 ? $rata_nilai . '<span class="fs-6 text-muted fw-normal">/100</span>' : '-'; ?></h3>
                 </div>
             </div>
         </div>
