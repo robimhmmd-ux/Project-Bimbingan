@@ -997,6 +997,38 @@ h6 {
     backdrop-filter: blur(4px);
 }
 
+/* Page Header Action Toolbar (Neat, Level, & Well-Spaced) */
+.page-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+@media (min-width: 576px) {
+    .page-header-actions {
+        flex-wrap: nowrap;
+    }
+}
+
+.page-header-actions .btn {
+    white-space: nowrap;
+    font-size: 0.825rem;
+    font-weight: 600;
+    padding: 0.45rem 0.85rem;
+    border-radius: var(--radius-md);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.35;
+    margin: 0 !important;
+}
+
+.page-header-actions .btn i {
+    font-size: 0.95rem;
+}
+
 /* 2. Student Identity & Class Badges */
 .badge-kelas {
     background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;

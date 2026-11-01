@@ -55,13 +55,13 @@ if (!empty($mhs['no_whatsapp'])) {
 }
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pt-3 pb-2 mb-3 border-bottom gap-2">
     <div>
         <h1 class="h2 mb-0">Jadwal & Profil Dosen Pembimbing</h1>
         <p class="text-muted small mb-0">Lihat ketersediaan hari bimbingan serta kontak resmi dosen pembimbing Anda.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="chat.php" class="btn btn-primary btn-sm me-2">
+    <div class="page-header-actions">
+        <a href="chat.php" class="btn btn-primary btn-sm">
             <i class="bi bi-chat-dots-fill me-1"></i>Chat Dosen di Web
         </a>
         <a href="ajukan_jadwal.php" class="btn btn-success btn-sm">

@@ -137,20 +137,20 @@ $stmt_drafts->execute([':mid' => $mhs_id]);
 $daftar_drafts = $stmt_drafts->fetchAll();
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pt-3 pb-2 mb-3 border-bottom gap-2">
     <div>
         <h1 class="h2 mb-0">Upload & Penyerahan Draf Skripsi</h1>
         <p class="text-muted small mb-0">Serahkan naskah skripsi melalui berkas PDF atau tautan Google Drive untuk dievaluasi oleh dosen pembimbing.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="index.php" class="btn btn-outline-secondary btn-sm me-2">
-            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+    <div class="page-header-actions">
+        <a href="index.php" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-speedometer2"></i>Dashboard
         </a>
-        <a href="logbook.php" class="btn btn-outline-secondary btn-sm me-2">
-            <i class="bi bi-journal-text me-1"></i>Logbook
+        <a href="logbook.php" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-journal-text"></i>Logbook
         </a>
         <a href="chat.php" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-chat-dots me-1"></i>Chat Dosen
+            <i class="bi bi-chat-dots"></i>Chat Dosen
         </a>
     </div>
 </div>

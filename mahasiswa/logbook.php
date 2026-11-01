@@ -64,20 +64,20 @@ foreach ($logbook_list as $item) {
 }
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pt-3 pb-2 mb-3 border-bottom gap-2">
     <div>
         <h1 class="h2 mb-0">Logbook Bimbingan Skripsi</h1>
         <p class="text-muted small mb-0">Catatan resmi kartu kendali konsultasi dan evaluasi draf skripsi oleh dosen pembimbing.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="index.php" class="btn btn-outline-secondary btn-sm me-2">
-            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+    <div class="page-header-actions">
+        <a href="index.php" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-speedometer2"></i>Dashboard
         </a>
-        <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm me-2">
-            <i class="bi bi-calendar-plus me-1"></i>Ajukan Sesi Baru
+        <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm">
+            <i class="bi bi-calendar-plus"></i>Ajukan Sesi Baru
         </a>
         <a href="cetak_laporan.php" target="_blank" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-printer me-1"></i>Cetak Kartu Bimbingan
+            <i class="bi bi-printer"></i>Cetak Kartu Bimbingan
         </a>
     </div>
 </div>

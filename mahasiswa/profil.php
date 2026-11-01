@@ -179,14 +179,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pt-3 pb-2 mb-3 border-bottom gap-2">
     <div>
         <h1 class="h2 mb-0">Profil & Pengaturan Akun</h1>
         <p class="text-muted small mb-0">Kelola dan perbarui identitas akun login, NIM, kelas akademik, judul skripsi, serta keamanan kata sandi Anda.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
+    <div class="page-header-actions">
         <a href="index.php" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-speedometer2 me-1"></i>Ke Dashboard
+            <i class="bi bi-speedometer2"></i>Ke Dashboard
         </a>
     </div>
 </div>

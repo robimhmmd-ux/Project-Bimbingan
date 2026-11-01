@@ -114,7 +114,7 @@ $status_kelulusan = $mhs['status_kelulusan'] ?? 'proses_bimbingan';
 $is_eligible      = ($status_kelulusan === 'siap_sidang' || $total_acc >= 5);
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pt-3 pb-2 mb-3 border-bottom gap-2">
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
             <h1 class="h2 mb-0">Halaman Progres & Informasi Sidang</h1>
@@ -122,12 +122,12 @@ $is_eligible      = ($status_kelulusan === 'siap_sidang' || $total_acc >= 5);
         </div>
         <p class="text-muted small mb-0">Pusat informasi kelayakan, jadwal resmi, susunan dewan penguji, dan tata tertib ujian sidang skripsi.</p>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="index.php" class="btn btn-outline-secondary btn-sm me-2">
-            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+    <div class="page-header-actions">
+        <a href="index.php" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-speedometer2"></i>Dashboard
         </a>
         <a href="cetak_laporan.php" target="_blank" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-printer me-1"></i>Cetak Kartu Bimbingan
+            <i class="bi bi-printer"></i>Cetak Kartu Bimbingan
         </a>
     </div>
 </div>
