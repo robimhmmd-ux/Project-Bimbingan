@@ -187,8 +187,8 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
      HERO BANNER MAHASISWA MODERN & BERWARNA
 ============================================================ -->
 <div class="student-hero-banner">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center position-relative" style="z-index: 2;">
-        <div>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative" style="z-index: 2;">
+        <div class="pe-md-3">
             <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                 <span class="badge-kelas">
                     <i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
@@ -202,24 +202,24 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                 NIM: <strong class="text-white"><?= htmlspecialchars($mhs['nim'] ?? '-'); ?></strong> &bull; Pantau progres bimbingan, jadwal konsultasi, dan kesiapan ujian sidang tugas akhir Anda.
             </p>
         </div>
-        <div class="btn-toolbar mt-3 mt-md-0 gap-2 flex-wrap">
+        <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-nowrap">
             <?php if ($status_pembimbing === 'aktif'): ?>
-                <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm px-3 shadow-sm border-0" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
-                    <i class="bi bi-calendar-plus me-1"></i>Ajukan Jadwal
+                <a href="ajukan_jadwal.php" class="btn btn-hero-action btn-hero-blue">
+                    <i class="bi bi-calendar-plus"></i>Ajukan Jadwal
                 </a>
-                <a href="upload_draft.php" class="btn btn-light btn-sm px-3 shadow-sm text-primary fw-semibold border-0">
-                    <i class="bi bi-cloud-arrow-up me-1"></i>Upload Draft
+                <a href="upload_draft.php" class="btn btn-hero-action btn-hero-white">
+                    <i class="bi bi-cloud-arrow-up"></i>Upload Draft
                 </a>
-                <a href="chat.php" class="btn btn-success btn-sm px-3 shadow-sm border-0" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                    <i class="bi bi-chat-dots-fill me-1"></i>Chat Dosen
+                <a href="chat.php" class="btn btn-hero-action btn-hero-emerald">
+                    <i class="bi bi-chat-dots-fill"></i>Chat Dosen
                 </a>
             <?php else: ?>
-                <button class="btn btn-light btn-sm text-muted disabled shadow-sm" title="Konfirmasi SK terlebih dahulu">
-                    <i class="bi bi-lock me-1"></i>Ajukan Jadwal
+                <button class="btn btn-hero-action btn-hero-disabled" title="Konfirmasi SK terlebih dahulu di banner bawah">
+                    <i class="bi bi-lock-fill"></i>Ajukan Jadwal
                 </button>
             <?php endif; ?>
-            <a href="cetak_laporan.php" target="_blank" class="btn btn-outline-light btn-sm px-3">
-                <i class="bi bi-printer me-1"></i>Cetak Laporan
+            <a href="cetak_laporan.php" target="_blank" class="btn btn-hero-action btn-hero-outline">
+                <i class="bi bi-printer-fill"></i>Cetak Laporan
             </a>
         </div>
     </div>
