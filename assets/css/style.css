@@ -848,3 +848,29 @@ h6 {
 .sidebar .nav-link.active i {
     color: #ffffff !important;
 }
+
+
+/* Badges Khusus Status Sidang & Konfirmasi SK (UPDATE ROBI) */
+.badge-sidang {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    padding: 0.35rem 0.65rem !important;
+    border-radius: 9999px !important;
+}
+
+.badge-sidang-indigo {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    padding: 0.35rem 0.65rem !important;
+    border-radius: 9999px !important;
+}
+
+.badge-konfirmasi {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    padding: 0.35rem 0.65rem !important;
+    border-radius: 9999px !important;
+}

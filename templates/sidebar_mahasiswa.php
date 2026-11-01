@@ -1,16 +1,24 @@
 <!-- templates/sidebar_mahasiswa.php -->
 <?php
-// Hitung notifikasi unread chat jika koneksi pdo tersedia
+// Hitung notifikasi unread chat dan status pembimbing mahasiswa
 $badge_chat_mhs = 0;
+$status_pembimbing_mhs = 'belum_diplot';
+
 if (isset($pdo) && isset($_SESSION['user_id'])) {
     try {
         $st_c = $pdo->prepare("SELECT COUNT(*) FROM pesan_chat WHERE penerima_id = :uid AND status_baca = 'belum_dibaca'");
         $st_c->execute([':uid' => $_SESSION['user_id']]);
         $badge_chat_mhs = (int)$st_c->fetchColumn();
+
+        $st_sp = $pdo->prepare("SELECT status_pembimbing FROM mahasiswa WHERE user_id = :uid LIMIT 1");
+        $st_sp->execute([':uid' => $_SESSION['user_id']]);
+        $status_pembimbing_mhs = $st_sp->fetchColumn() ?: 'belum_diplot';
     } catch (Exception $e) {
         $badge_chat_mhs = 0;
+        $status_pembimbing_mhs = 'belum_diplot';
     }
 }
+$is_sk_aktif = ($status_pembimbing_mhs === 'aktif');
 ?>
 <nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 min-vh-100 border-end">
     <div class="position-sticky">
@@ -27,8 +35,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link <?= ($current_page == 'ajukan') ? 'active' : 'text-dark'; ?>" href="ajukan_jadwal.php">
-                    <i class="bi bi-calendar-plus me-2"></i>Ajukan Bimbingan
+                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'ajukan') ? 'active' : 'text-dark'; ?>" href="ajukan_jadwal.php">
+                    <span><i class="bi bi-calendar-plus me-2"></i>Ajukan Bimbingan</span>
+                    <?php if (!$is_sk_aktif): ?>
+                        <i class="bi bi-lock-fill text-muted" title="Terkunci: Konfirmasi SK terlebih dahulu"></i>
+                    <?php endif; ?>
                 </a>
             </li>
             <li class="nav-item mb-1">
@@ -40,13 +51,21 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link <?= ($current_page == 'upload') ? 'active' : 'text-dark'; ?>" href="upload_draft.php">
-                    <i class="bi bi-cloud-arrow-up me-2"></i>Upload Skripsi
+                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'upload') ? 'active' : 'text-dark'; ?>" href="upload_draft.php">
+                    <span><i class="bi bi-cloud-arrow-up me-2"></i>Upload Skripsi</span>
+                    <?php if (!$is_sk_aktif): ?>
+                        <i class="bi bi-lock-fill text-muted" title="Terkunci: Konfirmasi SK terlebih dahulu"></i>
+                    <?php endif; ?>
                 </a>
             </li>
             <li class="nav-item mb-1">
                 <a class="nav-link <?= ($current_page == 'logbook') ? 'active' : 'text-dark'; ?>" href="logbook.php">
                     <i class="bi bi-journal-check me-2"></i>Logbook & Laporan
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link <?= ($current_page == 'sidang') ? 'active' : 'text-dark'; ?>" href="informasi_sidang.php">
+                    <i class="bi bi-mortarboard-fill me-2"></i>Informasi Sidang
                 </a>
             </li>
             <li class="nav-item mb-1">

@@ -279,26 +279,24 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                     <small class="text-muted">Dewan Penguji & Ketentuan Sidang Komprehensif</small>
                 </div>
             </div>
-            <div>
+            <div class="d-flex align-items-center gap-2">
                 <?php
                 $st_sidang = $info_sidang['status_sidang'] ?? 'pengajuan';
-                $badge_sidang = 'badge bg-warning text-dark';
-                $label_sidang = 'Pengajuan Sidang';
                 if ($st_sidang === 'dijadwalkan') {
-                    $badge_sidang = 'badge bg-primary';
-                    $label_sidang = 'Jadwal Telah Ditetapkan';
+                    echo '<span class="badge-sidang-indigo"><i class="bi bi-calendar-check me-1"></i>Jadwal Ditetapkan</span>';
                 } elseif ($st_sidang === 'lulus') {
-                    $badge_sidang = 'badge bg-success';
-                    $label_sidang = 'Lulus Sidang';
+                    echo '<span class="badge-sidang"><i class="bi bi-trophy-fill me-1"></i>Lulus Sidang</span>';
                 } elseif ($st_sidang === 'revisi') {
-                    $badge_sidang = 'badge bg-info text-dark';
-                    $label_sidang = 'Revisi Sidang';
+                    echo '<span class="badge-konfirmasi"><i class="bi bi-arrow-repeat me-1"></i>Revisi Sidang</span>';
                 } elseif ($st_sidang === 'tidak_lulus') {
-                    $badge_sidang = 'badge bg-danger';
-                    $label_sidang = 'Tidak Lulus';
+                    echo '<span class="badge bg-danger">Tidak Lulus</span>';
+                } else {
+                    echo '<span class="badge-konfirmasi"><i class="bi bi-clock me-1"></i>Menunggu Penjadwalan</span>';
                 }
                 ?>
-                <span class="<?= $badge_sidang; ?> px-3 py-2 fw-bold"><?= $label_sidang; ?></span>
+                <a href="informasi_sidang.php" class="btn btn-outline-primary btn-sm ms-2">
+                    <i class="bi bi-arrow-right-circle me-1"></i>Detail Sidang
+                </a>
             </div>
         </div>
         <div class="card-body p-4 bg-light bg-opacity-25">
@@ -371,6 +369,24 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+<?php else: ?>
+    <!-- Akses Cepat Informasi Sidang -->
+    <div class="card shadow-sm border-0 mb-4 bg-white p-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-indigo-subtle text-primary p-2 rounded-3 fs-4">
+                    <i class="bi bi-mortarboard-fill"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-0">Informasi & Pendaftaran Ujian Sidang Skripsi</h6>
+                    <small class="text-muted">Pantau kelayakan bimbingan Bab 1 - 5 dan ajukan pendaftaran sidang secara online.</small>
+                </div>
+            </div>
+            <a href="informasi_sidang.php" class="btn btn-outline-primary btn-sm px-3">
+                <i class="bi bi-arrow-right-circle me-1"></i>Buka Halaman Sidang
+            </a>
         </div>
     </div>
 <?php endif; ?>
