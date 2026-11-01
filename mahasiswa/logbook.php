@@ -64,21 +64,36 @@ foreach ($logbook_list as $item) {
 }
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pt-3 pb-2 mb-3 border-bottom gap-2">
-    <div>
-        <h1 class="h2 mb-0">Logbook Bimbingan Skripsi</h1>
-        <p class="text-muted small mb-0">Catatan resmi kartu kendali konsultasi dan evaluasi draf skripsi oleh dosen pembimbing.</p>
-    </div>
-    <div class="page-header-actions">
-        <a href="index.php" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-speedometer2"></i>Dashboard
-        </a>
-        <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm">
-            <i class="bi bi-calendar-plus"></i>Ajukan Sesi Baru
-        </a>
-        <a href="cetak_laporan.php" target="_blank" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-printer"></i>Cetak Kartu Bimbingan
-        </a>
+<!-- ============================================================
+     HERO BANNER MAHASISWA (NAVY SAPPHIRE)
+============================================================ -->
+<div class="student-hero-banner">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative" style="z-index: 2;">
+        <div class="pe-md-3">
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span class="badge-kelas">
+                    <i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
+                </span>
+                <span class="badge bg-white bg-opacity-25 text-white border border-white border-opacity-25 px-2.5 py-1 small rounded-pill">
+                    <i class="bi bi-journal-bookmark-fill me-1"></i>Kartu Kendali
+                </span>
+            </div>
+            <h2 class="fw-bold text-white mb-1">Logbook Bimbingan Skripsi</h2>
+            <p class="text-white-50 small mb-0">
+                Catatan resmi kartu kendali konsultasi dan evaluasi draf skripsi oleh dosen pembimbing.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-wrap">
+            <a href="ajukan_jadwal.php" class="btn btn-hero-action btn-hero-blue">
+                <i class="bi bi-calendar-plus"></i>Ajukan Sesi Baru
+            </a>
+            <a href="cetak_laporan.php" target="_blank" class="btn btn-hero-action btn-hero-white">
+                <i class="bi bi-printer-fill"></i>Cetak Kartu Bimbingan
+            </a>
+            <a href="index.php" class="btn btn-hero-action btn-hero-outline">
+                <i class="bi bi-speedometer2"></i>Dashboard
+            </a>
+        </div>
     </div>
 </div>
 

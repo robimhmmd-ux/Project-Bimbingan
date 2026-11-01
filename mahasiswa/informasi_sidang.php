@@ -114,21 +114,33 @@ $status_kelulusan = $mhs['status_kelulusan'] ?? 'proses_bimbingan';
 $is_eligible      = ($status_kelulusan === 'siap_sidang' || $total_acc >= 5);
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center pt-3 pb-2 mb-3 border-bottom gap-2">
-    <div>
-        <div class="d-flex align-items-center gap-2 mb-1">
-            <h1 class="h2 mb-0">Halaman Progres & Informasi Sidang</h1>
-            <span class="badge-kelas"><i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
+<!-- ============================================================
+     HERO BANNER MAHASISWA (NAVY SAPPHIRE)
+============================================================ -->
+<div class="student-hero-banner">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative" style="z-index: 2;">
+        <div class="pe-md-3">
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span class="badge-kelas">
+                    <i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
+                </span>
+                <span class="badge bg-white bg-opacity-25 text-white border border-white border-opacity-25 px-2.5 py-1 small rounded-pill">
+                    <i class="bi bi-award-fill me-1"></i>Kelayakan & Sidang Skripsi
+                </span>
+            </div>
+            <h2 class="fw-bold text-white mb-1">Halaman Progres & Informasi Sidang</h2>
+            <p class="text-white-50 small mb-0">
+                Pusat informasi kelayakan, jadwal resmi, susunan dewan penguji, dan tata tertib ujian sidang skripsi.
+            </p>
         </div>
-        <p class="text-muted small mb-0">Pusat informasi kelayakan, jadwal resmi, susunan dewan penguji, dan tata tertib ujian sidang skripsi.</p>
-    </div>
-    <div class="page-header-actions">
-        <a href="index.php" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-speedometer2"></i>Dashboard
-        </a>
-        <a href="cetak_laporan.php" target="_blank" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-printer"></i>Cetak Kartu Bimbingan
-        </a>
+        <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-wrap">
+            <a href="cetak_laporan.php" target="_blank" class="btn btn-hero-action btn-hero-white">
+                <i class="bi bi-printer-fill"></i>Cetak Kartu Bimbingan
+            </a>
+            <a href="index.php" class="btn btn-hero-action btn-hero-outline">
+                <i class="bi bi-speedometer2"></i>Dashboard
+            </a>
+        </div>
     </div>
 </div>
 
