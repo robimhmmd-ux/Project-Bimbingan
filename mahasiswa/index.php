@@ -1,5 +1,5 @@
 <?php
-// mahasiswa/index.php - Dashboard Mahasiswa & Pencatatan Progres Skripsi
+// mahasiswa/index.php - Dashboard Mahasiswa & Pencatatan Progres Skripsi Terpadu
 $page_title   = "Dashboard Mahasiswa";
 $current_page = "dashboard";
 
@@ -13,6 +13,9 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
     exit;
 }
 
+$success_msg = '';
+$error_msg   = '';
+
 // Ambil data profil mahasiswa beserta info dosen pembimbingnya
 $stmt_mhs = $pdo->prepare("
     SELECT m.*, d.user_id AS dosen_user_id, d.nidn, d.nama_dosen, d.email AS email_dosen, d.no_whatsapp, d.foto_profil AS foto_dosen 
@@ -25,13 +28,81 @@ $mhs = $stmt_mhs->fetch();
 
 $mhs_id = $mhs['id'] ?? 0;
 $dosen_pembimbing_id = $mhs['dosen_pembimbing_id'] ?? null;
+$status_pembimbing = $mhs['status_pembimbing'] ?? 'belum_diplot';
+
+// Handle Konfirmasi Penerimaan SK Dosen Pembimbing (UPDATE Robi)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'konfirmasi_sk') {
+    if ($mhs_id && $status_pembimbing === 'menunggu_konfirmasi') {
+        try {
+            $stmt_konfir = $pdo->prepare("UPDATE mahasiswa SET status_pembimbing = 'aktif' WHERE id = :mid");
+            $stmt_konfir->execute([':mid' => $mhs_id]);
+
+            // Catat notifikasi otomatis
+            $stmt_notif = $pdo->prepare("
+                INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
+                VALUES (:uid, 'SK Dosen Pembimbing Diterima', 'Anda telah mengonfirmasi penerimaan SK pembimbing. Seluruh fitur pengajuan bimbingan kini aktif.', 'sukses', 'index.php')
+            ");
+            $stmt_notif->execute([':uid' => $_SESSION['user_id']]);
+
+            $success_msg = "Selamat! Penerimaan SK Dosen Pembimbing berhasil dikonfirmasi. Anda kini dapat mengajukan jadwal bimbingan dan mengunggah draf skripsi.";
+            
+            // Refresh data mhs
+            $stmt_mhs->execute([':uid' => $_SESSION['user_id']]);
+            $mhs = $stmt_mhs->fetch();
+            $status_pembimbing = $mhs['status_pembimbing'] ?? 'aktif';
+        } catch (PDOException $e) {
+            $error_msg = "Gagal mengonfirmasi SK: " . $e->getMessage();
+        }
+    }
+}
+
+// Ambil Informasi Jadwal Sidang Skripsi Mahasiswa (UPDATE Robi: tabel sidang_skripsi)
+$info_sidang = null;
+if ($mhs_id) {
+    try {
+        $stmt_sidang = $pdo->prepare("
+            SELECT s.*, 
+                   d_pem.nama_dosen AS dospem,
+                   d_p1.nama_dosen  AS penguji_1,
+                   d_p2.nama_dosen  AS penguji_2,
+                   d_p3.nama_dosen  AS penguji_3
+            FROM sidang_skripsi s
+            LEFT JOIN dosen d_pem ON s.dosen_pembimbing_id = d_pem.id
+            LEFT JOIN dosen d_p1  ON s.penguji_1_id = d_p1.id
+            LEFT JOIN dosen d_p2  ON s.penguji_2_id = d_p2.id
+            LEFT JOIN dosen d_p3  ON s.penguji_3_id = d_p3.id
+            WHERE s.mahasiswa_id = :mid
+            ORDER BY s.id DESC LIMIT 1
+        ");
+        $stmt_sidang->execute([':mid' => $mhs_id]);
+        $info_sidang = $stmt_sidang->fetch();
+    } catch (PDOException $e) {
+        $info_sidang = null;
+    }
+}
+
+// Ambil Notifikasi Aktif Mahasiswa (UPDATE Robi: tabel notifikasi)
+$daftar_notif = [];
+if (isset($_SESSION['user_id'])) {
+    try {
+        $stmt_n = $pdo->prepare("
+            SELECT * FROM notifikasi 
+            WHERE user_id = :uid 
+            ORDER BY id DESC LIMIT 3
+        ");
+        $stmt_n->execute([':uid' => $_SESSION['user_id']]);
+        $daftar_notif = $stmt_n->fetchAll();
+    } catch (PDOException $e) {
+        $daftar_notif = [];
+    }
+}
 
 // Hitung statistik bimbingan
-$total_bimbingan = 0;
-$bimbingan_acc = 0;
-$bimbingan_revisi = 0;
+$total_bimbingan    = 0;
+$bimbingan_acc      = 0;
+$bimbingan_revisi   = 0;
 $bimbingan_menunggu = 0;
-$rata_nilai = 0;
+$rata_nilai         = 0;
 
 if ($mhs_id) {
     // Total pengajuan
@@ -54,7 +125,7 @@ if ($mhs_id) {
     $bimbingan_menunggu = (int)($stat['menunggu'] ?? 0);
     $rata_nilai         = round((float)($stat['avg_nilai'] ?? 0));
 
-    // Periksa status per bab (Bab 1 s/d Bab 5) dari pengajuan_bimbingan yang selesai/acc
+    // Periksa status per bab (Bab 1 s/d Bab 5)
     $stmt_bab = $pdo->prepare("
         SELECT bab_pembahasan, status, nilai_progres 
         FROM pengajuan_bimbingan 
@@ -114,21 +185,195 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <div>
-        <h1 class="h2 mb-0">Dashboard Progres Mahasiswa</h1>
-        <p class="text-muted small mb-0">Selamat datang kembali, <strong><?= htmlspecialchars($mhs['nama_lengkap'] ?? $_SESSION['username']); ?></strong>!</p>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h1 class="h2 mb-0">Dashboard Mahasiswa</h1>
+            <span class="badge bg-primary rounded-pill px-2 py-1 small"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
+        </div>
+        <p class="text-muted small mb-0">Selamat datang kembali, <strong><?= htmlspecialchars($mhs['nama_lengkap'] ?? $_SESSION['username']); ?></strong> (NIM: <?= htmlspecialchars($mhs['nim'] ?? '-'); ?>)</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm me-2">
-            <i class="bi bi-calendar-plus me-1"></i>Ajukan Jadwal
-        </a>
-        <a href="chat.php" class="btn btn-outline-primary btn-sm me-2">
-            <i class="bi bi-chat-dots me-1"></i>Chat Dosen
-        </a>
+        <?php if ($status_pembimbing === 'aktif'): ?>
+            <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm me-2">
+                <i class="bi bi-calendar-plus me-1"></i>Ajukan Jadwal
+            </a>
+            <a href="upload_draft.php" class="btn btn-outline-primary btn-sm me-2">
+                <i class="bi bi-cloud-arrow-up me-1"></i>Upload Draft
+            </a>
+            <a href="chat.php" class="btn btn-outline-success btn-sm me-2">
+                <i class="bi bi-chat-dots me-1"></i>Chat Dosen
+            </a>
+        <?php else: ?>
+            <button class="btn btn-secondary btn-sm me-2 disabled" title="Konfirmasi SK terlebih dahulu">
+                <i class="bi bi-lock me-1"></i>Ajukan Jadwal
+            </button>
+        <?php endif; ?>
         <a href="cetak_laporan.php" target="_blank" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-printer me-1"></i>Cetak Laporan
         </a>
     </div>
 </div>
+
+<?php if (!empty($success_msg)): ?>
+    <div class="alert alert-success alert-dismissible fade show py-2 small shadow-sm" role="alert">
+        <i class="bi bi-check-circle-fill me-1"></i><?= htmlspecialchars($success_msg); ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($error_msg)): ?>
+    <div class="alert alert-danger alert-dismissible fade show py-2 small shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i><?= htmlspecialchars($error_msg); ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<!-- ============================================================
+     BANNER STATUS SK PEMBIMBING (UPDATE ROBI)
+============================================================ -->
+<?php if ($status_pembimbing === 'menunggu_konfirmasi'): ?>
+    <div class="card border-warning bg-warning bg-opacity-10 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="bg-warning text-dark p-3 rounded-circle fs-3 shadow-sm">
+                        <i class="bi bi-award-fill"></i>
+                    </div>
+                    <div>
+                        <span class="badge bg-warning text-dark px-2 py-1 mb-1 fw-bold">PENETAPAN RESMI ADMIN</span>
+                        <h5 class="fw-bold text-dark mb-1">Surat Keputusan (SK) Dosen Pembimbing Telah Terbit!</h5>
+                        <p class="text-muted small mb-0">
+                            Admin Program Studi telah menetapkan <strong><?= htmlspecialchars($mhs['nama_dosen'] ?? 'Dosen'); ?></strong> (NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?>) sebagai dosen pembimbing tugas akhir Anda. Silakan konfirmasi penerimaan SK untuk membuka fitur pengajuan bimbingan & upload draf.
+                        </p>
+                    </div>
+                </div>
+                <form action="index.php" method="POST" class="flex-shrink-0">
+                    <input type="hidden" name="action" value="konfirmasi_sk">
+                    <button type="submit" class="btn btn-warning fw-bold px-4 py-2 shadow-sm text-dark" onclick="return confirm('Apakah Anda menyetujui dan siap melaksanakan bimbingan dengan dosen pembimbing yang telah ditetapkan?')">
+                        <i class="bi bi-check2-circle me-1"></i>Konfirmasi Penerimaan SK & Siap Bimbingan
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php elseif ($status_pembimbing === 'belum_diplot'): ?>
+    <div class="alert alert-info d-flex align-items-center gap-2 mb-4 shadow-sm" role="alert">
+        <i class="bi bi-info-circle-fill fs-5"></i>
+        <div>
+            <strong>Status Dosen Pembimbing:</strong> Admin program studi belum menetapkan dosen pembimbing untuk Anda. Anda akan menerima notifikasi otomatis ketika SK penetapan pembimbing telah diterbitkan.
+        </div>
+    </div>
+<?php endif; ?>
+
+<!-- ============================================================
+     KARTU PENGUMUMAN JADWAL SIDANG SKRIPSI (UPDATE ROBI: sidang_skripsi)
+============================================================ -->
+<?php if ($info_sidang): ?>
+    <div class="card shadow-sm mb-4 border-0 overflow-hidden" style="border-left: 5px solid #4f46e5 !important;">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-indigo-subtle text-primary p-2 rounded">
+                    <i class="bi bi-mortarboard fs-5"></i>
+                </div>
+                <div>
+                    <h6 class="m-0 fw-bold text-dark">Informasi Jadwal Sidang Skripsi</h6>
+                    <small class="text-muted">Dewan Penguji & Ketentuan Sidang Komprehensif</small>
+                </div>
+            </div>
+            <div>
+                <?php
+                $st_sidang = $info_sidang['status_sidang'] ?? 'pengajuan';
+                $badge_sidang = 'badge bg-warning text-dark';
+                $label_sidang = 'Pengajuan Sidang';
+                if ($st_sidang === 'dijadwalkan') {
+                    $badge_sidang = 'badge bg-primary';
+                    $label_sidang = 'Jadwal Telah Ditetapkan';
+                } elseif ($st_sidang === 'lulus') {
+                    $badge_sidang = 'badge bg-success';
+                    $label_sidang = 'Lulus Sidang';
+                } elseif ($st_sidang === 'revisi') {
+                    $badge_sidang = 'badge bg-info text-dark';
+                    $label_sidang = 'Revisi Sidang';
+                } elseif ($st_sidang === 'tidak_lulus') {
+                    $badge_sidang = 'badge bg-danger';
+                    $label_sidang = 'Tidak Lulus';
+                }
+                ?>
+                <span class="<?= $badge_sidang; ?> px-3 py-2 fw-bold"><?= $label_sidang; ?></span>
+            </div>
+        </div>
+        <div class="card-body p-4 bg-light bg-opacity-25">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="p-3 bg-white rounded border shadow-sm h-100">
+                        <span class="text-muted small text-uppercase fw-bold d-block mb-1">Judul Skripsi Final:</span>
+                        <h6 class="fw-bold text-dark mb-3">"<?= htmlspecialchars($info_sidang['judul_final'] ?? $mhs['judul_skripsi']); ?>"</h6>
+
+                        <div class="row g-2 pt-2 border-top">
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Waktu Pelaksanaan:</span>
+                                <strong class="text-dark small">
+                                    <i class="bi bi-calendar-event text-primary me-1"></i>
+                                    <?= !empty($info_sidang['tanggal_sidang']) ? date('d M Y', strtotime($info_sidang['tanggal_sidang'])) : 'Menunggu Jadwal'; ?>
+                                </strong>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Jam Sidang:</span>
+                                <strong class="text-dark small">
+                                    <i class="bi bi-clock text-primary me-1"></i>
+                                    <?= !empty($info_sidang['jam_sidang']) ? substr($info_sidang['jam_sidang'], 0, 5) . ' WIB' : '-'; ?>
+                                </strong>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <span class="text-muted small d-block">Ruangan Sidang:</span>
+                                <span class="badge bg-secondary px-2 py-1">
+                                    <i class="bi bi-geo-alt-fill me-1"></i><?= htmlspecialchars($info_sidang['ruangan'] ?? 'Ruang Sidang Utama'); ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <?php if ($info_sidang['nilai_akhir'] !== null): ?>
+                            <div class="mt-3 p-2 bg-success bg-opacity-10 border border-success rounded text-success text-center">
+                                <span class="small fw-semibold d-block">Nilai Akhir Sidang:</span>
+                                <span class="fs-4 fw-bold"><?= number_format((float)$info_sidang['nilai_akhir'], 2); ?></span>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="p-3 bg-white rounded border shadow-sm h-100">
+                        <span class="text-muted small text-uppercase fw-bold d-block mb-2">Dewan Penguji & Pembimbing:</span>
+                        <ul class="list-group list-group-flush small mb-3">
+                            <li class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-person-check text-primary me-2"></i><strong>Ketua Penguji (Penguji 1):</strong></span>
+                                <span class="text-dark"><?= htmlspecialchars($info_sidang['penguji_1'] ?? 'Akan Ditetapkan'); ?></span>
+                            </li>
+                            <li class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-person-check text-secondary me-2"></i><strong>Dosen Penguji 2:</strong></span>
+                                <span class="text-dark"><?= htmlspecialchars($info_sidang['penguji_2'] ?? 'Akan Ditetapkan'); ?></span>
+                            </li>
+                            <li class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-person-check text-secondary me-2"></i><strong>Sekretaris (Penguji 3):</strong></span>
+                                <span class="text-dark"><?= htmlspecialchars($info_sidang['penguji_3'] ?? 'Akan Ditetapkan'); ?></span>
+                            </li>
+                            <li class="list-group-item px-0 py-1 d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-person-badge text-success me-2"></i><strong>Dosen Pembimbing:</strong></span>
+                                <span class="text-dark"><?= htmlspecialchars($info_sidang['dospem'] ?? $mhs['nama_dosen']); ?></span>
+                            </li>
+                        </ul>
+
+                        <?php if (!empty($info_sidang['ketentuan_sidang'])): ?>
+                            <div class="bg-light p-2 rounded small border">
+                                <span class="fw-bold text-dark d-block mb-1"><i class="bi bi-info-circle me-1 text-info"></i>Tata Tertib / Ketentuan:</span>
+                                <p class="mb-0 text-muted" style="font-size: 0.8rem;"><?= nl2br(htmlspecialchars($info_sidang['ketentuan_sidang'])); ?></p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
 
 <!-- Kartu Informasi Skripsi & Dosen Pembimbing -->
 <div class="row g-3 mb-4">
@@ -156,7 +401,8 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
             <h5 class="fw-bold text-dark mb-2"><?= htmlspecialchars($mhs['judul_skripsi'] ?? 'Judul Belum Diatur'); ?></h5>
             <p class="text-muted small mb-3">
                 NIM: <strong class="text-dark"><?= htmlspecialchars($mhs['nim'] ?? '-'); ?></strong> | 
-                Nama: <strong class="text-dark"><?= htmlspecialchars($mhs['nama_lengkap'] ?? '-'); ?></strong>
+                Nama: <strong class="text-dark"><?= htmlspecialchars($mhs['nama_lengkap'] ?? '-'); ?></strong> |
+                Kelas: <strong class="text-dark"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></strong>
             </p>
 
             <!-- Bar Progres Skripsi -->
@@ -184,10 +430,10 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                 <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
                     <i class="bi bi-person-badge me-1"></i>Dosen Pembimbing
                 </span>
-                <?php if (!empty($mhs['nama_dosen'])): ?>
-                    <a href="jadwal_dosen.php" class="small text-decoration-none text-success fw-semibold">
-                        <i class="bi bi-calendar3 me-1"></i>Lihat Jadwal
-                    </a>
+                <?php if ($status_pembimbing === 'aktif'): ?>
+                    <span class="badge bg-success small"><i class="bi bi-check-circle me-1"></i>SK Aktif</span>
+                <?php elseif ($status_pembimbing === 'menunggu_konfirmasi'): ?>
+                    <span class="badge bg-warning text-dark small"><i class="bi bi-clock me-1"></i>Menunggu Konfirmasi</span>
                 <?php endif; ?>
             </div>
 
@@ -396,13 +642,21 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php if (!empty($item['file_draft'])): ?>
-                                        <a href="../assets/uploads/<?= htmlspecialchars($item['file_draft']); ?>" target="_blank" class="btn btn-outline-secondary btn-sm py-0 px-2">
-                                            <i class="bi bi-file-earmark-pdf text-danger me-1"></i>Lihat PDF
-                                        </a>
-                                    <?php else: ?>
-                                        <span class="text-muted small">-</span>
-                                    <?php endif; ?>
+                                    <div class="d-flex flex-column gap-1">
+                                        <?php if (!empty($item['file_draft'])): ?>
+                                            <a href="../assets/uploads/<?= htmlspecialchars($item['file_draft']); ?>" target="_blank" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if (!empty($item['link_drive'])): ?>
+                                            <a href="<?= htmlspecialchars($item['link_drive']); ?>" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                                                <i class="bi bi-link-45deg me-1"></i>Google Drive
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if (empty($item['file_draft']) && empty($item['link_drive'])): ?>
+                                            <span class="text-muted small">-</span>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge badge-<?= $item['status']; ?>">

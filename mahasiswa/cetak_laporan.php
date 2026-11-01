@@ -47,6 +47,24 @@ foreach ($bimbingan_list as $b) {
         $total_acc++;
     }
 }
+
+// Ambil data jadwal sidang skripsi jika ada (UPDATE ROBI: tabel sidang_skripsi)
+$stmt_sidang = $pdo->prepare("
+    SELECT s.*, 
+           d_pem.nama_dosen AS dospem,
+           d_p1.nama_dosen  AS penguji_1,
+           d_p2.nama_dosen  AS penguji_2,
+           d_p3.nama_dosen  AS penguji_3
+    FROM sidang_skripsi s
+    LEFT JOIN dosen d_pem ON s.dosen_pembimbing_id = d_pem.id
+    LEFT JOIN dosen d_p1  ON s.penguji_1_id = d_p1.id
+    LEFT JOIN dosen d_p2  ON s.penguji_2_id = d_p2.id
+    LEFT JOIN dosen d_p3  ON s.penguji_3_id = d_p3.id
+    WHERE s.mahasiswa_id = :mid
+    ORDER BY s.id DESC LIMIT 1
+");
+$stmt_sidang->execute([':mid' => $mhs_id]);
+$info_sidang = $stmt_sidang->fetch();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -68,10 +86,10 @@ foreach ($bimbingan_list as $b) {
             background: #ffffff;
             width: 210mm;
             min-height: 297mm;
-            padding: 20mm;
             margin: 20px auto;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            position: relative;
+            padding: 20mm 20mm;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border-radius: 4px;
         }
 
         .kop-surat {
@@ -81,18 +99,28 @@ foreach ($bimbingan_list as $b) {
         }
 
         .table-laporan th, .table-laporan td {
-            font-size: 11pt;
-            border: 1px solid #000 !important;
+            border: 1px solid #334155 !important;
             padding: 6px 8px;
+            font-size: 9pt;
+            font-family: Arial, sans-serif;
+            vertical-align: middle;
         }
 
-        .table-laporan th {
+        .table-laporan thead th {
             background-color: #f8fafc !important;
             text-align: center;
         }
 
+        .table-sidang th, .table-sidang td {
+            border: 1px solid #334155 !important;
+            padding: 5px 8px;
+            font-size: 9pt;
+            font-family: Arial, sans-serif;
+            vertical-align: middle;
+        }
+
         .ttd-box {
-            margin-top: 40px;
+            margin-top: 35px;
             page-break-inside: avoid;
         }
 
@@ -153,7 +181,7 @@ foreach ($bimbingan_list as $b) {
     </div>
 
     <!-- Identitas Mahasiswa & Dosen -->
-    <table class="table table-borderless table-sm mb-3" style="font-size: 10.5pt; font-family: Arial, sans-serif;">
+    <table class="table table-borderless table-sm mb-3" style="font-size: 10pt; font-family: Arial, sans-serif;">
         <tbody>
             <tr>
                 <td style="width: 18%;"><strong>Nama Mahasiswa</strong></td>
@@ -172,6 +200,14 @@ foreach ($bimbingan_list as $b) {
                 <td><?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></td>
             </tr>
             <tr>
+                <td><strong>Kelas</strong></td>
+                <td>:</td>
+                <td><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></td>
+                <td><strong>Status SK</strong></td>
+                <td>:</td>
+                <td><?= ucfirst(str_replace('_', ' ', $mhs['status_pembimbing'] ?? 'Belum Diplot')); ?></td>
+            </tr>
+            <tr>
                 <td><strong>Program Studi</strong></td>
                 <td>:</td>
                 <td>Teknik Informatika (S1)</td>
@@ -182,21 +218,74 @@ foreach ($bimbingan_list as $b) {
             <tr>
                 <td class="align-top"><strong>Judul Skripsi</strong></td>
                 <td class="align-top">:</td>
-                <td colspan="4" class="fw-semibold fst-italic">"<?= htmlspecialchars($mhs['judul_skripsi'] ?? 'Judul Belum Ditentukan'); ?>"</td>
+                <td colspan="4" class="fw-semibold fst-italic">
+                    "<?= htmlspecialchars($mhs['judul_skripsi'] ?? 'Belum Ditentukan'); ?>"
+                </td>
             </tr>
         </tbody>
     </table>
 
-    <!-- Tabel Rekapitulasi Logbook Bimbingan -->
-    <table class="table table-bordered table-laporan mb-4" style="font-family: Arial, sans-serif;">
+    <!-- ============================================================
+         INFORMASI JADWAL SIDANG SKRIPSI (JIKA ADA - UPDATE ROBI)
+    ============================================================ -->
+    <?php if ($info_sidang): ?>
+        <div class="mb-3 p-2 border bg-light" style="font-family: Arial, sans-serif; font-size: 9pt;">
+            <div class="fw-bold text-uppercase border-bottom pb-1 mb-2 text-dark">
+                <i class="bi bi-mortarboard-fill me-1"></i>Penetapan Dewan Penguji & Jadwal Ujian Sidang Skripsi
+            </div>
+            <div class="row g-2">
+                <div class="col-6">
+                    <table class="table-borderless table-sm w-100" style="font-size: 8.5pt;">
+                        <tr>
+                            <td style="width: 35%;"><strong>Waktu Sidang</strong></td>
+                            <td style="width: 5%;">:</td>
+                            <td><?= !empty($info_sidang['tanggal_sidang']) ? date('d/m/Y', strtotime($info_sidang['tanggal_sidang'])) : 'Belum Ditentukan'; ?> (<?= substr($info_sidang['jam_sidang'] ?? '00:00', 0, 5); ?> WIB)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Ruangan</strong></td>
+                            <td>:</td>
+                            <td><?= htmlspecialchars($info_sidang['ruangan'] ?? 'Ruang Sidang'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Status Sidang</strong></td>
+                            <td>:</td>
+                            <td class="fw-bold text-uppercase"><?= htmlspecialchars($info_sidang['status_sidang'] ?? 'Pengajuan'); ?></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-6">
+                    <table class="table-borderless table-sm w-100" style="font-size: 8.5pt;">
+                        <tr>
+                            <td style="width: 40%;"><strong>Ketua Penguji (1)</strong></td>
+                            <td style="width: 5%;">:</td>
+                            <td><?= htmlspecialchars($info_sidang['penguji_1'] ?? '-'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dosen Penguji 2</strong></td>
+                            <td>:</td>
+                            <td><?= htmlspecialchars($info_sidang['penguji_2'] ?? '-'); ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sekretaris (Penguji 3)</strong></td>
+                            <td>:</td>
+                            <td><?= htmlspecialchars($info_sidang['penguji_3'] ?? '-'); ?></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Tabel Rekapitulasi Catatan Bimbingan -->
+    <table class="table table-laporan w-100 mb-3">
         <thead>
             <tr>
-                <th style="width: 35px;">No</th>
-                <th style="width: 95px;">Hari / Tgl</th>
+                <th style="width: 30px;">No</th>
+                <th style="width: 80px;">Tanggal</th>
                 <th style="width: 140px;">Bab / Materi Pembahasan</th>
-                <th>Catatan Masukan & Arahan Pembimbing</th>
-                <th style="width: 50px;">Nilai</th>
-                <th style="width: 85px;">Status ACC</th>
+                <th>Uraian Masukan & Catatan Pembimbing</th>
+                <th style="width: 45px;">Nilai</th>
+                <th style="width: 65px;">Status</th>
                 <th style="width: 75px;">Paraf</th>
             </tr>
         </thead>
@@ -268,7 +357,7 @@ foreach ($bimbingan_list as $b) {
     <div class="row ttd-box text-center" style="font-family: Arial, sans-serif; font-size: 10pt;">
         <div class="col-4">
             <p class="mb-1">Mahasiswa Yang Bersangkutan,</p>
-            <div style="height: 65px;"></div>
+            <div style="height: 60px;"></div>
             <p class="fw-bold mb-0" style="text-decoration: underline;"><?= htmlspecialchars($mhs['nama_lengkap']); ?></p>
             <span class="text-muted">NIM. <?= htmlspecialchars($mhs['nim']); ?></span>
         </div>
@@ -299,4 +388,3 @@ if (urlParams.get('auto_print') === '1') {
 
 </body>
 </html>
-

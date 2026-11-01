@@ -28,10 +28,10 @@ $mhs_id = $mhs['id'] ?? 0;
 // Filter kategori bab
 $filter_bab = trim($_GET['bab'] ?? 'semua');
 
-// Query logbook bimbingan
+// Query logbook bimbingan (termasuk link_drive dari UPDATE Robi)
 $query_logbook = "
     SELECT p.id, p.tanggal_bimbingan, p.jam_bimbingan, p.bab_pembahasan, p.catatan_mahasiswa, 
-           p.file_draft, p.status, p.catatan_dosen, p.nilai_progres,
+           p.file_draft, p.link_drive, p.status, p.catatan_dosen, p.nilai_progres,
            lb.tanggal_acc, lb.catatan_hasil, lb.status_bab
     FROM pengajuan_bimbingan p
     LEFT JOIN logbook_bimbingan lb ON p.id = lb.bimbingan_id
@@ -66,15 +66,18 @@ foreach ($logbook_list as $item) {
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <div>
-        <h1 class="h2 mb-0">Logbook & Pencatatan Progres Skripsi</h1>
-        <p class="text-muted small mb-0">Catatan resmi rekapitulasi setiap sesi konsultasi skripsi bersama dosen pembimbing.</p>
+        <h1 class="h2 mb-0">Logbook Bimbingan Skripsi</h1>
+        <p class="text-muted small mb-0">Catatan resmi kartu kendali konsultasi dan evaluasi draf skripsi oleh dosen pembimbing.</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
-        <a href="cetak_laporan.php" target="_blank" class="btn btn-success btn-sm me-2">
-            <i class="bi bi-printer-fill me-1"></i>Cetak Laporan Progres (PDF)
+        <a href="index.php" class="btn btn-outline-secondary btn-sm me-2">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
         </a>
-        <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm">
+        <a href="ajukan_jadwal.php" class="btn btn-primary btn-sm me-2">
             <i class="bi bi-calendar-plus me-1"></i>Ajukan Sesi Baru
+        </a>
+        <a href="cetak_laporan.php" target="_blank" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-printer me-1"></i>Cetak Kartu Bimbingan
         </a>
     </div>
 </div>
@@ -84,9 +87,12 @@ foreach ($logbook_list as $item) {
     <div class="card-body p-4 bg-white rounded">
         <div class="row align-items-center">
             <div class="col-lg-8">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 mb-2">
-                    <i class="bi bi-mortarboard me-1"></i>Skripsi Mahasiswa
-                </span>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                        <i class="bi bi-mortarboard me-1"></i>Skripsi Mahasiswa
+                    </span>
+                    <span class="badge bg-primary rounded-pill px-2 py-1 small"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
+                </div>
                 <h5 class="fw-bold text-dark mb-1"><?= htmlspecialchars($mhs['judul_skripsi'] ?? 'Judul Belum Diatur'); ?></h5>
                 <p class="text-muted small mb-0">
                     NIM: <strong><?= htmlspecialchars($mhs['nim'] ?? '-'); ?></strong> | 
@@ -115,7 +121,7 @@ foreach ($logbook_list as $item) {
 </div>
 
 <!-- Filter dan Pencarian -->
-<div class="card shadow-sm mb-4">
+<div class="card shadow-sm mb-4 border-0">
     <div class="card-body p-3">
         <form action="logbook.php" method="GET" class="row g-2 align-items-center">
             <div class="col-auto">
@@ -143,8 +149,8 @@ foreach ($logbook_list as $item) {
 </div>
 
 <!-- Tabel Logbook Lengkap -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+<div class="card shadow-sm mb-4 border-0">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
         <h6 class="m-0 fw-bold text-dark">
             <i class="bi bi-journal-bookmark-fill text-primary me-2"></i>Catatan Kartu Kendali Bimbingan
         </h6>
@@ -161,7 +167,7 @@ foreach ($logbook_list as $item) {
                         <th>Uraian Konsultasi & Masukan Dosen</th>
                         <th style="width: 100px;">Nilai</th>
                         <th style="width: 120px;">Status ACC</th>
-                        <th style="width: 100px;" class="text-center">Draft PDF</th>
+                        <th style="width: 120px;" class="text-center">Berkas Draf</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -218,28 +224,36 @@ foreach ($logbook_list as $item) {
                                 </td>
                                 <td>
                                     <?php
-                                    $status_bab = $row['status_bab'] ?? '';
-                                    if ($status_bab === 'acc_sidang') {
-                                        echo '<span class="badge bg-success"><i class="bi bi-award me-1"></i>ACC Sidang</span>';
-                                    } elseif ($status_bab === 'acc_bab' || $row['status'] === 'selesai' || $row['status'] === 'disetujui') {
-                                        echo '<span class="badge bg-success"><i class="bi bi-check2 me-1"></i>ACC Bab</span>';
-                                    } elseif ($status_bab === 'revisi' || $row['status'] === 'revisi') {
+                                    $st_bab = $row['status_bab'] ?? '';
+                                    if ($st_bab === 'acc_sidang') {
+                                        echo '<span class="badge bg-success"><i class="bi bi-mortarboard-fill me-1"></i>ACC Sidang</span>';
+                                    } elseif ($st_bab === 'acc_bab' || in_array($row['status'], ['disetujui', 'selesai'])) {
+                                        echo '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>ACC Bab</span>';
+                                    } elseif ($st_bab === 'revisi' || $row['status'] === 'revisi') {
                                         echo '<span class="badge bg-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i>Revisi</span>';
                                     } elseif ($row['status'] === 'menunggu') {
-                                        echo '<span class="badge bg-secondary">Menunggu</span>';
+                                        echo '<span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Menunggu</span>';
                                     } else {
-                                        echo '<span class="badge bg-danger">Ditolak</span>';
+                                        echo '<span class="badge bg-light text-dark border">Belum Selesai</span>';
                                     }
                                     ?>
                                 </td>
                                 <td class="text-center">
-                                    <?php if (!empty($row['file_draft'])): ?>
-                                        <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="btn btn-outline-secondary btn-sm py-0 px-2" title="Unduh Berkas">
-                                            <i class="bi bi-file-earmark-pdf text-danger"></i>
-                                        </a>
-                                    <?php else: ?>
-                                        <span class="text-muted small">-</span>
-                                    <?php endif; ?>
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <?php if (!empty($row['file_draft'])): ?>
+                                            <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;" title="Lihat PDF">
+                                                <i class="bi bi-file-earmark-pdf"></i> PDF
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if (!empty($row['link_drive'])): ?>
+                                            <a href="<?= htmlspecialchars($row['link_drive']); ?>" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;" title="Buka Google Drive">
+                                                <i class="bi bi-google"></i> Drive
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if (empty($row['file_draft']) && empty($row['link_drive'])): ?>
+                                            <span class="text-muted small">-</span>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -248,17 +262,8 @@ foreach ($logbook_list as $item) {
             </table>
         </div>
     </div>
-    <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
-        <span class="small text-muted">
-            <i class="bi bi-info-circle me-1"></i>Gunakan tombol <strong>Cetak Laporan Progres</strong> untuk mencetak lembar kendali resmi skripsi Anda.
-        </span>
-        <a href="cetak_laporan.php" target="_blank" class="btn btn-primary btn-sm">
-            <i class="bi bi-printer me-1"></i>Cetak Laporan
-        </a>
-    </div>
 </div>
 
 <?php
 require_once '../templates/footer.php';
 ?>
-

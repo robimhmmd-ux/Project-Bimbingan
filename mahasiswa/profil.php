@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <div>
         <h1 class="h2 mb-0">Profil & Data Diri Mahasiswa</h1>
-        <p class="text-muted small mb-0">Kelola informasi pribadi, judul tugas akhir, dan foto profil akun Anda.</p>
+        <p class="text-muted small mb-0">Kelola informasi pribadi, kelas, judul tugas akhir, dan foto profil akun Anda.</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <a href="index.php" class="btn btn-outline-secondary btn-sm">
@@ -149,14 +149,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <?php if (!empty($success_msg)): ?>
-    <div class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+    <div class="alert alert-success alert-dismissible fade show py-2 small shadow-sm" role="alert">
         <i class="bi bi-check-circle-fill me-1"></i><?= htmlspecialchars($success_msg); ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($error_msg)): ?>
-    <div class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+    <div class="alert alert-danger alert-dismissible fade show py-2 small shadow-sm" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-1"></i><?= htmlspecialchars($error_msg); ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
@@ -165,10 +165,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="row g-4 mb-4">
     <!-- Kartu Tampilan Profil Samping -->
     <div class="col-lg-4">
-        <div class="card shadow-sm h-100">
+        <div class="card shadow-sm h-100 border-0">
             <div class="card-header bg-white py-3 border-bottom text-center">
                 <h6 class="m-0 fw-bold text-dark">
-                    <i class="bi bi-person-bounding-box text-primary me-2"></i>Kartu Identitas
+                    <i class="bi bi-person-bounding-box text-primary me-2"></i>Kartu Identitas Akademik
                 </h6>
             </div>
             <div class="card-body text-center p-4">
@@ -185,7 +185,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h5 class="fw-bold text-dark mb-1"><?= htmlspecialchars($mhs['nama_lengkap']); ?></h5>
                 <p class="text-muted small mb-2">NIM: <strong><?= htmlspecialchars($mhs['nim']); ?></strong></p>
 
-                <div class="mb-3">
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                    <span class="badge bg-primary px-3 py-1">
+                        <i class="bi bi-mortarboard me-1"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
+                    </span>
                     <?php
                     $sk = $mhs['status_kelulusan'] ?? 'proses_bimbingan';
                     $bg_sk = 'warning text-dark';
@@ -199,12 +202,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="bg-light p-3 rounded text-start border small mb-3">
                     <div class="mb-2">
-                        <span class="text-muted d-block">Username Login:</span>
+                        <span class="text-muted d-block">Username / ID Login:</span>
                         <span class="fw-semibold text-dark">@<?= htmlspecialchars($mhs['username']); ?></span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted d-block">Kelas Mahasiswa:</span>
+                        <span class="fw-semibold text-primary"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
                     </div>
                     <div class="mb-2">
                         <span class="text-muted d-block">Dosen Pembimbing:</span>
                         <span class="fw-semibold text-dark"><?= htmlspecialchars($mhs['nama_dosen'] ?? 'Belum Diplot'); ?></span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted d-block">Status Penetapan SK:</span>
+                        <?php
+                        $sp = $mhs['status_pembimbing'] ?? 'belum_diplot';
+                        if ($sp === 'aktif') {
+                            echo '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Aktif & Dikonfirmasi</span>';
+                        } elseif ($sp === 'menunggu_konfirmasi') {
+                            echo '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Menunggu Konfirmasi SK</span>';
+                        } else {
+                            echo '<span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Belum Diplot</span>';
+                        }
+                        ?>
                     </div>
                     <div>
                         <span class="text-muted d-block">Terdaftar Sejak:</span>
@@ -225,7 +245,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Formulir Edit Data Diri & Ganti Password -->
     <div class="col-lg-8">
         <!-- Form Data Diri & Foto -->
-        <div class="card shadow-sm mb-4">
+        <div class="card shadow-sm mb-4 border-0">
             <div class="card-header bg-white py-3 border-bottom">
                 <h6 class="m-0 fw-bold text-dark">
                     <i class="bi bi-pencil-square text-primary me-2"></i>Perbarui Data Diri & Foto Profil
@@ -244,6 +264,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label for="nim" class="form-label small fw-semibold text-secondary">Nomor Induk Mahasiswa (NIM) <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="nim" name="nim" value="<?= htmlspecialchars($mhs['nim']); ?>" required>
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-secondary">Kelas</label>
+                        <input type="text" class="form-control bg-light" value="<?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>" readonly>
+                        <div class="form-text small" style="font-size: 0.75rem;">Kelas ditetapkan secara resmi oleh sistem akademik.</div>
                     </div>
 
                     <div class="mb-3">
@@ -269,11 +295,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <!-- Form Ganti Password -->
+        <!-- Form Ubah Password Akun -->
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white py-3 border-bottom">
                 <h6 class="m-0 fw-bold text-dark">
-                    <i class="bi bi-key-fill text-warning me-2"></i>Keamanan Akun (Ganti Password)
+                    <i class="bi bi-shield-lock text-primary me-2"></i>Keamanan Akun & Ubah Password
                 </h6>
             </div>
             <div class="card-body p-4">
@@ -281,8 +307,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="hidden" name="action" value="ganti_password">
 
                     <div class="mb-3">
-                        <label for="password_lama" class="form-label small fw-semibold text-secondary">Password Lama <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" id="password_lama" name="password_lama" placeholder="Masukkan password saat ini" required>
+                        <label for="password_lama" class="form-label small fw-semibold text-secondary">Password Saat Ini <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" id="password_lama" name="password_lama" placeholder="Masukkan password lama..." required>
                     </div>
 
                     <div class="row g-3 mb-4">
@@ -292,12 +318,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="col-md-6">
                             <label for="konfirmasi_password" class="form-label small fw-semibold text-secondary">Ulangi Password Baru <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" id="konfirmasi_password" name="konfirmasi_password" placeholder="Ulangi password baru" required minlength="6">
+                            <input type="password" class="form-control" id="konfirmasi_password" name="konfirmasi_password" placeholder="Ketik ulang password baru" required minlength="6">
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-outline-warning text-dark px-4 fw-semibold">
-                        <i class="bi bi-shield-lock me-1"></i>Perbarui Password
+                    <button type="submit" class="btn btn-warning text-dark px-4 fw-bold">
+                        <i class="bi bi-key me-1"></i>Perbarui Password
                     </button>
                 </form>
             </div>
@@ -308,4 +334,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php
 require_once '../templates/footer.php';
 ?>
-

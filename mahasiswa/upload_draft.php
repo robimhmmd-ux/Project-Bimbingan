@@ -1,5 +1,5 @@
 <?php
-// mahasiswa/upload_draft.php - Pengelolaan & Unggah Berkas Draf Skripsi (PDF)
+// mahasiswa/upload_draft.php - Pengelolaan & Unggah Berkas Draf Skripsi (PDF / Google Drive)
 $page_title   = "Upload Draf Skripsi";
 $current_page = "upload";
 
@@ -15,7 +15,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
 
 // Ambil info mahasiswa & dosen pembimbing
 $stmt_mhs = $pdo->prepare("
-    SELECT m.*, d.id AS dosen_id, d.nama_dosen 
+    SELECT m.*, d.id AS dosen_id, d.nama_dosen, d.user_id AS dosen_user_id 
     FROM mahasiswa m 
     LEFT JOIN dosen d ON m.dosen_pembimbing_id = d.id 
     WHERE m.user_id = :uid LIMIT 1
@@ -23,79 +23,114 @@ $stmt_mhs = $pdo->prepare("
 $stmt_mhs->execute([':uid' => $_SESSION['user_id']]);
 $mhs = $stmt_mhs->fetch();
 
-$mhs_id   = $mhs['id'] ?? 0;
-$dosen_id = $mhs['dosen_id'] ?? null;
+$mhs_id            = $mhs['id'] ?? 0;
+$dosen_id          = $mhs['dosen_id'] ?? null;
+$dosen_user_id     = $mhs['dosen_user_id'] ?? null;
+$status_pembimbing = $mhs['status_pembimbing'] ?? 'belum_diplot';
 
 $success_msg = '';
 $error_msg   = '';
 
-// Handle Upload Draf Skripsi Baru
+// Handle Upload Draf Skripsi Baru (PDF / Google Drive Link)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$dosen_id) {
-        $error_msg = "Anda belum memiliki dosen pembimbing. Silakan hubungi admin terlebih dahulu.";
+    if (!$dosen_id || $status_pembimbing !== 'aktif') {
+        $error_msg = "Anda belum dapat mengunggah naskah karena SK Dosen Pembimbing belum aktif. Silakan lakukan konfirmasi SK di Dashboard terlebih dahulu.";
     } else {
+        $metode_unggah  = trim($_POST['metode_unggah'] ?? 'file');
         $bab_pembahasan = trim($_POST['bab_pembahasan'] ?? '');
         $catatan_revisi = trim($_POST['catatan_revisi'] ?? '');
+        $link_drive     = trim($_POST['link_drive'] ?? '');
         $tanggal_draft  = date('Y-m-d');
         $jam_draft      = date('H:i:s');
+        $new_filename   = null;
 
         if (empty($bab_pembahasan)) {
-            $error_msg = "Silakan tentukan Bab pembahasan skripsi yang diunggah.";
-        } elseif (!isset($_FILES['file_skripsi']) || $_FILES['file_skripsi']['error'] !== UPLOAD_ERR_OK) {
-            $error_msg = "File draf skripsi wajib dipilih dan harus berhasil diunggah.";
+            $error_msg = "Silakan tentukan Bab pembahasan skripsi yang diajukan.";
         } else {
-            $file_tmp  = $_FILES['file_skripsi']['tmp_name'];
-            $file_name = $_FILES['file_skripsi']['name'];
-            $file_size = $_FILES['file_skripsi']['size'];
-            $ext       = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-            if ($ext !== 'pdf') {
-                $error_msg = "Format berkas tidak valid. Hanya berkas PDF (.pdf) yang diperbolehkan.";
-            } elseif ($file_size > 5 * 1024 * 1024) {
-                $error_msg = "Ukuran berkas skripsi maksimal adalah 5 MB.";
-            } else {
-                $upload_dir = '../assets/uploads/';
-                if (!is_dir($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
-                }
-
-                $new_filename = 'skripsi_' . $mhs_id . '_' . uniqid() . '.pdf';
-
-                if (move_uploaded_file($file_tmp, $upload_dir . $new_filename)) {
-                    try {
-                        // Masukkan ke pengajuan_bimbingan sebagai draft masuk
-                        $stmt_insert = $pdo->prepare("
-                            INSERT INTO pengajuan_bimbingan 
-                            (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, status) 
-                            VALUES (:mid, :did, :tgl, :jam, :bab, :catatan, :file_draft, 'menunggu')
-                        ");
-                        $stmt_insert->execute([
-                            ':mid'        => $mhs_id,
-                            ':did'        => $dosen_id,
-                            ':tgl'        => $tanggal_draft,
-                            ':jam'        => $jam_draft,
-                            ':bab'        => $bab_pembahasan,
-                            ':catatan'    => $catatan_revisi,
-                            ':file_draft' => $new_filename
-                        ]);
-
-                        $success_msg = "Draf skripsi ({$bab_pembahasan}) berhasil diunggah! Berkas telah tersedia untuk diperiksa dosen pembimbing.";
-                    } catch (PDOException $e) {
-                        $error_msg = "Gagal mencatat unggahan draf ke database: " . $e->getMessage();
-                    }
+            // Metode 1: Unggah Berkas PDF Lokal
+            if ($metode_unggah === 'file') {
+                if (!isset($_FILES['file_skripsi']) || $_FILES['file_skripsi']['error'] !== UPLOAD_ERR_OK) {
+                    $error_msg = "File berkas PDF wajib dipilih dan harus berhasil diunggah.";
                 } else {
-                    $error_msg = "Gagal menyimpan berkas ke server. Pastikan folder uploads dapat ditulisi.";
+                    $file_tmp  = $_FILES['file_skripsi']['tmp_name'];
+                    $file_name = $_FILES['file_skripsi']['name'];
+                    $file_size = $_FILES['file_skripsi']['size'];
+                    $ext       = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+
+                    if ($ext !== 'pdf') {
+                        $error_msg = "Format berkas tidak valid. Hanya berkas PDF (.pdf) yang diperbolehkan.";
+                    } elseif ($file_size > 5 * 1024 * 1024) {
+                        $error_msg = "Ukuran berkas skripsi maksimal adalah 5 MB.";
+                    } else {
+                        $upload_dir = '../assets/uploads/';
+                        if (!is_dir($upload_dir)) {
+                            mkdir($upload_dir, 0777, true);
+                        }
+
+                        $new_filename = 'skripsi_' . $mhs_id . '_' . uniqid() . '.pdf';
+                        if (!move_uploaded_file($file_tmp, $upload_dir . $new_filename)) {
+                            $error_msg = "Gagal menyimpan berkas ke server lokal.";
+                        }
+                    }
+                }
+            } 
+            // Metode 2: Tautan Link Google Drive / Docs
+            elseif ($metode_unggah === 'drive') {
+                if (empty($link_drive)) {
+                    $error_msg = "Silakan masukkan tautan link Google Drive / Google Docs naskah skripsi Anda.";
+                } elseif (!filter_var($link_drive, FILTER_VALIDATE_URL)) {
+                    $error_msg = "Format URL Google Drive tidak valid. Pastikan diawali dengan https://";
+                }
+            } else {
+                $error_msg = "Metode penyerahan naskah tidak valid.";
+            }
+
+            // Jika validasi lolos, catat ke database
+            if (empty($error_msg)) {
+                try {
+                    $stmt_insert = $pdo->prepare("
+                        INSERT INTO pengajuan_bimbingan 
+                        (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, link_drive, status) 
+                        VALUES (:mid, :did, :tgl, :jam, :bab, :catatan, :file_draft, :link_drive, 'menunggu')
+                    ");
+                    $stmt_insert->execute([
+                        ':mid'        => $mhs_id,
+                        ':did'        => $dosen_id,
+                        ':tgl'        => $tanggal_draft,
+                        ':jam'        => $jam_draft,
+                        ':bab'        => $bab_pembahasan,
+                        ':catatan'    => $catatan_revisi,
+                        ':file_draft' => $new_filename,
+                        ':link_drive' => (!empty($link_drive) ? $link_drive : null)
+                    ]);
+
+                    // Tambahkan notifikasi ke dosen pembimbing jika user id dosen ada
+                    if ($dosen_user_id) {
+                        $nama_mhs = $mhs['nama_lengkap'] ?? 'Mahasiswa';
+                        $stmt_n = $pdo->prepare("
+                            INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
+                            VALUES (:uid, 'Draf Naskah Baru Masuk', :pesan, 'info', 'persetujuan.php')
+                        ");
+                        $stmt_n->execute([
+                            ':uid'   => $dosen_user_id,
+                            ':pesan' => "Mahasiswa {$nama_mhs} telah mengunggah naskah evaluasi ({$bab_pembahasan})."
+                        ]);
+                    }
+
+                    $success_msg = "Naskah skripsi ({$bab_pembahasan}) berhasil diserahkan! Berkas kini siap dievaluasi oleh dosen pembimbing.";
+                } catch (PDOException $e) {
+                    $error_msg = "Gagal mencatat naskah ke database: " . $e->getMessage();
                 }
             }
         }
     }
 }
 
-// Ambil semua daftar file draf yang pernah diunggah oleh mahasiswa ini
+// Ambil semua daftar file draf & tautan drive yang pernah diunggah oleh mahasiswa ini
 $stmt_drafts = $pdo->prepare("
-    SELECT id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, status, catatan_dosen, created_at 
+    SELECT id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, link_drive, status, catatan_dosen, created_at 
     FROM pengajuan_bimbingan 
-    WHERE mahasiswa_id = :mid AND file_draft IS NOT NULL AND file_draft != ''
+    WHERE mahasiswa_id = :mid AND ((file_draft IS NOT NULL AND file_draft != '') OR (link_drive IS NOT NULL AND link_drive != ''))
     ORDER BY id DESC
 ");
 $stmt_drafts->execute([':mid' => $mhs_id]);
@@ -104,12 +139,15 @@ $daftar_drafts = $stmt_drafts->fetchAll();
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <div>
-        <h1 class="h2 mb-0">Upload Berkas Draf Skripsi</h1>
-        <p class="text-muted small mb-0">Unggah naskah draf skripsi dalam format PDF untuk dievaluasi oleh dosen pembimbing.</p>
+        <h1 class="h2 mb-0">Upload & Penyerahan Draf Skripsi</h1>
+        <p class="text-muted small mb-0">Serahkan naskah skripsi melalui berkas PDF atau tautan Google Drive untuk dievaluasi oleh dosen pembimbing.</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="index.php" class="btn btn-outline-secondary btn-sm me-2">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+        </a>
         <a href="logbook.php" class="btn btn-outline-secondary btn-sm me-2">
-            <i class="bi bi-journal-text me-1"></i>Lihat Logbook
+            <i class="bi bi-journal-text me-1"></i>Logbook
         </a>
         <a href="chat.php" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-chat-dots me-1"></i>Chat Dosen
@@ -118,16 +156,27 @@ $daftar_drafts = $stmt_drafts->fetchAll();
 </div>
 
 <?php if (!empty($success_msg)): ?>
-    <div class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+    <div class="alert alert-success alert-dismissible fade show py-2 small shadow-sm" role="alert">
         <i class="bi bi-check-circle-fill me-1"></i><?= htmlspecialchars($success_msg); ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 <?php endif; ?>
 
 <?php if (!empty($error_msg)): ?>
-    <div class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+    <div class="alert alert-danger alert-dismissible fade show py-2 small shadow-sm" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-1"></i><?= htmlspecialchars($error_msg); ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<?php if ($status_pembimbing !== 'aktif'): ?>
+    <div class="alert alert-warning shadow-sm mb-4" role="alert">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <div>
+                <strong>Perhatian:</strong> SK Dosen Pembimbing Anda saat ini belum berstatus <strong>Aktif</strong>. Silakan kembali ke <a href="index.php" class="fw-bold text-dark text-decoration-underline">Dashboard Mahasiswa</a> untuk mengonfirmasi penerimaan SK sebelum dapat menyerahkan draf skripsi.
+            </div>
+        </div>
     </div>
 <?php endif; ?>
 
@@ -137,7 +186,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
         <div class="card shadow-sm h-100">
             <div class="card-header bg-white py-3 border-bottom">
                 <h6 class="m-0 fw-bold text-dark">
-                    <i class="bi bi-cloud-arrow-up text-primary me-2"></i>Form Unggah Berkas Baru
+                    <i class="bi bi-cloud-arrow-up text-primary me-2"></i>Form Penyerahan Naskah Baru
                 </h6>
             </div>
             <div class="card-body p-4">
@@ -150,8 +199,8 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                     </div>
 
                     <div class="mb-3">
-                        <label for="bab_pembahasan" class="form-label small fw-semibold text-secondary">Bab yang Diunggah <span class="text-danger">*</span></label>
-                        <select class="form-select" id="bab_pembahasan" name="bab_pembahasan" required>
+                        <label for="bab_pembahasan" class="form-label small fw-semibold text-secondary">Bab yang Diajukan <span class="text-danger">*</span></label>
+                        <select class="form-select" id="bab_pembahasan" name="bab_pembahasan" required <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
                             <option value="" selected disabled>-- Pilih Bagian Skripsi --</option>
                             <option value="Bab 1: Pendahuluan">Bab 1: Pendahuluan</option>
                             <option value="Bab 2: Tinjauan Pustaka">Bab 2: Tinjauan Pustaka</option>
@@ -163,21 +212,53 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                         </select>
                     </div>
 
+                    <!-- Pilihan Metode Penyerahan (UPDATE ROBI: PDF atau Google Drive) -->
                     <div class="mb-3">
-                        <label for="catatan_revisi" class="form-label small fw-semibold text-secondary">Catatan Perubahan / Versi Revisi</label>
-                        <textarea class="form-control" id="catatan_revisi" name="catatan_revisi" rows="3" placeholder="Contoh: Revisi Bab 1 perbaikan latar belakang masalah sesuai arahan pembimbing..."></textarea>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="file_skripsi" class="form-label small fw-semibold text-secondary">Pilih Berkas Skripsi (PDF) <span class="text-danger">*</span></label>
-                        <input class="form-control" type="file" id="file_skripsi" name="file_skripsi" accept=".pdf" required>
-                        <div class="form-text small" style="font-size: 0.75rem;">
-                            <i class="bi bi-info-circle me-1"></i>Hanya menerima file berekstensi <strong>.pdf</strong> dengan ukuran maksimal <strong>5 MB</strong>.
+                        <label class="form-label small fw-semibold text-secondary d-block">Pilihan Metode Penyerahan <span class="text-danger">*</span></label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="metode_unggah" id="metode_file" value="file" checked onchange="toggleMetode()" <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                                <label class="form-check-label small fw-semibold" for="metode_file">
+                                    <i class="bi bi-file-earmark-pdf text-danger me-1"></i>Unggah Berkas PDF
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="metode_unggah" id="metode_drive" value="drive" onchange="toggleMetode()" <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                                <label class="form-check-label small fw-semibold" for="metode_drive">
+                                    <i class="bi bi-google text-primary me-1"></i>Link Google Drive / Docs
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                        <i class="bi bi-upload me-1"></i>Unggah Sekarang
+                    <!-- Input Berkas PDF -->
+                    <div class="mb-3" id="input_file_box">
+                        <label for="file_skripsi" class="form-label small fw-semibold text-secondary">Pilih Berkas Naskah (PDF) <span class="text-danger">*</span></label>
+                        <input class="form-control" type="file" id="file_skripsi" name="file_skripsi" accept=".pdf" <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                        <div class="form-text small" style="font-size: 0.75rem;">
+                            <i class="bi bi-info-circle me-1"></i>Maksimal <strong>5 MB</strong> dalam format <strong>.pdf</strong>.
+                        </div>
+                    </div>
+
+                    <!-- Input Tautan Google Drive (UPDATE ROBI) -->
+                    <div class="mb-3 d-none" id="input_drive_box">
+                        <label for="link_drive" class="form-label small fw-semibold text-secondary">Tautan Link Google Drive / Docs <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-link-45deg"></i></span>
+                            <input type="url" class="form-control" id="link_drive" name="link_drive" placeholder="https://docs.google.com/... atau https://drive.google.com/..." <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                        </div>
+                        <div class="form-text small" style="font-size: 0.75rem;">
+                            <i class="bi bi-shield-lock me-1"></i>Pastikan izin akses dokumen diatur ke <em>"Siapa saja yang memiliki link dapat melihat/mengomentari"</em>.
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="catatan_revisi" class="form-label small fw-semibold text-secondary">Catatan Perubahan / Versi Revisi</label>
+                        <textarea class="form-control" id="catatan_revisi" name="catatan_revisi" rows="3" placeholder="Contoh: Revisi Bab 1 perbaikan latar belakang masalah sesuai arahan pembimbing..." <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                        <i class="bi bi-send-check me-1"></i>Serahkan Naskah Sekarang
                     </button>
                 </form>
             </div>
@@ -189,21 +270,21 @@ $daftar_drafts = $stmt_drafts->fetchAll();
         <div class="card shadow-sm h-100 border-0">
             <div class="card-header bg-white py-3 border-bottom">
                 <h6 class="m-0 fw-bold text-dark">
-                    <i class="bi bi-shield-check text-success me-2"></i>Standar Format Dokumen Skripsi
+                    <i class="bi bi-shield-check text-success me-2"></i>Panduan & Standar Penyerahan Naskah
                 </h6>
             </div>
             <div class="card-body">
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <div class="p-3 border rounded bg-light">
-                            <h6 class="fw-bold small text-dark"><i class="bi bi-filetype-pdf text-danger me-1"></i>Format Dokumen</h6>
-                            <p class="small text-muted mb-0">Pastikan dokumen telah dikonversi ke format <strong>PDF</strong> standar tanpa proteksi kata sandi.</p>
+                        <div class="p-3 border rounded bg-light h-100">
+                            <h6 class="fw-bold small text-dark"><i class="bi bi-filetype-pdf text-danger me-1"></i>Opsi Berkas PDF</h6>
+                            <p class="small text-muted mb-0">Unggah file PDF ukuran maks 5 MB jika naskah telah final dan siap untuk direview langsung secara offline.</p>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="p-3 border rounded bg-light">
-                            <h6 class="fw-bold small text-dark"><i class="bi bi-hdd-network text-primary me-1"></i>Batas Ukuran</h6>
-                            <p class="small text-muted mb-0">Ukuran maksimal per unggahan adalah <strong>5 MB</strong>. Kompresi gambar dalam dokumen bila melebihi kuota.</p>
+                        <div class="p-3 border rounded bg-light h-100">
+                            <h6 class="fw-bold small text-dark"><i class="bi bi-google text-primary me-1"></i>Opsi Google Drive / Docs</h6>
+                            <p class="small text-muted mb-0">Gunakan link Google Docs agar dosen pembimbing dapat langsung memberikan catatan komentar (*inline comments*) pada naskah.</p>
                         </div>
                     </div>
                 </div>
@@ -250,7 +331,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h6 class="m-0 fw-bold text-dark">
-            <i class="bi bi-folder-check text-primary me-2"></i>Daftar Dokumen Skripsi yang Pernah Diunggah
+            <i class="bi bi-folder-check text-primary me-2"></i>Daftar Dokumen Skripsi yang Pernah Diserahkan
         </h6>
         <span class="badge bg-primary-subtle text-primary border border-primary-subtle small">
             <?= count($daftar_drafts); ?> Berkas Tersimpan
@@ -267,7 +348,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                         <th>Catatan Mahasiswa</th>
                         <th>Status Evaluasi</th>
                         <th>Catatan Dosen</th>
-                        <th class="text-center">Berkas PDF</th>
+                        <th class="text-center">Akses Berkas</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -275,7 +356,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                         <tr>
                             <td colspan="7" class="text-center py-4 text-muted">
                                 <i class="bi bi-file-earmark-x fs-2 d-block mb-1"></i>
-                                Belum ada berkas skripsi yang diunggah. Silakan unggah berkas melalui form di atas.
+                                Belum ada berkas skripsi yang diserahkan. Silakan unggah naskah melalui formulir di atas.
                             </td>
                         </tr>
                     <?php else: ?>
@@ -308,9 +389,18 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                                     <span class="small text-muted"><?= htmlspecialchars($draft['catatan_dosen'] ?? 'Belum ada catatan'); ?></span>
                                 </td>
                                 <td class="text-center">
-                                    <a href="../assets/uploads/<?= htmlspecialchars($draft['file_draft']); ?>" target="_blank" class="btn btn-outline-danger btn-sm">
-                                        <i class="bi bi-file-earmark-pdf me-1"></i>Buka PDF
-                                    </a>
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <?php if (!empty($draft['file_draft'])): ?>
+                                            <a href="../assets/uploads/<?= htmlspecialchars($draft['file_draft']); ?>" target="_blank" class="btn btn-outline-danger btn-sm" title="Lihat Berkas PDF">
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                            </a>
+                                        <?php endif; ?>
+                                        <?php if (!empty($draft['link_drive'])): ?>
+                                            <a href="<?= htmlspecialchars($draft['link_drive']); ?>" target="_blank" class="btn btn-outline-primary btn-sm" title="Buka Link Google Drive">
+                                                <i class="bi bi-google me-1"></i>Drive
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -321,7 +411,28 @@ $daftar_drafts = $stmt_drafts->fetchAll();
     </div>
 </div>
 
+<script>
+function toggleMetode() {
+    const isDrive = document.getElementById('metode_drive').checked;
+    const boxFile = document.getElementById('input_file_box');
+    const boxDrive = document.getElementById('input_drive_box');
+    const inputFile = document.getElementById('file_skripsi');
+    const inputDrive = document.getElementById('link_drive');
+
+    if (isDrive) {
+        boxFile.classList.add('d-none');
+        boxDrive.classList.remove('d-none');
+        inputFile.removeAttribute('required');
+        inputDrive.setAttribute('required', 'required');
+    } else {
+        boxFile.classList.remove('d-none');
+        boxDrive.classList.add('d-none');
+        inputFile.setAttribute('required', 'required');
+        inputDrive.removeAttribute('required');
+    }
+}
+</script>
+
 <?php
 require_once '../templates/footer.php';
 ?>
-
