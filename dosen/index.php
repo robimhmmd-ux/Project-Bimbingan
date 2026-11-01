@@ -42,7 +42,7 @@ $count_jadwal = (int)$stmt_jadwal->fetchColumn();
 
 // Data 5 Pengajuan Bimbingan Terbaru
 $stmt_terbaru = $pdo->prepare("
-    SELECT pb.*, m.nim, m.nama_lengkap 
+    SELECT pb.*, m.nim, m.nama_lengkap, m.kelas 
     FROM pengajuan_bimbingan pb
     JOIN mahasiswa m ON pb.mahasiswa_id = m.id
     WHERE pb.dosen_id = :did
@@ -167,7 +167,12 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
                                     <tr>
                                         <td>
                                             <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
-                                            <small class="text-muted">NIM: <?= htmlspecialchars($row['nim']); ?></small>
+                                            <div class="small text-muted">
+                                                <span>NIM: <?= htmlspecialchars($row['nim']); ?></span>
+                                                <?php if (!empty($row['kelas'])): ?>
+                                                    <span class="badge bg-light text-primary border border-primary-subtle ms-1"><?= htmlspecialchars($row['kelas']); ?></span>
+                                                <?php endif; ?>
+                                            </div>
                                         </td>
                                         <td>
                                             <span class="badge bg-light text-dark border"><?= htmlspecialchars($row['bab_pembahasan']); ?></span>
@@ -240,6 +245,13 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
                         <div>
                             <div class="fw-bold"><i class="bi bi-journal-check text-success me-2"></i>Evaluasi, Nilai & ACC</div>
                             <small class="text-muted">Unduh draft naskah & beri pengesahan bab</small>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </a>
+                    <a href="sidang.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <div class="fw-bold"><i class="bi bi-mortarboard-fill text-warning me-2"></i>Jadwal & Penguji Sidang</div>
+                            <small class="text-muted">Tugas dewan penguji & penilaian sidang</small>
                         </div>
                         <i class="bi bi-chevron-right text-muted"></i>
                     </a>

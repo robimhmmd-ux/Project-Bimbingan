@@ -46,6 +46,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_keputusan'])) 
                 ':did'     => $dosen_id
             ]);
 
+            // Kirim notifikasi otomatis ke mahasiswa
+            try {
+                $st_m_user = $pdo->prepare("SELECT m.user_id, pb.bab_pembahasan, pb.tanggal_bimbingan FROM pengajuan_bimbingan pb JOIN mahasiswa m ON pb.mahasiswa_id = m.id WHERE pb.id = :pbid LIMIT 1");
+                $st_m_user->execute([':pbid' => $id_pengajuan]);
+                $m_u = $st_m_user->fetch();
+                if ($m_u) {
+                    $judul_n = ($status_baru === 'disetujui') ? 'Jadwal Bimbingan Disetujui' : 'Pengajuan Bimbingan Ditolak';
+                    $tipe_n  = ($status_baru === 'disetujui') ? 'pembimbing' : 'revisi';
+                    $pesan_n = ($status_baru === 'disetujui') 
+                        ? "Permohonan bimbingan {$m_u['bab_pembahasan']} pada tanggal " . date('d/m/Y', strtotime($m_u['tanggal_bimbingan'])) . " telah DISETUJUI oleh dosen pembimbing."
+                        : "Permohonan bimbingan {$m_u['bab_pembahasan']} ditolak. Catatan: " . (!empty($catatan_dosen) ? $catatan_dosen : 'Silakan ajukan jadwal baru.');
+                    $st_notif = $pdo->prepare("INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) VALUES (:uid, :jdl, :psn, :tp, 'logbook.php')");
+                    $st_notif->execute([':uid' => $m_u['user_id'], ':jdl' => $judul_n, ':psn' => $pesan_n, ':tp' => $tipe_n]);
+                }
+            } catch (Exception $ne) {}
+
             if ($status_baru === 'disetujui') {
                 $success_msg = "Permohonan bimbingan berhasil <strong>DISETUJUI / DITERIMA</strong>.";
             } else {
@@ -92,6 +108,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_reschedule']))
                 ':did'     => $dosen_id
             ]);
 
+            // Kirim notifikasi reschedule ke mahasiswa
+            try {
+                $st_m_user = $pdo->prepare("SELECT m.user_id, pb.bab_pembahasan FROM pengajuan_bimbingan pb JOIN mahasiswa m ON pb.mahasiswa_id = m.id WHERE pb.id = :pbid LIMIT 1");
+                $st_m_user->execute([':pbid' => $id_pengajuan]);
+                $m_u = $st_m_user->fetch();
+                if ($m_u) {
+                    $st_notif = $pdo->prepare("INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) VALUES (:uid, 'Jadwal Bimbingan Dijadwalkan Ulang', :psn, 'revisi', 'logbook.php')");
+                    $st_notif->execute([
+                        ':uid' => $m_u['user_id'],
+                        ':psn' => "Jadwal bimbingan {$m_u['bab_pembahasan']} telah dijadwalkan ulang oleh Dosen ke tanggal {$tgl_format} pukul {$jam_format} WIB."
+                    ]);
+                }
+            } catch (Exception $ne) {}
+
             $success_msg = "Jadwal bimbingan berhasil <strong>DIJADWALKAN ULANG & DISETUJUI</strong> ke tanggal {$tgl_format} pukul {$jam_format} WIB!";
         } catch (PDOException $e) {
             $error_msg = "Gagal menjadwalkan ulang: " . $e->getMessage();
@@ -108,7 +138,7 @@ if (!in_array($filter_status, $allowed_filters)) {
 
 if ($filter_status === 'semua') {
     $stmt_pengajuan = $pdo->prepare("
-        SELECT pb.*, m.nim, m.nama_lengkap, m.judul_skripsi 
+        SELECT pb.*, m.nim, m.nama_lengkap, m.judul_skripsi, m.kelas, m.status_pembimbing 
         FROM pengajuan_bimbingan pb
         JOIN mahasiswa m ON pb.mahasiswa_id = m.id
         WHERE pb.dosen_id = :did
@@ -117,7 +147,7 @@ if ($filter_status === 'semua') {
     $stmt_pengajuan->execute([':did' => $dosen_id]);
 } else {
     $stmt_pengajuan = $pdo->prepare("
-        SELECT pb.*, m.nim, m.nama_lengkap, m.judul_skripsi 
+        SELECT pb.*, m.nim, m.nama_lengkap, m.judul_skripsi, m.kelas, m.status_pembimbing 
         FROM pengajuan_bimbingan pb
         JOIN mahasiswa m ON pb.mahasiswa_id = m.id
         WHERE pb.dosen_id = :did AND pb.status = :st
@@ -228,7 +258,12 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                                     </div>
                                     <div>
                                         <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
-                                        <small class="text-muted">NIM: <?= htmlspecialchars($row['nim']); ?></small>
+                                        <div class="small text-muted">
+                                            <span>NIM: <?= htmlspecialchars($row['nim']); ?></span>
+                                            <?php if (!empty($row['kelas'])): ?>
+                                                <span class="badge bg-light text-primary border border-primary-subtle ms-1"><?= htmlspecialchars($row['kelas']); ?></span>
+                                            <?php endif; ?>
+                                        </div>
                                         <div class="text-truncate small text-secondary mt-1" style="max-width: 230px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
                                             <i class="bi bi-journal-text me-1 text-primary"></i><?= htmlspecialchars($row['judul_skripsi']); ?>
                                         </div>
@@ -256,15 +291,25 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                                 </small>
                             </td>
                             <td>
-                                <?php if (!empty($row['file_draft'])): ?>
-                                    <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" 
-                                       class="btn btn-sm btn-outline-danger fw-semibold shadow-sm" 
-                                       target="_blank" download>
-                                        <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh PDF
-                                    </a>
-                                <?php else: ?>
-                                    <span class="badge bg-light text-muted border">Belum Upload</span>
-                                <?php endif; ?>
+                                <div class="d-flex flex-column gap-1">
+                                    <?php if (!empty($row['file_draft'])): ?>
+                                        <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" 
+                                           class="btn btn-sm btn-outline-danger fw-semibold shadow-sm" 
+                                           target="_blank" download>
+                                            <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh PDF
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if (!empty($row['link_drive'])): ?>
+                                        <a href="<?= htmlspecialchars($row['link_drive']); ?>" 
+                                           class="btn btn-sm btn-outline-success fw-semibold shadow-sm" 
+                                           target="_blank" rel="noopener noreferrer">
+                                            <i class="bi bi-google me-1"></i>Buka Drive
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if (empty($row['file_draft']) && empty($row['link_drive'])): ?>
+                                        <span class="badge bg-light text-muted border">Belum Ada Berkas</span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td>
                                 <?php

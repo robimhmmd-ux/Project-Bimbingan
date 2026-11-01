@@ -85,6 +85,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_evaluasi'])) {
             $pdo->commit();
 
             $label_keputusan = ($keputusan_acc === 'acc_bab') ? 'ACC BAB' : (($keputusan_acc === 'acc_sidang') ? 'ACC SIDANG SKRIPSI' : (($keputusan_acc === 'revisi') ? 'PERLU REVISI' : 'SELESAI'));
+            
+            // Kirim notifikasi otomatis ke akun mahasiswa
+            try {
+                $st_m_u = $pdo->prepare("SELECT user_id FROM mahasiswa WHERE id = :mid LIMIT 1");
+                $st_m_u->execute([':mid' => $mahasiswa_id]);
+                $m_uid = $st_m_u->fetchColumn();
+                if ($m_uid) {
+                    $judul_notif = ($keputusan_acc === 'acc_sidang') ? 'Selamat! Anda Di-ACC Siap Sidang Skripsi' : (($keputusan_acc === 'acc_bab') ? 'Bab Skripsi Di-ACC Dosen' : (($keputusan_acc === 'revisi') ? 'Catatan Revisi dari Pembimbing' : 'Hasil Evaluasi Bimbingan'));
+                    $tipe_notif  = ($keputusan_acc === 'acc_sidang') ? 'sidang' : (($keputusan_acc === 'revisi') ? 'revisi' : 'sukses');
+                    $pesan_notif = "Dosen pembimbing telah memberikan evaluasi ({$label_keputusan}) dengan nilai progres {$nilai_progres}%. Silakan cek logbook Anda.";
+                    $st_n = $pdo->prepare("INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) VALUES (:uid, :jdl, :psn, :tp, 'logbook.php')");
+                    $st_n->execute([':uid' => $m_uid, ':jdl' => $judul_notif, ':psn' => $pesan_notif, ':tp' => $tipe_notif]);
+                }
+            } catch (Exception $ne) {}
+
             $success_msg = "Evaluasi berhasil disimpan: Status <strong>{$label_keputusan}</strong> dengan Nilai Progres <strong>{$nilai_progres}%</strong>.";
         } catch (PDOException $e) {
             $pdo->rollBack();
@@ -105,7 +120,7 @@ if ($filter === 'disetujui') {
 }
 
 $stmt_riwayat = $pdo->prepare("
-    SELECT pb.*, m.nim, m.nama_lengkap, m.judul_skripsi, m.status_kelulusan
+    SELECT pb.*, m.nim, m.nama_lengkap, m.judul_skripsi, m.status_kelulusan, m.kelas
     FROM pengajuan_bimbingan pb
     JOIN mahasiswa m ON pb.mahasiswa_id = m.id
     WHERE pb.dosen_id = :did AND {$where_status}
@@ -202,7 +217,12 @@ $riwayat_list = $stmt_riwayat->fetchAll();
                                     </div>
                                     <div>
                                         <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
-                                        <small class="text-muted">NIM: <?= htmlspecialchars($row['nim']); ?></small>
+                                        <div class="small text-muted">
+                                            <span>NIM: <?= htmlspecialchars($row['nim']); ?></span>
+                                            <?php if (!empty($row['kelas'])): ?>
+                                                <span class="badge bg-light text-primary border border-primary-subtle ms-1"><?= htmlspecialchars($row['kelas']); ?></span>
+                                            <?php endif; ?>
+                                        </div>
                                         <div class="text-truncate small text-secondary mt-1" style="max-width: 230px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
                                             <i class="bi bi-mortarboard me-1 text-primary"></i><?= htmlspecialchars($row['judul_skripsi']); ?>
                                         </div>
@@ -228,15 +248,25 @@ $riwayat_list = $stmt_riwayat->fetchAll();
                                 </small>
                             </td>
                             <td>
-                                <?php if (!empty($row['file_draft'])): ?>
-                                    <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" 
-                                       class="btn btn-sm btn-outline-danger fw-semibold shadow-sm" 
-                                       target="_blank" download>
-                                        <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Draft
-                                    </a>
-                                <?php else: ?>
-                                    <span class="badge bg-light text-muted border">Belum Ada File</span>
-                                <?php endif; ?>
+                                <div class="d-flex flex-column gap-1">
+                                    <?php if (!empty($row['file_draft'])): ?>
+                                        <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" 
+                                           class="btn btn-sm btn-outline-danger fw-semibold shadow-sm" 
+                                           target="_blank" download>
+                                            <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Draft
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if (!empty($row['link_drive'])): ?>
+                                        <a href="<?= htmlspecialchars($row['link_drive']); ?>" 
+                                           class="btn btn-sm btn-outline-success fw-semibold shadow-sm" 
+                                           target="_blank" rel="noopener noreferrer">
+                                            <i class="bi bi-google me-1"></i>Buka Drive
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if (empty($row['file_draft']) && empty($row['link_drive'])): ?>
+                                        <span class="badge bg-light text-muted border">Belum Ada Berkas</span>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                             <td style="min-width: 120px;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -306,16 +336,26 @@ $riwayat_list = $stmt_riwayat->fetchAll();
                                                             <span class="small text-secondary"><?= htmlspecialchars($row['judul_skripsi']); ?></span>
                                                         </div>
                                                         <div class="col-12 mt-2">
-                                                            <small class="text-muted d-block">Berkas Draft Naskah</small>
-                                                            <?php if (!empty($row['file_draft'])): ?>
-                                                                <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" 
-                                                                   class="btn btn-sm btn-outline-danger mt-1 shadow-sm" 
-                                                                   target="_blank" download>
-                                                                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh & Periksa Berkas (<?= htmlspecialchars($row['file_draft']); ?>)
-                                                                </a>
-                                                            <?php else: ?>
-                                                                <span class="badge bg-secondary-subtle text-secondary">Mahasiswa belum mengunggah file naskah.</span>
-                                                            <?php endif; ?>
+                                                            <small class="text-muted d-block">Berkas Draft Naskah & Tautan</small>
+                                                            <div class="d-flex flex-wrap gap-2 mt-1">
+                                                                <?php if (!empty($row['file_draft'])): ?>
+                                                                    <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" 
+                                                                       class="btn btn-sm btn-outline-danger shadow-sm" 
+                                                                       target="_blank" download>
+                                                                        <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh PDF (<?= htmlspecialchars($row['file_draft']); ?>)
+                                                                    </a>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($row['link_drive'])): ?>
+                                                                    <a href="<?= htmlspecialchars($row['link_drive']); ?>" 
+                                                                       class="btn btn-sm btn-outline-success shadow-sm" 
+                                                                       target="_blank" rel="noopener noreferrer">
+                                                                        <i class="bi bi-google me-1"></i>Buka di Google Drive
+                                                                    </a>
+                                                                <?php endif; ?>
+                                                                <?php if (empty($row['file_draft']) && empty($row['link_drive'])): ?>
+                                                                    <span class="badge bg-secondary-subtle text-secondary py-2 px-3">Mahasiswa belum melampirkan berkas naskah atau tautan Drive.</span>
+                                                                <?php endif; ?>
+                                                            </div>
                                                         </div>
                                                     </div>
 

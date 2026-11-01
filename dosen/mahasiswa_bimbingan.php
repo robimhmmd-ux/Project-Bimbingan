@@ -98,6 +98,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_catatan_progre
                 ':did' => $dosen_id
             ]);
 
+            try {
+                $st_u_mhs = $pdo->prepare("SELECT user_id FROM mahasiswa WHERE id = :mid LIMIT 1");
+                $st_u_mhs->execute([':mid' => $mahasiswa_id]);
+                $m_uid = $st_u_mhs->fetchColumn();
+                if ($m_uid) {
+                    $judul_n = ($keputusan_progres === 'acc_sidang') ? 'Selamat! Anda Di-ACC Siap Sidang Skripsi' : 'Catatan Progres Baru dari Pembimbing';
+                    $tipe_n  = ($keputusan_progres === 'acc_sidang') ? 'sidang' : 'pembimbing';
+                    $pesan_n = "Dosen pembimbing telah menerbitkan catatan progres ({$bab_pembahasan}) dengan capaian {$nilai_progres}%. Silakan cek logbook Anda.";
+                    $st_not = $pdo->prepare("INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) VALUES (:uid, :jdl, :psn, :tp, 'logbook.php')");
+                    $st_not->execute([':uid' => $m_uid, ':jdl' => $judul_n, ':psn' => $pesan_n, ':tp' => $tipe_n]);
+                }
+            } catch (Exception $ne) {}
+
             $pdo->commit();
             $success_msg = "Catatan progres & arahan bimbingan berhasil disimpan! Progres <strong>{$nilai_progres}%</strong> untuk <strong>" . htmlspecialchars($bab_pembahasan) . "</strong> telah diterbitkan ke kartu kendali & dashboard mahasiswa.";
         } catch (PDOException $e) {
@@ -376,7 +389,17 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                         </div>
                                         <div>
                                             <div class="fw-bold text-dark"><?= htmlspecialchars($mhs['nama_lengkap']); ?></div>
-                                            <small class="text-muted">NIM: <?= htmlspecialchars($mhs['nim']); ?></small>
+                                            <div class="small text-muted d-flex flex-wrap align-items-center gap-1 mt-1">
+                                            <span>NIM: <?= htmlspecialchars($mhs['nim']); ?></span>
+                                            <?php if (!empty($mhs['kelas'])): ?>
+                                                <span class="badge bg-light text-primary border border-primary-subtle"><?= htmlspecialchars($mhs['kelas']); ?></span>
+                                            <?php endif; ?>
+                                            <?php if (($mhs['status_pembimbing'] ?? '') === 'menunggu_konfirmasi'): ?>
+                                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle" title="Menunggu mahasiswa konfirmasi SK">SK: Menunggu</span>
+                                            <?php elseif (($mhs['status_pembimbing'] ?? '') === 'aktif'): ?>
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle" title="SK Bimbingan Aktif">SK: Aktif</span>
+                                            <?php endif; ?>
+                                        </div>
                                             <div class="text-truncate small text-secondary mt-1" style="max-width: 240px;" title="<?= htmlspecialchars($mhs['judul_skripsi']); ?>">
                                                 <i class="bi bi-mortarboard me-1 text-primary"></i><?= htmlspecialchars($mhs['judul_skripsi']); ?>
                                             </div>
@@ -652,7 +675,17 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                                                                 <?= date('d/m/Y', strtotime($h['tanggal_bimbingan'])); ?><br>
                                                                                 <small class="text-muted"><?= substr($h['jam_bimbingan'], 0, 5); ?> WIB</small>
                                                                             </td>
-                                                                            <td><strong><?= htmlspecialchars($h['bab_pembahasan']); ?></strong></td>
+                                                                            <td>
+                                                                                <strong><?= htmlspecialchars($h['bab_pembahasan']); ?></strong>
+                                                                                <div class="mt-1 d-flex flex-wrap gap-1">
+                                                                                    <?php if (!empty($h['file_draft'])): ?>
+                                                                                        <a href="../assets/uploads/<?= htmlspecialchars($h['file_draft']); ?>" target="_blank" class="badge bg-danger-subtle text-danger border border-danger-subtle text-decoration-none" title="Unduh PDF"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+                                                                                    <?php endif; ?>
+                                                                                    <?php if (!empty($h['link_drive'])): ?>
+                                                                                        <a href="<?= htmlspecialchars($h['link_drive']); ?>" target="_blank" rel="noopener noreferrer" class="badge bg-success-subtle text-success border border-success-subtle text-decoration-none" title="Buka Google Drive"><i class="bi bi-google me-1"></i>Drive</a>
+                                                                                    <?php endif; ?>
+                                                                                </div>
+                                                                            </td>
                                                                             <td>
                                                                                 <?= !empty($h['catatan_dosen']) ? nl2br(htmlspecialchars($h['catatan_dosen'])) : '<span class="text-muted fst-italic">Belum ada catatan.</span>'; ?>
                                                                             </td>
