@@ -25,11 +25,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if ($action === 'create') {
         $nim                  = trim($_POST['nim'] ?? '');
         $nama_lengkap         = trim($_POST['nama_lengkap'] ?? '');
+        $kelas                = trim($_POST['kelas'] ?? 'TI-1A-2025');
         $judul_skripsi        = trim($_POST['judul_skripsi'] ?? 'Belum Ditentukan');
         $dosen_pembimbing_id  = !empty($_POST['dosen_pembimbing_id']) ? (int)$_POST['dosen_pembimbing_id'] : null;
         $status_kelulusan     = $_POST['status_kelulusan'] ?? 'proses_bimbingan';
         $username             = trim($_POST['username'] ?? '');
         $password             = trim($_POST['password'] ?? '');
+
+        // Status pembimbing otomatis menunggu konfirmasi jika dospem dipilih
+        $status_pembimbing    = !empty($dosen_pembimbing_id) ? 'menunggu_konfirmasi' : 'belum_diplot';
 
         if (empty($nim) || empty($nama_lengkap) || empty($username) || empty($password)) {
             $error_msg = 'Field NIM, Nama Lengkap, Username, dan Password wajib diisi!';
@@ -60,20 +64,38 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                 // 2. Tambah profil mahasiswa
                 $stmtMhs = $pdo->prepare("
-                    INSERT INTO mahasiswa (user_id, nim, nama_lengkap, judul_skripsi, dosen_pembimbing_id, status_kelulusan)
-                    VALUES (:uid, :nim, :nama, :judul, :did, :status)
+                    INSERT INTO mahasiswa (user_id, nim, nama_lengkap, kelas, judul_skripsi, dosen_pembimbing_id, status_pembimbing, status_kelulusan)
+                    VALUES (:uid, :nim, :nama, :kelas, :judul, :did, :spemb, :status)
                 ");
                 $stmtMhs->execute([
                     ':uid'    => $user_id,
                     ':nim'    => $nim,
                     ':nama'   => $nama_lengkap,
+                    ':kelas'  => $kelas,
                     ':judul'  => !empty($judul_skripsi) ? $judul_skripsi : 'Belum Ditentukan',
                     ':did'    => $dosen_pembimbing_id,
+                    ':spemb'  => $status_pembimbing,
                     ':status' => $status_kelulusan
                 ]);
 
+                // 3. Jika dospem langsung ditentukan, buatkan notifikasi ke mahasiswa
+                if (!empty($dosen_pembimbing_id)) {
+                    $stmtDsn = $pdo->prepare("SELECT nama_dosen FROM dosen WHERE id = :did LIMIT 1");
+                    $stmtDsn->execute([':did' => $dosen_pembimbing_id]);
+                    $nama_dosen = $stmtDsn->fetchColumn() ?: 'Dosen';
+
+                    $stmtNotif = $pdo->prepare("
+                        INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
+                        VALUES (:uid, 'Dosen Pembimbing Ditetapkan', :pesan, 'pembimbing', 'index.php')
+                    ");
+                    $stmtNotif->execute([
+                        ':uid'   => $user_id,
+                        ':pesan' => "Anda telah ditetapkan dibimbing oleh {$nama_dosen}. Silakan konfirmasi di dashboard Anda."
+                    ]);
+                }
+
                 $pdo->commit();
-                $success_msg = "Data mahasiswa '{$nama_lengkap}' (NIM: {$nim}) berhasil ditambahkan!";
+                $success_msg = "Data mahasiswa '{$nama_lengkap}' ({$kelas} - NIM: {$nim}) berhasil ditambahkan!";
             } catch (Exception $e) {
                 if ($pdo->inTransaction()) {
                     $pdo->rollBack();
@@ -89,6 +111,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $user_id             = (int)($_POST['user_id'] ?? 0);
         $nim                 = trim($_POST['nim'] ?? '');
         $nama_lengkap        = trim($_POST['nama_lengkap'] ?? '');
+        $kelas               = trim($_POST['kelas'] ?? 'TI-1A-2025');
         $judul_skripsi       = trim($_POST['judul_skripsi'] ?? 'Belum Ditentukan');
         $dosen_pembimbing_id = !empty($_POST['dosen_pembimbing_id']) ? (int)$_POST['dosen_pembimbing_id'] : null;
         $status_kelulusan    = $_POST['status_kelulusan'] ?? 'proses_bimbingan';
@@ -125,18 +148,30 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $stmtUpU->execute([':u' => $username, ':uid' => $user_id]);
                 }
 
+                // Ambil data lama mahasiswa untuk cek apakah dospem berubah
+                $stmtOld = $pdo->prepare("SELECT dosen_pembimbing_id, status_pembimbing FROM mahasiswa WHERE id = :mid");
+                $stmtOld->execute([':mid' => $mahasiswa_id]);
+                $oldMhs = $stmtOld->fetch();
+
+                $spemb_baru = $oldMhs['status_pembimbing'] ?? 'belum_diplot';
+                if ($dosen_pembimbing_id != $oldMhs['dosen_pembimbing_id']) {
+                    $spemb_baru = !empty($dosen_pembimbing_id) ? 'menunggu_konfirmasi' : 'belum_diplot';
+                }
+
                 // Update mahasiswa
                 $stmtUpM = $pdo->prepare("
                     UPDATE mahasiswa 
-                    SET nim = :nim, nama_lengkap = :nama, judul_skripsi = :judul, 
-                        dosen_pembimbing_id = :did, status_kelulusan = :status 
+                    SET nim = :nim, nama_lengkap = :nama, kelas = :kelas, judul_skripsi = :judul, 
+                        dosen_pembimbing_id = :did, status_pembimbing = :spemb, status_kelulusan = :status 
                     WHERE id = :mid
                 ");
                 $stmtUpM->execute([
                     ':nim'    => $nim,
                     ':nama'   => $nama_lengkap,
+                    ':kelas'  => $kelas,
                     ':judul'  => !empty($judul_skripsi) ? $judul_skripsi : 'Belum Ditentukan',
                     ':did'    => $dosen_pembimbing_id,
+                    ':spemb'  => $spemb_baru,
                     ':status' => $status_kelulusan,
                     ':mid'    => $mahasiswa_id
                 ]);
@@ -225,6 +260,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 // FILTER & AMBIL DATA MAHASISWA
 // =========================================================================
 $filter_status = $_GET['status'] ?? 'all';
+$filter_kelas  = $_GET['kelas'] ?? 'all';
 $search_query  = trim($_GET['q'] ?? '');
 
 $where = ["1=1"];
@@ -235,8 +271,13 @@ if ($filter_status !== 'all' && in_array($filter_status, ['proses_bimbingan', 's
     $params[':st'] = $filter_status;
 }
 
+if ($filter_kelas !== 'all' && in_array($filter_kelas, ['TI-1A-2025', 'TI-1B-2025', 'TI-1C-2025'])) {
+    $where[] = "m.kelas = :kelas";
+    $params[':kelas'] = $filter_kelas;
+}
+
 if (!empty($search_query)) {
-    $where[] = "(m.nim LIKE :q OR m.nama_lengkap LIKE :q OR m.judul_skripsi LIKE :q)";
+    $where[] = "(m.nim LIKE :q OR m.nama_lengkap LIKE :q OR m.judul_skripsi LIKE :q OR m.kelas LIKE :q)";
     $params[':q'] = "%{$search_query}%";
 }
 
@@ -257,7 +298,7 @@ $queryMhs = "
     INNER JOIN users u ON m.user_id = u.id
     LEFT JOIN dosen d ON m.dosen_pembimbing_id = d.id
     WHERE {$where_clause}
-    ORDER BY m.id DESC
+    ORDER BY m.kelas ASC, m.nama_lengkap ASC
 ";
 $stmt = $pdo->prepare($queryMhs);
 $stmt->execute($params);
@@ -268,6 +309,11 @@ $total_all_mhs = $pdo->query("SELECT COUNT(*) FROM mahasiswa")->fetchColumn();
 $count_bimb    = $pdo->query("SELECT COUNT(*) FROM mahasiswa WHERE status_kelulusan = 'proses_bimbingan'")->fetchColumn();
 $count_siap    = $pdo->query("SELECT COUNT(*) FROM mahasiswa WHERE status_kelulusan = 'siap_sidang'")->fetchColumn();
 $count_lulus   = $pdo->query("SELECT COUNT(*) FROM mahasiswa WHERE status_kelulusan = 'lulus'")->fetchColumn();
+
+// Metrik per kelas
+$count_1a = $pdo->query("SELECT COUNT(*) FROM mahasiswa WHERE kelas = 'TI-1A-2025'")->fetchColumn();
+$count_1b = $pdo->query("SELECT COUNT(*) FROM mahasiswa WHERE kelas = 'TI-1B-2025'")->fetchColumn();
+$count_1c = $pdo->query("SELECT COUNT(*) FROM mahasiswa WHERE kelas = 'TI-1C-2025'")->fetchColumn();
 
 // Ambil daftar dosen untuk dropdown form
 $dosen_dropdown = $pdo->query("SELECT id, nama_dosen, kuota_bimbingan FROM dosen ORDER BY nama_dosen ASC")->fetchAll();
@@ -283,11 +329,11 @@ require_once '../templates/sidebar_admin.php';
 <div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
         <div class="hero-tag">
-            <i class="bi bi-mortarboard-fill text-info"></i>
-            <span>Direktori Mahasiswa Tugas Akhir</span>
+            <i class="bi bi-mortarboard-fill"></i>
+            <span>Direktori Mahasiswa Tugas Akhir (3 Kelas)</span>
         </div>
         <h2 class="fw-bold text-white mb-1">Manajemen Mahasiswa & Kelulusan</h2>
-        <p class="text-white-50 small mb-0">Kelola master data mahasiswa, rencana judul skripsi, pembimbing, serta evaluasi status kelulusan.</p>
+        <p class="text-white-50 small mb-0">Kelola master data mahasiswa 3 kelas (TI-1A, TI-1B, TI-1C), judul skripsi, status pembimbing, serta evaluasi kelulusan.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
         <button type="button" class="btn btn-light shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#modalTambahMhs">
@@ -313,7 +359,7 @@ require_once '../templates/sidebar_admin.php';
     </div>
 <?php endif; ?>
 
-<!-- Stat Bar Status Kelulusan -->
+<!-- Stat Bar Status Kelulusan & Kelas -->
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
         <div class="metric-card p-3">
@@ -321,6 +367,7 @@ require_once '../templates/sidebar_admin.php';
                 <div>
                     <span class="small text-muted fw-bold text-uppercase">Total Mahasiswa</span>
                     <h3 class="fw-bold text-dark mb-0 mt-1"><?= $total_all_mhs; ?></h3>
+                    <small class="text-muted" style="font-size: 0.72rem;">1A: <?= $count_1a; ?> | 1B: <?= $count_1b; ?> | 1C: <?= $count_1c; ?></small>
                 </div>
                 <div class="metric-icon-box bg-primary-subtle text-primary">
                     <i class="bi bi-people-fill"></i>
@@ -334,6 +381,7 @@ require_once '../templates/sidebar_admin.php';
                 <div>
                     <span class="small text-muted fw-bold text-uppercase">Proses Bimbingan</span>
                     <h3 class="fw-bold text-secondary mb-0 mt-1"><?= $count_bimb; ?></h3>
+                    <small class="text-muted" style="font-size: 0.72rem;">Aktif konsultasi</small>
                 </div>
                 <div class="metric-icon-box bg-secondary-subtle text-secondary">
                     <i class="bi bi-clock-history"></i>
@@ -347,6 +395,7 @@ require_once '../templates/sidebar_admin.php';
                 <div>
                     <span class="small text-muted fw-bold text-uppercase">Siap Sidang</span>
                     <h3 class="fw-bold text-primary mb-0 mt-1"><?= $count_siap; ?></h3>
+                    <small class="text-muted" style="font-size: 0.72rem;">Menunggu jadwal</small>
                 </div>
                 <div class="metric-icon-box bg-primary-subtle text-primary">
                     <i class="bi bi-award-fill"></i>
@@ -360,6 +409,7 @@ require_once '../templates/sidebar_admin.php';
                 <div>
                     <span class="small text-muted fw-bold text-uppercase">Telah Lulus</span>
                     <h3 class="fw-bold text-success mb-0 mt-1"><?= $count_lulus; ?></h3>
+                    <small class="text-muted" style="font-size: 0.72rem;">Yudisium & Alumni</small>
                 </div>
                 <div class="metric-icon-box bg-success-subtle text-success">
                     <i class="bi bi-check2-all"></i>
@@ -369,17 +419,27 @@ require_once '../templates/sidebar_admin.php';
     </div>
 </div>
 
-<!-- Filter & Pencarian Modern -->
+<!-- Filter & Pencarian Modern dengan Filter Kelas -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-3">
         <form method="GET" action="data_mahasiswa.php" class="row g-2 align-items-center">
-            <div class="col-md-5">
+            <div class="col-md-4">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" class="form-control border-start-0 ps-0" name="q" value="<?= htmlspecialchars($search_query); ?>" placeholder="Cari NIM, Nama Mahasiswa, atau Judul Skripsi...">
+                    <input type="text" class="form-control border-start-0 ps-0" name="q" value="<?= htmlspecialchars($search_query); ?>" placeholder="Cari NIM, Nama, atau Judul...">
                 </div>
             </div>
-            <div class="col-md-4">
+            <!-- Filter Kelas -->
+            <div class="col-md-3">
+                <select name="kelas" class="form-select" onchange="this.form.submit()">
+                    <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Semua Kelas (3 Kelas) --</option>
+                    <option value="TI-1A-2025" <?= ($filter_kelas === 'TI-1A-2025') ? 'selected' : ''; ?>>Kelas TI-1A-2025 (Pagi)</option>
+                    <option value="TI-1B-2025" <?= ($filter_kelas === 'TI-1B-2025') ? 'selected' : ''; ?>>Kelas TI-1B-2025 (Pagi)</option>
+                    <option value="TI-1C-2025" <?= ($filter_kelas === 'TI-1C-2025') ? 'selected' : ''; ?>>Kelas TI-1C-2025 (Malam)</option>
+                </select>
+            </div>
+            <!-- Filter Status Kelulusan -->
+            <div class="col-md-3">
                 <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="all" <?= ($filter_status === 'all') ? 'selected' : ''; ?>>-- Semua Status Kelulusan --</option>
                     <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Proses Bimbingan (Aktif)</option>
@@ -387,9 +447,9 @@ require_once '../templates/sidebar_admin.php';
                     <option value="lulus" <?= ($filter_status === 'lulus') ? 'selected' : ''; ?>>Telah Lulus</option>
                 </select>
             </div>
-            <div class="col-md-3 d-flex gap-2">
-                <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
-                <?php if ($filter_status !== 'all' || !empty($search_query)): ?>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <?php if ($filter_status !== 'all' || $filter_kelas !== 'all' || !empty($search_query)): ?>
                     <a href="data_mahasiswa.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
                 <?php endif; ?>
             </div>
@@ -417,17 +477,18 @@ require_once '../templates/sidebar_admin.php';
                     <tr>
                         <th class="ps-3" style="width: 50px;">No</th>
                         <th>Mahasiswa & Akun</th>
+                        <th>Kelas</th>
                         <th>Judul Penelitian Skripsi</th>
-                        <th>Dosen Pembimbing</th>
-                        <th class="text-center" style="width: 140px;">Progres</th>
-                        <th class="text-center" style="width: 130px;">Status</th>
-                        <th class="text-center" style="width: 160px;">Aksi</th>
+                        <th>Dosen Pembimbing & Status SK</th>
+                        <th class="text-center" style="width: 110px;">Progres</th>
+                        <th class="text-center" style="width: 120px;">Status</th>
+                        <th class="text-center" style="width: 150px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($mahasiswa_list)): ?>
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-5">
+                            <td colspan="8" class="text-center text-muted py-5">
                                 <i class="bi bi-search fs-2 d-block text-secondary mb-2"></i>
                                 Tidak ada data mahasiswa yang sesuai dengan filter pencarian.
                             </td>
@@ -438,6 +499,8 @@ require_once '../templates/sidebar_admin.php';
                         foreach ($mahasiswa_list as $row): 
                             $nilai = (int)$row['nilai_terakhir'];
                             $initial = strtoupper(substr($row['nama_lengkap'], 0, 1));
+                            $kelas_clean = htmlspecialchars($row['kelas'] ?? 'TI-1A-2025');
+                            $spemb = $row['status_pembimbing'] ?? 'belum_diplot';
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
@@ -454,17 +517,33 @@ require_once '../templates/sidebar_admin.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <small class="text-dark fw-medium d-block text-truncate" style="max-width: 280px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fw-semibold">
+                                        <i class="bi bi-building me-1"></i><?= $kelas_clean; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-dark fw-medium d-block text-truncate" style="max-width: 250px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
                                         <?= htmlspecialchars($row['judul_skripsi']); ?>
                                     </small>
                                 </td>
                                 <td>
                                     <?php if ($row['nama_dosen']): ?>
-                                        <span class="text-dark small fw-semibold">
+                                        <div class="text-dark small fw-semibold mb-1">
                                             <i class="bi bi-person-check-fill text-success me-1"></i><?= htmlspecialchars($row['nama_dosen']); ?>
-                                        </span>
+                                        </div>
+                                        <?php if ($spemb === 'aktif'): ?>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.7rem;">
+                                                <i class="bi bi-patch-check-fill me-1"></i>SK Aktif
+                                            </span>
+                                        <?php elseif ($spemb === 'menunggu_konfirmasi'): ?>
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size: 0.7rem;">
+                                                <i class="bi bi-clock-history me-1"></i>Menunggu Konfirmasi
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.7rem;">Terplot</span>
+                                        <?php endif; ?>
                                     <?php else: ?>
-                                        <span class="badge bg-warning text-dark">
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
                                             <i class="bi bi-exclamation-triangle me-1"></i>Belum Diplot
                                         </span>
                                     <?php endif; ?>
@@ -474,46 +553,45 @@ require_once '../templates/sidebar_admin.php';
                                         <span class="fw-bold fs-6 <?= ($nilai >= 80) ? 'text-success' : (($nilai >= 60) ? 'text-primary' : 'text-warning'); ?>">
                                             <?= $nilai; ?>%
                                         </span>
-                                        <div class="progress" style="height: 6px; width: 75px;">
+                                        <div class="progress" style="height: 6px; width: 70px;">
                                             <div class="progress-bar <?= ($nilai >= 80) ? 'bg-success' : (($nilai >= 60) ? 'bg-primary' : 'bg-warning'); ?>" 
                                                  style="width: <?= $nilai; ?>%"></div>
                                         </div>
-                                        <small class="text-muted d-block mt-1" style="font-size: 0.725rem;"><?= $row['total_bimbingan']; ?> Bimb | <?= $row['total_acc']; ?> ACC</small>
+                                        <small class="text-muted d-block" style="font-size: 0.68rem;"><?= $row['total_acc']; ?> Bab ACC</small>
                                     </div>
                                 </td>
                                 <td class="text-center">
                                     <?php if ($row['status_kelulusan'] === 'lulus'): ?>
-                                        <span class="badge bg-success px-2 py-1"><i class="bi bi-check2-circle me-1"></i>Lulus</span>
+                                        <span class="badge bg-success"><i class="bi bi-check2-circle me-1"></i>Lulus</span>
                                     <?php elseif ($row['status_kelulusan'] === 'siap_sidang'): ?>
-                                        <span class="badge bg-primary px-2 py-1"><i class="bi bi-award me-1"></i>Siap Sidang</span>
+                                        <span class="badge bg-primary"><i class="bi bi-award me-1"></i>Siap Sidang</span>
                                     <?php else: ?>
-                                        <span class="badge bg-secondary px-2 py-1"><i class="bi bi-clock-history me-1"></i>Bimbingan</span>
+                                        <span class="badge bg-secondary"><i class="bi bi-hourglass-split me-1"></i>Bimbingan</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
                                         <!-- Tombol Konfigurasi Nilai & Kelulusan -->
                                         <button type="button" class="btn btn-outline-success btn-kelulusan" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalKelulusan"
+                                                data-bs-toggle="modal" data-bs-target="#modalKelulusan"
                                                 data-id="<?= $row['id']; ?>"
                                                 data-nama="<?= htmlspecialchars($row['nama_lengkap']); ?>"
                                                 data-nim="<?= htmlspecialchars($row['nim']); ?>"
                                                 data-status="<?= $row['status_kelulusan']; ?>"
                                                 data-nilai="<?= $nilai; ?>"
-                                                title="Konfigurasi Nilai & Kelulusan">
+                                                title="Konfigurasi Nilai & Status Kelulusan">
                                             <i class="bi bi-award-fill"></i>
                                         </button>
-                                        <!-- Tombol Edit Mahasiswa -->
+                                        <!-- Tombol Edit Data Mahasiswa -->
                                         <button type="button" class="btn btn-outline-primary btn-edit" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalEditMhs"
+                                                data-bs-toggle="modal" data-bs-target="#modalEditMhs"
                                                 data-id="<?= $row['id']; ?>"
                                                 data-userid="<?= $row['user_id']; ?>"
                                                 data-nim="<?= htmlspecialchars($row['nim']); ?>"
                                                 data-nama="<?= htmlspecialchars($row['nama_lengkap']); ?>"
+                                                data-kelas="<?= htmlspecialchars($row['kelas'] ?? 'TI-1A-2025'); ?>"
                                                 data-judul="<?= htmlspecialchars($row['judul_skripsi']); ?>"
-                                                data-dosenid="<?= $row['dosen_pembimbing_id'] ?? ''; ?>"
+                                                data-dosenid="<?= $row['dosen_pembimbing_id']; ?>"
                                                 data-status="<?= $row['status_kelulusan']; ?>"
                                                 data-username="<?= htmlspecialchars($row['username']); ?>"
                                                 title="Edit Data Mahasiswa">
@@ -521,8 +599,7 @@ require_once '../templates/sidebar_admin.php';
                                         </button>
                                         <!-- Tombol Hapus Mahasiswa -->
                                         <button type="button" class="btn btn-outline-danger btn-delete" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalHapusMhs"
+                                                data-bs-toggle="modal" data-bs-target="#modalHapusMhs"
                                                 data-userid="<?= $row['user_id']; ?>"
                                                 data-nama="<?= htmlspecialchars($row['nama_lengkap']); ?>"
                                                 data-nim="<?= htmlspecialchars($row['nim']); ?>"
@@ -541,25 +618,33 @@ require_once '../templates/sidebar_admin.php';
 </div>
 
 <!-- ========================================================================= -->
-<!-- MODAL TAMBAH MAHASISWA -->
+<!-- MODAL TAMBAH MAHASISWA BARU -->
 <!-- ========================================================================= -->
 <div class="modal fade" id="modalTambahMhs" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form method="POST" action="data_mahasiswa.php" class="modal-content">
             <input type="hidden" name="action" value="create">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2"></i>Tambah Mahasiswa Baru</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2"></i>Tambah Mahasiswa Tugas Akhir Baru</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Nomor Induk Mahasiswa (NIM) <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="nim" placeholder="Contoh: 202401003" required>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">NIM Mahasiswa <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control font-monospace" name="nim" placeholder="Contoh: 41257144" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <label class="form-label small fw-semibold">Nama Lengkap Mahasiswa <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_lengkap" placeholder="Nama mahasiswa sesuai KRS" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Kelas Mahasiswa <span class="text-danger">*</span></label>
+                        <select name="kelas" class="form-select" required>
+                            <option value="TI-1A-2025" selected>TI-1A-2025 (Pagi)</option>
+                            <option value="TI-1B-2025">TI-1B-2025 (Pagi)</option>
+                            <option value="TI-1C-2025">TI-1C-2025 (Malam)</option>
+                        </select>
                     </div>
                     <div class="col-12">
                         <label class="form-label small fw-semibold">Judul Rencana / Proposal Skripsi</label>
@@ -573,6 +658,7 @@ require_once '../templates/sidebar_admin.php';
                                 <option value="<?= $d['id']; ?>"><?= htmlspecialchars($d['nama_dosen']); ?> (Kuota: <?= $d['kuota_bimbingan']; ?>)</option>
                             <?php endforeach; ?>
                         </select>
+                        <div class="form-text small">Jika dipilih, status pembimbing otomatis menjadi "Menunggu Konfirmasi".</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Status Awal Kelulusan <span class="text-danger">*</span></label>
@@ -589,7 +675,7 @@ require_once '../templates/sidebar_admin.php';
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Username Login <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" name="username" placeholder="Username untuk masuk sistem" required>
+                                    <input type="text" class="form-control" name="username" placeholder="Gunakan NIM atau username tanpa spasi" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
@@ -623,13 +709,21 @@ require_once '../templates/sidebar_admin.php';
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label small fw-semibold">NIM <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="nim" id="edit_nim" required>
+                        <input type="text" class="form-control font-monospace" name="nim" id="edit_nim" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-5">
                         <label class="form-label small fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_lengkap" id="edit_nama_lengkap" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold">Kelas <span class="text-danger">*</span></label>
+                        <select name="kelas" id="edit_kelas" class="form-select" required>
+                            <option value="TI-1A-2025">TI-1A-2025</option>
+                            <option value="TI-1B-2025">TI-1B-2025</option>
+                            <option value="TI-1C-2025">TI-1C-2025</option>
+                        </select>
                     </div>
                     <div class="col-12">
                         <label class="form-label small fw-semibold">Judul Skripsi</label>
@@ -761,6 +855,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_user_id').value          = this.dataset.userid;
             document.getElementById('edit_nim').value              = this.dataset.nim;
             document.getElementById('edit_nama_lengkap').value     = this.dataset.nama;
+            document.getElementById('edit_kelas').value            = this.dataset.kelas || 'TI-1A-2025';
             document.getElementById('edit_judul_skripsi').value    = this.dataset.judul;
             document.getElementById('edit_dosen_id').value         = this.dataset.dosenid;
             document.getElementById('edit_status_kelulusan').value = this.dataset.status;

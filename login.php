@@ -25,6 +25,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_id']  = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role']     = $user['role'];
+
+                // Load nama lengkap & foto profil ke session
+                try {
+                    if ($user['role'] === 'admin') {
+                        $stmt_adm = $pdo->prepare("SELECT nama_lengkap, foto_profil FROM admin_profil WHERE user_id = :uid LIMIT 1");
+                        $stmt_adm->execute([':uid' => $user['id']]);
+                        $adm_data = $stmt_adm->fetch();
+                        if ($adm_data) {
+                            $_SESSION['nama_lengkap'] = $adm_data['nama_lengkap'];
+                            $_SESSION['foto_profil']  = $adm_data['foto_profil'];
+                        }
+                    } elseif ($user['role'] === 'dosen') {
+                        $stmt_dsn = $pdo->prepare("SELECT nama_dosen, foto_profil FROM dosen WHERE user_id = :uid LIMIT 1");
+                        $stmt_dsn->execute([':uid' => $user['id']]);
+                        $dsn_data = $stmt_dsn->fetch();
+                        if ($dsn_data) {
+                            $_SESSION['nama_lengkap'] = $dsn_data['nama_dosen'];
+                            $_SESSION['foto_profil']  = $dsn_data['foto_profil'];
+                        }
+                    } elseif ($user['role'] === 'mahasiswa') {
+                        $stmt_mhs = $pdo->prepare("SELECT nama_lengkap, foto_profil FROM mahasiswa WHERE user_id = :uid LIMIT 1");
+                        $stmt_mhs->execute([':uid' => $user['id']]);
+                        $mhs_data = $stmt_mhs->fetch();
+                        if ($mhs_data) {
+                            $_SESSION['nama_lengkap'] = $mhs_data['nama_lengkap'];
+                            $_SESSION['foto_profil']  = $mhs_data['foto_profil'];
+                        }
+                    }
+                } catch (Exception $e) {
+                    // Abaikan jika query profil gagal
+                }
+
                 if ($user['role'] === 'admin') header("Location: admin/index.php");
                 elseif ($user['role'] === 'dosen') header("Location: dosen/index.php");
                 elseif ($user['role'] === 'mahasiswa') header("Location: mahasiswa/index.php");

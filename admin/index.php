@@ -41,7 +41,7 @@ $mhs_terbaru = $pdo->query("
             <i class="bi bi-stars text-warning"></i>
             <span>Executive Command Center</span>
         </div>
-        <h2 class="fw-bold text-white mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['username'] ?? 'Administrator'); ?>! 👋</h2>
+        <h2 class="fw-bold text-white mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Administrator'); ?>! 👋</h2>
         <p class="text-white-50 small mb-0">Kelola master data akademik, jadwal dosen, plotting bimbingan, dan evaluasi kelulusan skripsi.</p>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -50,6 +50,9 @@ $mhs_terbaru = $pdo->query("
             <?php if ($total_belum_plot > 0): ?>
                 <span class="badge bg-danger ms-1"><?= $total_belum_plot; ?> Belum Diplot</span>
             <?php endif; ?>
+        </a>
+        <a href="jadwal_sidang.php" class="btn btn-warning text-dark fw-bold">
+            <i class="bi bi-calendar2-check-fill me-1"></i> Jadwal Sidang (3 Penguji)
         </a>
         <a href="laporan_plotting.php" class="btn btn-outline-light">
             <i class="bi bi-printer me-1"></i> Cetak Laporan
@@ -194,7 +197,10 @@ $mhs_terbaru = $pdo->query("
                                                 </div>
                                                 <div>
                                                     <div class="fw-bold text-dark"><?= htmlspecialchars($m['nama_lengkap']); ?></div>
-                                                    <span class="font-monospace text-muted small">NIM: <?= htmlspecialchars($m['nim']); ?></span>
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <span class="font-monospace text-muted small">NIM: <?= htmlspecialchars($m['nim']); ?></span>
+                                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.65rem;"><?= htmlspecialchars($m['kelas'] ?? '-Self'); ?></span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </td>
@@ -299,6 +305,20 @@ $mhs_terbaru = $pdo->query("
                         <div>
                             <div class="fw-bold text-dark">Plotting Pembimbing</div>
                             <small class="text-muted">Petakan mahasiswa ke dosen pembimbing</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+
+                <!-- Action 5: Jadwal Sidang -->
+                <a href="jadwal_sidang.php" class="btn btn-outline-warning d-flex align-items-center justify-content-between p-3 text-start border bg-light bg-opacity-50">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 rounded-3 bg-warning-subtle text-warning">
+                            <i class="bi bi-calendar2-check fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">Jadwal Sidang Skripsi</div>
+                            <small class="text-muted">Tetapkan 3 penguji & ruangan sidang</small>
                         </div>
                     </div>
                     <i class="bi bi-chevron-right text-muted"></i>

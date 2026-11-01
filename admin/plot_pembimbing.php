@@ -32,6 +32,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $error_msg = 'Silakan pilih salah satu dosen pembimbing.';
         } else {
             try {
+                $pdo->beginTransaction();
+
                 // Cek kuota dosen
                 $stmtD = $pdo->prepare("
                     SELECT d.nama_dosen, d.kuota_bimbingan, COUNT(m.id) as terisi 
@@ -51,13 +53,42 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     throw new Exception("Kuota bimbingan untuk {$dosenInfo['nama_dosen']} sudah penuh ({$dosenInfo['kuota_bimbingan']} mahasiswa).");
                 }
 
-                // Update relasi mahasiswa ke dosen
-                $stmtUp = $pdo->prepare("UPDATE mahasiswa SET dosen_pembimbing_id = :did WHERE id = :mid");
+                // Ambil data mahasiswa untuk notifikasi
+                $stmtM = $pdo->prepare("SELECT user_id, nama_lengkap, nim FROM mahasiswa WHERE id = :mid");
+                $stmtM->execute([':mid' => $mahasiswa_id]);
+                $mhsInfo = $stmtM->fetch();
+
+                if (!$mhsInfo) {
+                    throw new Exception('Data mahasiswa tidak ditemukan.');
+                }
+
+                // Update relasi mahasiswa ke dosen dan set status_pembimbing = 'menunggu_konfirmasi'
+                $stmtUp = $pdo->prepare("
+                    UPDATE mahasiswa 
+                    SET dosen_pembimbing_id = :did, status_pembimbing = 'menunggu_konfirmasi' 
+                    WHERE id = :mid
+                ");
                 $stmtUp->execute([':did' => $dosen_id, ':mid' => $mahasiswa_id]);
 
+                // Buat notifikasi otomatis ke user mahasiswa
+                $pesanNotif = "Anda telah ditetapkan dibimbing oleh {$dosenInfo['nama_dosen']}. Silakan lakukan konfirmasi penerimaan SK di dashboard mahasiswa.";
+                $stmtNotif = $pdo->prepare("
+                    INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
+                    VALUES (:uid, 'Dosen Pembimbing Ditetapkan', :pesan, 'pembimbing', 'index.php')
+                ");
+                $stmtNotif->execute([
+                    ':uid'   => $mhsInfo['user_id'],
+                    ':pesan' => $pesanNotif
+                ]);
+
+                $pdo->commit();
+
                 $label = ($action === 'reassign') ? 'diperbarui / dialihkan' : 'ditetapkan';
-                $success_msg = "Dosen pembimbing ({$dosenInfo['nama_dosen']}) berhasil {$label} untuk mahasiswa.";
+                $success_msg = "Dosen pembimbing ({$dosenInfo['nama_dosen']}) berhasil {$label} untuk mahasiswa {$mhsInfo['nama_lengkap']} (Status: Menunggu Konfirmasi SK). Notifikasi telah dikirim.";
             } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
                 $error_msg = "Gagal memproses pembimbing: " . $e->getMessage();
             }
         }
@@ -68,14 +99,35 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $mahasiswa_id = (int)($_POST['mahasiswa_id'] ?? 0);
         if ($mahasiswa_id > 0) {
             try {
-                $stmtReset = $pdo->prepare("UPDATE mahasiswa SET dosen_pembimbing_id = NULL WHERE id = :mid");
+                $stmtReset = $pdo->prepare("
+                    UPDATE mahasiswa 
+                    SET dosen_pembimbing_id = NULL, status_pembimbing = 'belum_diplot' 
+                    WHERE id = :mid
+                ");
                 $stmtReset->execute([':mid' => $mahasiswa_id]);
-                $success_msg = "Plotting dosen pembimbing berhasil dilepas.";
+                $success_msg = "Plotting dosen pembimbing berhasil dilepas (Status: Belum Diplot).";
             } catch (Exception $e) {
                 $error_msg = "Gagal membatalkan plotting: " . $e->getMessage();
             }
         }
     }
+}
+
+// =========================================================================
+// FILTER KELAS
+// =========================================================================
+$filter_kelas = $_GET['kelas'] ?? 'all';
+$where_kelas_belum = "";
+$where_kelas_sudah = "";
+$params_belum = [];
+$params_sudah = [];
+
+if ($filter_kelas !== 'all' && in_array($filter_kelas, ['TI-1A-2025', 'TI-1B-2025', 'TI-1C-2025'])) {
+    $where_kelas_belum = " AND m.kelas = :k_belum ";
+    $params_belum[':k_belum'] = $filter_kelas;
+
+    $where_kelas_sudah = " AND m.kelas = :k_sudah ";
+    $params_sudah[':k_sudah'] = $filter_kelas;
 }
 
 // =========================================================================
@@ -103,10 +155,12 @@ $queryBelum = "
     SELECT m.*, u.username 
     FROM mahasiswa m
     INNER JOIN users u ON m.user_id = u.id
-    WHERE m.dosen_pembimbing_id IS NULL
-    ORDER BY m.id DESC
+    WHERE m.dosen_pembimbing_id IS NULL {$where_kelas_belum}
+    ORDER BY m.kelas ASC, m.nama_lengkap ASC
 ";
-$mhs_belum_plot = $pdo->query($queryBelum)->fetchAll();
+$stmtBelum = $pdo->prepare($queryBelum);
+$stmtBelum->execute($params_belum);
+$mhs_belum_plot = $stmtBelum->fetchAll();
 
 // =========================================================================
 // AMBIL MAHASISWA YANG SUDAH MEMILIKI PEMBIMBING (SUDAH DIPLOT)
@@ -116,9 +170,12 @@ $querySudah = "
     FROM mahasiswa m
     INNER JOIN users u ON m.user_id = u.id
     INNER JOIN dosen d ON m.dosen_pembimbing_id = d.id
-    ORDER BY m.nama_lengkap ASC
+    WHERE 1=1 {$where_kelas_sudah}
+    ORDER BY m.kelas ASC, m.nama_lengkap ASC
 ";
-$mhs_sudah_plot = $pdo->query($querySudah)->fetchAll();
+$stmtSudah = $pdo->prepare($querySudah);
+$stmtSudah->execute($params_sudah);
+$mhs_sudah_plot = $stmtSudah->fetchAll();
 
 $page_title   = "Plotting Dosen Pembimbing";
 $current_page = "plotting";
@@ -131,11 +188,11 @@ require_once '../templates/sidebar_admin.php';
 <div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
         <div class="hero-tag">
-            <i class="bi bi-diagram-3-fill text-primary"></i>
-            <span>Pemetaan Akademik & Kuota Bimbingan</span>
+            <i class="bi bi-diagram-3-fill"></i>
+            <span>Pemetaan Akademik & Kuota Bimbingan (Maks 5 Mhs/Dosen)</span>
         </div>
         <h2 class="fw-bold text-white mb-1">Mekanisme Plotting Pembimbing</h2>
-        <p class="text-white-50 small mb-0">Petakan, tetapkan, atau alihkan dosen pembimbing skripsi mahasiswa secara akurat & transparan.</p>
+        <p class="text-white-50 small mb-0">Petakan dosen pembimbing skripsi, kirim notifikasi otomatis konfirmasi SK, serta pantau kuota beban 9 dosen.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
         <a href="laporan_plotting.php" class="btn btn-light shadow-sm fw-bold">
@@ -161,7 +218,29 @@ require_once '../templates/sidebar_admin.php';
     </div>
 <?php endif; ?>
 
-<!-- Ringkasan Beban & Kuota Dosen -->
+<!-- Filter Kelas Bar -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-3">
+        <form method="GET" action="plot_pembimbing.php" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small fw-semibold"><i class="bi bi-filter me-1"></i>Saring Kelas:</span>
+                    <select name="kelas" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Tampilkan Semua Kelas (TI-1A, 1B, 1C) --</option>
+                        <option value="TI-1A-2025" <?= ($filter_kelas === 'TI-1A-2025') ? 'selected' : ''; ?>>Kelas TI-1A-2025</option>
+                        <option value="TI-1B-2025" <?= ($filter_kelas === 'TI-1B-2025') ? 'selected' : ''; ?>>Kelas TI-1B-2025</option>
+                        <option value="TI-1C-2025" <?= ($filter_kelas === 'TI-1C-2025') ? 'selected' : ''; ?>>Kelas TI-1C-2025</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-7 text-md-end text-muted small">
+                <span>Belum Diplot: <strong class="text-warning-emphasis"><?= count($mhs_belum_plot); ?></strong> | Sudah Diplot: <strong class="text-success"><?= count($mhs_sudah_plot); ?></strong></span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Ringkasan Beban & Kuota Dosen (9 Dosen) -->
 <div class="row g-3 mb-4">
     <?php foreach ($dosen_list as $dl): 
         $persen = $dl['kuota_bimbingan'] > 0 ? min(100, round(($dl['total_bimbingan'] / $dl['kuota_bimbingan']) * 100)) : 0;
@@ -178,7 +257,7 @@ require_once '../templates/sidebar_admin.php';
                             </div>
                             <div>
                                 <h6 class="fw-bold text-dark mb-0"><?= htmlspecialchars($dl['nama_dosen']); ?></h6>
-                                <span class="text-muted font-monospace small">NIDN: <?= htmlspecialchars($dl['nidn']); ?></span>
+                                <span class="text-muted font-monospace small" style="font-size: 0.72rem;">NIDN: <?= htmlspecialchars($dl['nidn']); ?></span>
                             </div>
                         </div>
                         <span class="badge <?= $is_full ? 'bg-danger' : 'bg-success'; ?>">
@@ -220,6 +299,7 @@ require_once '../templates/sidebar_admin.php';
                     <tr>
                         <th class="ps-3" style="width: 50px;">No</th>
                         <th>Mahasiswa</th>
+                        <th>Kelas</th>
                         <th>Judul Skripsi</th>
                         <th style="min-width: 320px;">Pilih Dosen Pembimbing</th>
                         <th class="text-center" style="width: 140px;">Aksi</th>
@@ -228,7 +308,7 @@ require_once '../templates/sidebar_admin.php';
                 <tbody>
                     <?php if (empty($mhs_belum_plot)): ?>
                         <tr>
-                            <td colspan="5" class="text-center text-success py-5">
+                            <td colspan="6" class="text-center text-success py-5">
                                 <i class="bi bi-check-circle-fill fs-2 d-block text-success mb-2"></i>
                                 Semua mahasiswa yang terdaftar sudah memiliki dosen pembimbing!
                             </td>
@@ -253,7 +333,12 @@ require_once '../templates/sidebar_admin.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="text-muted small d-block" style="max-width: 350px;">
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                        <?= htmlspecialchars($m['kelas'] ?? 'TI-1A-2025'); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-muted small d-block text-truncate" style="max-width: 320px;" title="<?= htmlspecialchars($m['judul_skripsi']); ?>">
                                         <?= htmlspecialchars($m['judul_skripsi']); ?>
                                     </span>
                                 </td>
@@ -296,7 +381,7 @@ require_once '../templates/sidebar_admin.php';
             </span>
             <div>
                 <h6 class="fw-bold mb-0 text-dark">Daftar Mahasiswa yang Telah Diplot</h6>
-                <small class="text-muted">Total <?= count($mhs_sudah_plot); ?> mahasiswa sudah memiliki pembimbing aktif</small>
+                <small class="text-muted">Total <?= count($mhs_sudah_plot); ?> mahasiswa sudah memiliki pembimbing</small>
             </div>
         </div>
     </div>
@@ -307,8 +392,10 @@ require_once '../templates/sidebar_admin.php';
                     <tr>
                         <th class="ps-3" style="width: 50px;">No</th>
                         <th>Mahasiswa</th>
+                        <th>Kelas</th>
                         <th>Judul Skripsi</th>
                         <th>Dosen Pembimbing Aktif</th>
+                        <th>Status SK Pembimbing</th>
                         <th>Status Kelulusan</th>
                         <th class="text-center" style="width: 170px;">Aksi</th>
                     </tr>
@@ -316,7 +403,7 @@ require_once '../templates/sidebar_admin.php';
                 <tbody>
                     <?php if (empty($mhs_sudah_plot)): ?>
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-5">
+                            <td colspan="8" class="text-center text-muted py-5">
                                 <i class="bi bi-inbox fs-2 d-block text-secondary mb-2"></i>
                                 Belum ada mahasiswa yang diplot ke dosen.
                             </td>
@@ -326,6 +413,7 @@ require_once '../templates/sidebar_admin.php';
                         $no = 1;
                         foreach ($mhs_sudah_plot as $m): 
                             $initial = strtoupper(substr($m['nama_lengkap'], 0, 1));
+                            $spemb = $m['status_pembimbing'] ?? 'belum_diplot';
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
@@ -341,12 +429,30 @@ require_once '../templates/sidebar_admin.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <small class="text-muted d-block text-truncate" style="max-width: 280px;" title="<?= htmlspecialchars($m['judul_skripsi']); ?>">
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                        <?= htmlspecialchars($m['kelas'] ?? 'TI-1A-2025'); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted d-block text-truncate" style="max-width: 250px;" title="<?= htmlspecialchars($m['judul_skripsi']); ?>">
                                         <?= htmlspecialchars($m['judul_skripsi']); ?>
                                     </small>
                                 </td>
                                 <td>
                                     <span class="fw-semibold text-success"><i class="bi bi-check-circle-fill me-1"></i><?= htmlspecialchars($m['nama_dosen']); ?></span>
+                                </td>
+                                <td>
+                                    <?php if ($spemb === 'aktif'): ?>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-patch-check-fill me-1"></i>SK Aktif
+                                        </span>
+                                    <?php elseif ($spemb === 'menunggu_konfirmasi'): ?>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                            <i class="bi bi-clock-history me-1"></i>Menunggu Konfirmasi
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-info-subtle text-info border border-info-subtle">Terplot</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if ($m['status_kelulusan'] === 'lulus'): ?>
@@ -421,7 +527,7 @@ require_once '../templates/sidebar_admin.php';
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <div class="form-text">Dosen dengan kuota yang sudah penuh dinonaktifkan secara otomatis.</div>
+                    <div class="form-text">Dosen dengan kuota yang sudah penuh dinonaktifkan secara otomatis. Setelah dialihkan, notifikasi konfirmasi SK baru akan dikirimkan ke mahasiswa.</div>
                 </div>
             </div>
             <div class="modal-footer">

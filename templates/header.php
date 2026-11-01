@@ -52,6 +52,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action_quick_
             if (!empty($new_nama) && $cur_role === 'dosen') {
                 $stmt_up_d = $pdo->prepare("UPDATE dosen SET nama_dosen = :nm WHERE user_id = :uid");
                 $stmt_up_d->execute([':nm' => $new_nama, ':uid' => $cur_user_id]);
+                $_SESSION['nama_lengkap'] = $new_nama;
+            } elseif (!empty($new_nama) && $cur_role === 'admin') {
+                $stmt_up_a = $pdo->prepare("UPDATE admin_profil SET nama_lengkap = :nm WHERE user_id = :uid");
+                $stmt_up_a->execute([':nm' => $new_nama, ':uid' => $cur_user_id]);
+                $_SESSION['nama_lengkap'] = $new_nama;
             }
 
             // Redirect bersih ke halaman yang sama
@@ -112,11 +117,14 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                     data-bs-target="#modalQuickEditNavbar" 
                     title="Klik untuk mengedit username atau nama Anda">
                 <span class="small d-none d-md-inline text-white-50">Halo,</span>
-                <span class="fw-bold text-white border-bottom border-white border-opacity-50 pb-0"><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
+                <span class="fw-bold text-white border-bottom border-white border-opacity-50 pb-0"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
                 <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-2 py-1 shadow-sm" style="font-size: 0.72rem;">
                     <i class="bi bi-pencil-fill me-1"></i>Edit
                 </span>
             </button>
+            <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
+                <i class="bi bi-person-gear"></i><span class="d-none d-md-inline">Profil</span>
+            </a>
             <a href="../logout.php" class="btn btn-sm btn-outline-light px-3" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
                 <i class="bi bi-box-arrow-right me-1"></i>Logout
             </a>
@@ -124,7 +132,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     </div>
 </nav>
 
-<!-- MODAL QUICK EDIT USERNAME & NAMA DOSEN LANGSUNG DARI NAVBAR -->
+<!-- MODAL QUICK EDIT USERNAME & NAMA DOSEN / ADMIN LANGSUNG DARI NAVBAR -->
 <div class="modal fade" id="modalQuickEditNavbar" tabindex="-1" aria-labelledby="modalQuickEditNavbarLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content shadow border-0 text-dark">
@@ -158,7 +166,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                                    value="<?= htmlspecialchars($_SESSION['username'] ?? ''); ?>" 
                                    placeholder="Contoh: dosen1" required autofocus>
                         </div>
-                        <div class="form-text small text-muted">Tanpa spasi. Contoh: <code>salsa</code>, <code>dosen_hendra</code>, <code>dosen1</code>.</div>
+                        <div class="form-text small text-muted">Tanpa spasi. Contoh: <code>salsa</code>, <code>dosen_hendra</code>, <code>admin</code>.</div>
                     </div>
 
                     <?php if ($cur_role === 'dosen'): ?>
@@ -168,9 +176,20 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                             <i class="bi bi-person-lines-fill text-primary me-1"></i>Nama Lengkap & Gelar Resmi Dosen
                         </label>
                         <input type="text" name="quick_nama_dosen" id="quick_nama_dosen" class="form-control" 
-                               value="<?= htmlspecialchars($dosen_info['nama_dosen'] ?? ''); ?>" 
-                               placeholder="Contoh: Dr. Hendra Gunawan, M.T.">
+                                value="<?= htmlspecialchars($dosen_info['nama_dosen'] ?? $_SESSION['nama_lengkap'] ?? ''); ?>" 
+                                placeholder="Contoh: Dr. Hendra Gunawan, M.T.">
                         <div class="form-text small text-muted">Nama resmi yang tampil di lembar laporan dan kartu bimbingan mahasiswa.</div>
+                    </div>
+                    <?php elseif ($cur_role === 'admin'): ?>
+                    <!-- Input Nama Lengkap Admin -->
+                    <div class="mb-3">
+                        <label for="quick_nama_dosen" class="form-label fw-bold small text-dark">
+                            <i class="bi bi-person-lines-fill text-primary me-1"></i>Nama Lengkap Administrator
+                        </label>
+                        <input type="text" name="quick_nama_dosen" id="quick_nama_dosen" class="form-control" 
+                                value="<?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Administrator'); ?>" 
+                                placeholder="Contoh: Talita Nabila, S.Kom.">
+                        <div class="form-text small text-muted">Nama resmi yang tampil pada navbar sistem dan kop surat laporan akademik.</div>
                     </div>
                     <?php endif; ?>
                 </div>

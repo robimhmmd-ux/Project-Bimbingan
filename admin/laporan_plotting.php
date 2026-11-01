@@ -312,11 +312,12 @@ require_once '../templates/sidebar_admin.php';
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width: 40px;" class="text-center">No</th>
-                                        <th style="width: 120px;">NIM</th>
-                                        <th style="width: 220px;">Nama Mahasiswa</th>
+                                        <th style="width: 110px;">NIM</th>
+                                        <th style="width: 200px;">Nama Mahasiswa</th>
+                                        <th style="width: 100px;" class="text-center">Kelas</th>
                                         <th>Judul Penelitian Skripsi</th>
-                                        <th style="width: 90px;" class="text-center">Progres</th>
-                                        <th style="width: 130px;" class="text-center">Status Kelulusan</th>
+                                        <th style="width: 80px;" class="text-center">Progres</th>
+                                        <th style="width: 120px;" class="text-center">Status Kelulusan</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -328,6 +329,7 @@ require_once '../templates/sidebar_admin.php';
                                             <td class="text-center"><?= $no++; ?></td>
                                             <td class="font-monospace fw-bold text-primary"><?= htmlspecialchars($m['nim']); ?></td>
                                             <td class="fw-semibold text-dark"><?= htmlspecialchars($m['nama_lengkap']); ?></td>
+                                            <td class="text-center"><span class="badge bg-light text-dark border"><?= htmlspecialchars($m['kelas'] ?? '-'); ?></span></td>
                                             <td><?= htmlspecialchars($m['judul_skripsi']); ?></td>
                                             <td class="text-center font-monospace fw-bold">
                                                 <?= (int)$m['nilai_terakhir']; ?>%
@@ -368,10 +370,11 @@ require_once '../templates/sidebar_admin.php';
                     <thead class="table-light">
                         <tr>
                             <th style="width: 40px;" class="text-center">No</th>
-                            <th style="width: 130px;">NIM</th>
-                            <th style="width: 220px;">Nama Mahasiswa</th>
+                            <th style="width: 120px;">NIM</th>
+                            <th style="width: 200px;">Nama Mahasiswa</th>
+                            <th style="width: 100px;" class="text-center">Kelas</th>
                             <th>Rencana Judul Skripsi</th>
-                            <th style="width: 140px;" class="text-center">Status</th>
+                            <th style="width: 130px;" class="text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody>

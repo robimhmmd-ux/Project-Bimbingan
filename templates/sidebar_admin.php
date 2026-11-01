@@ -56,9 +56,28 @@
                     </a>
                 </li>
                 <li class="nav-item mb-1">
+                    <a class="nav-link <?= ($current_page == 'sidang') ? 'active' : ''; ?>" href="jadwal_sidang.php">
+                        <i class="bi bi-calendar2-check-fill me-2 text-warning"></i>
+                        <span>Jadwal Sidang Skripsi</span>
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
                     <a class="nav-link <?= ($current_page == 'laporan') ? 'active' : ''; ?>" href="laporan_plotting.php">
                         <i class="bi bi-printer-fill me-2 text-danger"></i>
                         <span>Rekap & Cetak Laporan</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Section: Pengaturan Akun -->
+        <div class="sidebar-category mb-3">
+            <span class="sidebar-heading px-3 text-uppercase">Pengaturan</span>
+            <ul class="nav flex-column nav-pills mt-1">
+                <li class="nav-item mb-1">
+                    <a class="nav-link <?= ($current_page == 'profil') ? 'active' : ''; ?>" href="profil.php">
+                        <i class="bi bi-person-gear me-2 text-secondary"></i>
+                        <span>Profil & Pengaturan Akun</span>
                     </a>
                 </li>
             </ul>

@@ -12,6 +12,19 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- 1.1 TABEL PROFIL ADMINISTRATOR
+CREATE TABLE IF NOT EXISTS admin_profil (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    nama_lengkap VARCHAR(100) NOT NULL DEFAULT 'Administrator Utama',
+    email VARCHAR(100) DEFAULT 'admin@univ.ac.id',
+    no_whatsapp VARCHAR(20) DEFAULT '081234567890',
+    jabatan VARCHAR(100) DEFAULT 'Staf Administrasi Akademik & Skripsi',
+    foto_profil VARCHAR(255) DEFAULT 'default.png',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- 2. TABEL DOSEN
 CREATE TABLE IF NOT EXISTS dosen (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -151,6 +164,10 @@ INSERT INTO users (id, username, password, role) VALUES
 (2, 'dosen1', '$2y$10$7iNS8F5KQGTbVKHI9Acx5unQphy3bA4sjkSDA16B8LjO3mPULtq.i', 'dosen'),
 (3, 'dosen2', '$2y$10$7iNS8F5KQGTbVKHI9Acx5unQphy3bA4sjkSDA16B8LjO3mPULtq.i', 'dosen')
 ON DUPLICATE KEY UPDATE role=VALUES(role);
+
+INSERT INTO admin_profil (user_id, nama_lengkap, email, no_whatsapp, jabatan, foto_profil) VALUES
+(1, 'Administrator Utama', 'admin@univ.ac.id', '081234567890', 'Staf Administrasi Akademik & Skripsi', 'default.png')
+ON DUPLICATE KEY UPDATE nama_lengkap=VALUES(nama_lengkap);
 
 INSERT INTO dosen (id, user_id, nidn, nama_dosen, email, no_whatsapp, kuota_bimbingan) VALUES
 (1, 2, '0412058001', 'Dr. Hendra Gunawan, M.T.', 'hendra@univ.ac.id', '081234567890', 5),

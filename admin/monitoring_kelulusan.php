@@ -65,6 +65,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 // FILTER & QUERY DATA MONITORING
 // =========================================================================
 $filter_status = $_GET['status'] ?? 'all';
+$filter_kelas  = $_GET['kelas'] ?? 'all';
 $filter_dosen  = (int)($_GET['dosen_id'] ?? 0);
 $search_q      = trim($_GET['q'] ?? '');
 
@@ -76,19 +77,24 @@ if ($filter_status !== 'all' && in_array($filter_status, ['proses_bimbingan', 's
     $params[':st'] = $filter_status;
 }
 
+if ($filter_kelas !== 'all' && in_array($filter_kelas, ['TI-1A-2025', 'TI-1B-2025', 'TI-1C-2025'])) {
+    $where[] = "m.kelas = :kelas";
+    $params[':kelas'] = $filter_kelas;
+}
+
 if ($filter_dosen > 0) {
     $where[] = "m.dosen_pembimbing_id = :did";
     $params[':did'] = $filter_dosen;
 }
 
 if (!empty($search_q)) {
-    $where[] = "(m.nim LIKE :q OR m.nama_lengkap LIKE :q OR m.judul_skripsi LIKE :q)";
+    $where[] = "(m.nim LIKE :q OR m.nama_lengkap LIKE :q OR m.judul_skripsi LIKE :q OR m.kelas LIKE :q)";
     $params[':q'] = "%{$search_q}%";
 }
 
 $where_sql = implode(" AND ", $where);
 
-// Query Mahasiswa dengan Progres Bimbingan dan Logbook
+// Query Mahasiswa dengan Progres Bimbingan, Logbook, dan Sidang
 $queryMhs = "
     SELECT 
         m.*,
@@ -101,7 +107,8 @@ $queryMhs = "
         (SELECT COUNT(*) FROM pengajuan_bimbingan WHERE mahasiswa_id = m.id) AS total_bimbingan,
         (SELECT COUNT(*) FROM logbook_bimbingan WHERE mahasiswa_id = m.id) AS total_acc_bab,
         (SELECT status_bab FROM logbook_bimbingan WHERE mahasiswa_id = m.id ORDER BY id DESC LIMIT 1) AS status_bab_terakhir,
-        (SELECT tanggal_acc FROM logbook_bimbingan WHERE mahasiswa_id = m.id ORDER BY id DESC LIMIT 1) AS tgl_acc_terakhir
+        (SELECT tanggal_acc FROM logbook_bimbingan WHERE mahasiswa_id = m.id ORDER BY id DESC LIMIT 1) AS tgl_acc_terakhir,
+        (SELECT status_sidang FROM sidang_skripsi WHERE mahasiswa_id = m.id ORDER BY id DESC LIMIT 1) AS status_sidang_terakhir
     FROM mahasiswa m
     INNER JOIN users u ON m.user_id = u.id
     LEFT JOIN dosen d ON m.dosen_pembimbing_id = d.id
@@ -112,7 +119,8 @@ $queryMhs = "
             WHEN 'proses_bimbingan' THEN 2 
             WHEN 'lulus' THEN 3 
         END,
-        m.id DESC
+        m.kelas ASC,
+        m.nama_lengkap ASC
 ";
 $stmt = $pdo->prepare($queryMhs);
 $stmt->execute($params);
@@ -142,19 +150,16 @@ require_once '../templates/sidebar_admin.php';
 <div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
         <div class="hero-tag">
-            <i class="bi bi-award-fill text-purple"></i>
-            <span>Evaluasi Capaian & Kelulusan</span>
+            <i class="bi bi-mortarboard-fill"></i>
+            <span>Monitoring Akademik & Kelulusan (3 Kelas)</span>
         </div>
-        <h2 class="fw-bold text-white mb-1">Monitoring Kelulusan Mahasiswa</h2>
-        <p class="text-white-50 small mb-0">Pantau kemajuan skripsi, evaluasi capaian nilai progres, kesiapan sidang munaqasyah, hingga kelulusan final.</p>
+        <h2 class="fw-bold text-white mb-1">Monitoring Kelulusan & Sidang</h2>
+        <p class="text-white-50 small mb-0">Pantau progres tahapan bimbingan skripsi, verifikasi kesiapan munaqasyah, dan evaluasi hasil kelulusan mahasiswa.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
-        <a href="data_mahasiswa.php" class="btn btn-outline-light">
-            <i class="bi bi-people me-1"></i> Data Mahasiswa
+        <a href="jadwal_sidang.php" class="btn btn-warning text-dark shadow-sm fw-bold">
+            <i class="bi bi-calendar2-check-fill me-1"></i> Penjadwalan Sidang (3 Penguji)
         </a>
-        <button type="button" class="btn btn-light shadow-sm fw-bold" onclick="window.print()">
-            <i class="bi bi-printer-fill text-primary me-1"></i> Cetak Rekap Kelulusan
-        </button>
     </div>
 </div>
 
@@ -175,70 +180,75 @@ require_once '../templates/sidebar_admin.php';
     </div>
 <?php endif; ?>
 
-<!-- Pipeline Metrik Kelulusan -->
+<!-- Stat Bar Corong Kelulusan -->
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="metric-card p-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="text-muted small fw-bold text-uppercase">Tahap Bimbingan</span>
-                    <h3 class="fw-bold text-dark mb-0 mt-1"><?= $count_bimbingan; ?> <small class="fs-6 fw-normal text-muted">(<?= $persen_bimb; ?>%)</small></h3>
-                    <small class="text-muted">Masih aktif penulisan & revisi</small>
+                    <span class="small text-muted fw-bold text-uppercase">1. Bimbingan Aktif</span>
+                    <h3 class="fw-bold text-secondary mb-0 mt-1"><?= $count_bimbingan; ?></h3>
+                    <small class="text-muted"><?= $persen_bimb; ?>% dari total angkatan</small>
                 </div>
                 <div class="metric-icon-box bg-secondary-subtle text-secondary">
-                    <i class="bi bi-book"></i>
+                    <i class="bi bi-hourglass-split"></i>
                 </div>
+            </div>
+            <div class="progress mt-3" style="height: 4px;">
+                <div class="progress-bar bg-secondary" style="width: <?= $persen_bimb; ?>%"></div>
             </div>
         </div>
     </div>
-
     <div class="col-md-4">
-        <div class="metric-card p-3">
+        <div class="metric-card p-3 border-start border-4 border-primary">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="text-muted small fw-bold text-uppercase">Siap Sidang Munaqasyah</span>
-                    <h3 class="fw-bold text-primary mb-0 mt-1"><?= $count_siap; ?> <small class="fs-6 fw-normal text-muted">(<?= $persen_siap; ?>%)</small></h3>
-                    <small class="text-muted">ACC Bab lengkap dari pembimbing</small>
+                    <span class="small text-primary fw-bold text-uppercase">2. Siap Sidang (ACC 5 Bab)</span>
+                    <h3 class="fw-bold text-primary mb-0 mt-1"><?= $count_siap; ?></h3>
+                    <small class="text-muted"><?= $persen_siap; ?>% siap munaqasyah</small>
                 </div>
                 <div class="metric-icon-box bg-primary-subtle text-primary">
                     <i class="bi bi-award-fill"></i>
                 </div>
             </div>
+            <div class="progress mt-3" style="height: 4px;">
+                <div class="progress-bar bg-primary" style="width: <?= $persen_siap; ?>%"></div>
+            </div>
         </div>
     </div>
-
     <div class="col-md-4">
-        <div class="metric-card p-3">
+        <div class="metric-card p-3 border-start border-4 border-success">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <span class="text-muted small fw-bold text-uppercase">Telah Dinyatakan Lulus</span>
-                    <h3 class="fw-bold text-success mb-0 mt-1"><?= $count_lulus; ?> <small class="fs-6 fw-normal text-muted">(<?= $persen_lulus; ?>%)</small></h3>
-                    <small class="text-muted">Tuntas ujian sidang & yudisium</small>
+                    <span class="small text-success fw-bold text-uppercase">3. Telah Lulus Sidang</span>
+                    <h3 class="fw-bold text-success mb-0 mt-1"><?= $count_lulus; ?></h3>
+                    <small class="text-muted"><?= $persen_lulus; ?>% kelulusan resmi</small>
                 </div>
                 <div class="metric-icon-box bg-success-subtle text-success">
                     <i class="bi bi-check2-all"></i>
                 </div>
             </div>
+            <div class="progress mt-3" style="height: 4px;">
+                <div class="progress-bar bg-success" style="width: <?= $persen_lulus; ?>%"></div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Progress Bar Akumulasi Tingkat Kelulusan -->
+<!-- Progress Bar Tingkat Penyelesaian Angkatan -->
 <div class="card shadow-sm border-0 mb-4">
-    <div class="card-body p-3">
-        <div class="d-flex justify-content-between small fw-bold text-muted mb-2">
-            <span>Tingkat Kemajuan Kelulusan Mahasiswa Angkatan</span>
-            <span>Total: <?= $total_mhs; ?> Mahasiswa</span>
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Tingkat Penyelesaian Angkatan</h6>
+                <small class="text-muted">Komposisi status mahasiswa: Lulus (<?= $count_lulus; ?>), Siap Sidang (<?= $count_siap; ?>), Bimbingan (<?= $count_bimbingan; ?>)</small>
+            </div>
+            <span class="fw-bold text-success fs-5"><?= $persen_lulus; ?>% Lulus</span>
         </div>
-        <div class="progress" style="height: 10px;">
+        <div class="progress" style="height: 12px; border-radius: 9999px;">
             <div class="progress-bar bg-success" role="progressbar" style="width: <?= $persen_lulus; ?>%" title="Lulus: <?= $count_lulus; ?>"></div>
             <div class="progress-bar bg-primary" role="progressbar" style="width: <?= $persen_siap; ?>%" title="Siap Sidang: <?= $count_siap; ?>"></div>
-            <div class="progress-bar bg-secondary" role="progressbar" style="width: <?= $persen_bimb; ?>%" title="Bimbingan: <?= $count_bimbingan; ?>"></div>
-        </div>
-        <div class="d-flex gap-4 mt-2 small text-muted">
-            <div><span class="badge bg-success me-1">■</span> Lulus (<?= $count_lulus; ?>)</div>
-            <div><span class="badge bg-primary me-1">■</span> Siap Sidang (<?= $count_siap; ?>)</div>
-            <div><span class="badge bg-secondary me-1">■</span> Proses Bimbingan (<?= $count_bimbingan; ?>)</div>
+            <div class="progress-bar bg-secondary opacity-50" role="progressbar" style="width: <?= $persen_bimb; ?>%" title="Bimbingan: <?= $count_bimbingan; ?>"></div>
         </div>
     </div>
 </div>
@@ -247,20 +257,31 @@ require_once '../templates/sidebar_admin.php';
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-3">
         <form method="GET" action="monitoring_kelulusan.php" class="row g-2 align-items-center">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" class="form-control border-start-0 ps-0" name="q" value="<?= htmlspecialchars($search_q); ?>" placeholder="Cari NIM, Nama, atau Judul...">
+                    <input type="text" class="form-control border-start-0 ps-0" name="q" value="<?= htmlspecialchars($search_q); ?>" placeholder="Cari Mahasiswa...">
                 </div>
             </div>
-            <div class="col-md-3">
+            <!-- Filter Kelas -->
+            <div class="col-md-2">
+                <select name="kelas" class="form-select" onchange="this.form.submit()">
+                    <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Semua Kelas --</option>
+                    <option value="TI-1A-2025" <?= ($filter_kelas === 'TI-1A-2025') ? 'selected' : ''; ?>>TI-1A-2025</option>
+                    <option value="TI-1B-2025" <?= ($filter_kelas === 'TI-1B-2025') ? 'selected' : ''; ?>>TI-1B-2025</option>
+                    <option value="TI-1C-2025" <?= ($filter_kelas === 'TI-1C-2025') ? 'selected' : ''; ?>>TI-1C-2025</option>
+                </select>
+            </div>
+            <!-- Filter Status -->
+            <div class="col-md-2">
                 <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="all" <?= ($filter_status === 'all') ? 'selected' : ''; ?>>-- Semua Status --</option>
                     <option value="siap_sidang" <?= ($filter_status === 'siap_sidang') ? 'selected' : ''; ?>>Siap Sidang</option>
-                    <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Proses Bimbingan</option>
+                    <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Bimbingan</option>
                     <option value="lulus" <?= ($filter_status === 'lulus') ? 'selected' : ''; ?>>Lulus</option>
                 </select>
             </div>
+            <!-- Filter Dosen -->
             <div class="col-md-3">
                 <select name="dosen_id" class="form-select" onchange="this.form.submit()">
                     <option value="0">-- Semua Dosen Pembimbing --</option>
@@ -272,8 +293,8 @@ require_once '../templates/sidebar_admin.php';
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-outline-primary w-100">Filter</button>
-                <?php if ($filter_status !== 'all' || $filter_dosen > 0 || !empty($search_q)): ?>
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <?php if ($filter_status !== 'all' || $filter_kelas !== 'all' || $filter_dosen > 0 || !empty($search_q)): ?>
                     <a href="monitoring_kelulusan.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
                 <?php endif; ?>
             </div>
@@ -301,17 +322,18 @@ require_once '../templates/sidebar_admin.php';
                     <tr>
                         <th class="ps-3" style="width: 40px;">No</th>
                         <th>Mahasiswa</th>
+                        <th>Kelas</th>
                         <th>Judul Penelitian Skripsi</th>
                         <th>Dosen Pembimbing</th>
-                        <th class="text-center" style="width: 140px;">Capaian Nilai</th>
-                        <th class="text-center" style="width: 130px;">Status</th>
-                        <th class="text-center" style="width: 130px;">Aksi</th>
+                        <th class="text-center" style="width: 130px;">Capaian Nilai</th>
+                        <th class="text-center" style="width: 140px;">Status Akademik</th>
+                        <th class="text-center" style="width: 140px;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($monitoring_list)): ?>
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-5">
+                            <td colspan="8" class="text-center text-muted py-5">
                                 <i class="bi bi-inbox fs-2 d-block text-secondary mb-2"></i>
                                 Tidak ada data mahasiswa sesuai filter.
                             </td>
@@ -322,6 +344,7 @@ require_once '../templates/sidebar_admin.php';
                         foreach ($monitoring_list as $row): 
                             $nilai = (int)$row['nilai_progres_terakhir'];
                             $initial = strtoupper(substr($row['nama_lengkap'], 0, 1));
+                            $st_sidang = $row['status_sidang_terakhir'] ?? null;
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
@@ -337,7 +360,12 @@ require_once '../templates/sidebar_admin.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <small class="text-muted d-block text-truncate" style="max-width: 280px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                                        <?= htmlspecialchars($row['kelas'] ?? '-'); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted d-block text-truncate" style="max-width: 260px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
                                         <?= htmlspecialchars($row['judul_skripsi']); ?>
                                     </small>
                                 </td>
@@ -361,8 +389,8 @@ require_once '../templates/sidebar_admin.php';
                                             <div class="progress-bar <?= ($nilai >= 80) ? 'bg-success' : (($nilai >= 60) ? 'bg-primary' : 'bg-warning'); ?>" 
                                                  style="width: <?= $nilai; ?>%"></div>
                                         </div>
-                                        <small class="text-muted d-block mt-1" style="font-size: 0.725rem;">
-                                            <?= $row['total_acc_bab']; ?> Bab ACC / <?= $row['total_bimbingan']; ?> Bimb
+                                        <small class="text-muted d-block mt-1" style="font-size: 0.72rem;">
+                                            <?= $row['total_acc_bab']; ?> Bab ACC
                                         </small>
                                     </div>
                                 </td>
@@ -371,22 +399,34 @@ require_once '../templates/sidebar_admin.php';
                                         <span class="badge bg-success px-2 py-1"><i class="bi bi-check2-circle me-1"></i>Lulus</span>
                                     <?php elseif ($row['status_kelulusan'] === 'siap_sidang'): ?>
                                         <span class="badge bg-primary px-2 py-1"><i class="bi bi-award me-1"></i>Siap Sidang</span>
+                                        <?php if ($st_sidang === 'dijadwalkan'): ?>
+                                            <span class="badge bg-info-subtle text-info border border-info-subtle d-block mt-1" style="font-size: 0.68rem;">Sidang Terjadwal</span>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <span class="badge bg-secondary px-2 py-1"><i class="bi bi-clock-history me-1"></i>Bimbingan</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-outline-success btn-evaluasi" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#modalEvaluasiKelulusan"
-                                            data-id="<?= $row['id']; ?>"
-                                            data-nama="<?= htmlspecialchars($row['nama_lengkap']); ?>"
-                                            data-nim="<?= htmlspecialchars($row['nim']); ?>"
-                                            data-status="<?= $row['status_kelulusan']; ?>"
-                                            data-nilai="<?= $nilai; ?>"
-                                            title="Evaluasi & Update Status Kelulusan">
-                                        <i class="bi bi-pencil-square me-1"></i>Evaluasi
-                                    </button>
+                                    <div class="btn-group btn-group-sm">
+                                        <!-- Tombol Evaluasi Status Kelulusan -->
+                                        <button type="button" class="btn btn-outline-success btn-evaluasi" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalEvaluasiKelulusan"
+                                                data-id="<?= $row['id']; ?>"
+                                                data-nama="<?= htmlspecialchars($row['nama_lengkap']); ?>"
+                                                data-nim="<?= htmlspecialchars($row['nim']); ?>"
+                                                data-status="<?= $row['status_kelulusan']; ?>"
+                                                data-nilai="<?= $nilai; ?>"
+                                                title="Evaluasi & Update Status Kelulusan">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <!-- Tombol Cepat Jadwalkan Sidang jika Siap Sidang -->
+                                        <?php if ($row['status_kelulusan'] === 'siap_sidang'): ?>
+                                            <a href="jadwal_sidang.php?mhs_id=<?= $row['id']; ?>" class="btn btn-outline-primary" title="Buka Penjadwalan Sidang (3 Penguji)">
+                                                <i class="bi bi-calendar2-check"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -419,24 +459,24 @@ require_once '../templates/sidebar_admin.php';
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Status Kelulusan Akademik <span class="text-danger">*</span></label>
                     <select name="status_kelulusan" id="eval_status" class="form-select" required>
-                        <option value="proses_bimbingan">Proses Bimbingan (Masih dalam tahap bimbingan/revisi)</option>
-                        <option value="siap_sidang">Siap Sidang (Telah disetujui dosen untuk sidang munaqasyah)</option>
-                        <option value="lulus">Lulus (Telah lulus ujian sidang & menyelesaikan revisi akhir)</option>
+                        <option value="proses_bimbingan">Proses Bimbingan (Masih aktif bimbingan/revisi bab)</option>
+                        <option value="siap_sidang">Siap Sidang (ACC seluruh bab skripsi)</option>
+                        <option value="lulus">Lulus (Telah lulus sidang munaqasyah)</option>
                     </select>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Nilai Progres / Evaluasi (0 - 100)</label>
+                    <label class="form-label small fw-semibold">Nilai Progres Bimbingan Skripsi (0 - 100)</label>
                     <div class="input-group">
-                        <input type="number" class="form-control" name="nilai_evaluasi" id="eval_nilai" min="0" max="100">
+                        <input type="number" class="form-control" name="nilai_evaluasi" id="eval_nilai" min="0" max="100" placeholder="0 - 100">
                         <span class="input-group-text bg-white">%</span>
                     </div>
-                    <div class="form-text">Nilai persentase kemajuan bimbingan skripsi.</div>
+                    <div class="form-text">Persentase capaian progres penulisan skripsi.</div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i>Simpan Pembaruan</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle me-1"></i>Simpan Perubahan</button>
             </div>
         </form>
     </div>
