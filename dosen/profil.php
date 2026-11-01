@@ -1,17 +1,19 @@
 <?php
 // dosen/profil.php - Edit Akun, Biodata Profil & Foto Profil Dosen (Salsa)
-$page_title   = "Profil & Pengaturan Akun";
-$current_page = "profil";
-
-require_once '../config/database.php';
-require_once '../templates/header.php';
-require_once '../templates/sidebar_dosen.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Proteksi akses role dosen
-if ($_SESSION['role'] !== 'dosen') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'dosen') {
     header("Location: ../login.php");
     exit;
 }
+
+require_once '../config/database.php';
+
+$page_title   = "Profil & Pengaturan Akun";
+$current_page = "profil";
 
 $user_id = $_SESSION['user_id'];
 $success_msg = '';
@@ -119,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
 
                 $pdo->commit();
                 $_SESSION['username'] = $username;
-                $success_msg = "Biodata profil dan pengaturan akun dosen berhasil diperbarui!";
+                $success_msg = "Biodata profil dan username akun (@{$username}) berhasil diperbarui!";
                 
                 // Refresh data
                 $stmt_dosen->execute([':uid' => $user_id]);
@@ -167,6 +169,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_password'])) {
     }
 }
 
+// Include header dan sidebar setelah POST diproses agar username di navbar ter-update langsung
+require_once '../templates/header.php';
+require_once '../templates/sidebar_dosen.php';
+
 // Tentukan path foto profil
 $foto_path = '../assets/uploads/profile/' . ($dosen['foto_profil'] ?? '');
 $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default.png' && file_exists($foto_path);
@@ -175,7 +181,7 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
     <div>
         <h1 class="h3 fw-bold mb-1">Profil & Pengaturan Akun</h1>
-        <p class="text-muted small mb-0">Kelola dan perbarui informasi biodata akademik, ID login, kontak, foto profil, dan kata sandi akun pembimbing Anda.</p>
+        <p class="text-muted small mb-0">Kelola dan perbarui informasi biodata akademik, ID login / username, kontak, foto profil, dan kata sandi akun pembimbing Anda.</p>
     </div>
 </div>
 
@@ -223,8 +229,8 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 
             <div class="list-group list-group-flush text-start small border-top pt-3">
                 <div class="list-group-item d-flex justify-content-between px-0 bg-transparent">
-                    <span class="text-muted"><i class="bi bi-person me-2 text-primary"></i> Username:</span>
-                    <strong>@<?= htmlspecialchars($dosen['username'] ?? '-'); ?></strong>
+                    <span class="text-muted"><i class="bi bi-person-badge me-2 text-primary"></i> Username (Login):</span>
+                    <strong class="text-primary">@<?= htmlspecialchars($dosen['username'] ?? '-'); ?></strong>
                 </div>
                 <div class="list-group-item d-flex justify-content-between px-0 bg-transparent">
                     <span class="text-muted"><i class="bi bi-envelope me-2 text-primary"></i> Email:</span>
@@ -268,12 +274,16 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label for="username" class="form-label fw-semibold">ID Login / Username <span class="text-danger">*</span></label>
+                                    <label for="username" class="form-label fw-semibold text-primary">
+                                        <i class="bi bi-pencil-square me-1"></i>ID Login / Username <span class="text-danger">*</span>
+                                    </label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light"><i class="bi bi-at"></i></span>
-                                        <input type="text" name="username" id="username" class="form-control" value="<?= htmlspecialchars($dosen['username'] ?? ''); ?>" required>
+                                        <span class="input-group-text bg-light fw-bold">@</span>
+                                        <input type="text" name="username" id="username" class="form-control fw-semibold" value="<?= htmlspecialchars($dosen['username'] ?? ''); ?>" placeholder="Contoh: dosen1" required>
                                     </div>
-                                    <div class="form-text small">Username digunakan untuk masuk ke portal.</div>
+                                    <div class="form-text small text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>Username ini ditampilkan pada ucapan <strong>Halo, <?= htmlspecialchars($dosen['username'] ?? '...'); ?></strong> di pojok kanan atas.
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="nidn" class="form-label fw-semibold">NIDN (Nomor Induk Dosen) <span class="text-danger">*</span></label>
@@ -283,7 +293,7 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 
                                 <div class="col-md-12">
                                     <label for="nama_dosen" class="form-label fw-semibold">Nama Lengkap & Gelar <span class="text-danger">*</span></label>
-                                    <input type="text" name="nama_dosen" id="nama_dosen" class="form-control" value="<?= htmlspecialchars($dosen['nama_dosen'] ?? ''); ?>" placeholder="Contoh: Dr. Budi Darmawan, M.Kom." required>
+                                    <input type="text" name="nama_dosen" id="nama_dosen" class="form-control" value="<?= htmlspecialchars($dosen['nama_dosen'] ?? ''); ?>" placeholder="Contoh: Dr. Hendra Gunawan, M.T." required>
                                 </div>
 
                                 <div class="col-md-6">

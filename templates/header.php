@@ -10,6 +10,12 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $css_ver = file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : time();
+
+// Link profil sesuai role
+$profile_link = 'profil.php';
+if (isset($_SESSION['role'])) {
+    $profile_link = '../' . $_SESSION['role'] . '/profil.php';
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -47,7 +53,10 @@ $css_ver = file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__
         <!-- Right Side User & Status Pill -->
         <div class="d-flex align-items-center gap-3 text-white">
             <span class="small d-none d-md-inline text-white">
-                Halo, <strong><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></strong><?= (isset($_SESSION['role']) && $_SESSION['role'] !== 'mahasiswa') ? ' (' . ucfirst($_SESSION['role']) . ')' : ''; ?>
+                Halo, <a href="<?= $profile_link; ?>" class="text-white text-decoration-none fw-bold" title="Klik untuk edit profil & username">
+                    <span><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
+                    <i class="bi bi-pencil-square ms-1 text-white-50" style="font-size: 0.8rem;"></i>
+                </a>
             </span>
             <a href="../logout.php" class="btn btn-sm btn-outline-light px-3" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
                 <i class="bi bi-box-arrow-right me-1"></i>Logout
