@@ -50,16 +50,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     ':pesan'    => $pesan
                 ]);
 
-                // Notifikasi ke dosen
+                // Notifikasi ke dosen (UPDATE Robi)
                 $nama_mhs = $mhs['nama_lengkap'] ?? 'Mahasiswa';
+                $link_chat = 'chat.php?uid=' . $my_user_id;
                 $stmt_n = $pdo->prepare("
                     INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
-                    VALUES (:uid, 'Pesan Chat Baru', :pesan, 'info', 'chat.php?uid=' || :sender)
+                    VALUES (:uid, 'Pesan Chat Baru', :pesan, 'info', :link)
                 ");
                 $stmt_n->execute([
-                    ':uid'    => $dosen_user_id,
-                    ':pesan'  => "Mahasiswa {$nama_mhs} mengirimkan pesan bimbingan.",
-                    ':sender' => $my_user_id
+                    ':uid'   => $dosen_user_id,
+                    ':pesan' => "Mahasiswa {$nama_mhs} mengirimkan pesan bimbingan.",
+                    ':link'  => $link_chat
                 ]);
 
                 header("Location: chat.php?sent=1");

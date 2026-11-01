@@ -27,6 +27,45 @@ if (isset($pdo) && $cur_role === 'dosen') {
 }
 
 // Proses Cepat Ubah Username / Nama dari Modal Navbar
+// Ambil data notifikasi aktif untuk pengguna saat ini (UPDATE Robi: tabel notifikasi)
+$notif_unread_count = 0;
+$notif_list = [];
+if (isset($pdo) && isset($_SESSION['user_id'])) {
+    // Handle aksi tandai semua notifikasi dibaca
+    if (isset($_GET['mark_all_read']) && $_GET['mark_all_read'] == '1') {
+        try {
+            $pdo->prepare("UPDATE notifikasi SET is_read = 1 WHERE user_id = :uid")->execute([':uid' => $cur_user_id]);
+        } catch (PDOException $e) {}
+        $clean_url = strtok($_SERVER['REQUEST_URI'], '?');
+        header("Location: " . $clean_url);
+        exit;
+    }
+
+    // Handle aksi klik notifikasi spesifik (tandai dibaca lalu redirect ke link tujuan)
+    if (isset($_GET['open_nid']) && !empty($_GET['open_nid'])) {
+        $nid = (int)$_GET['open_nid'];
+        $dest = $_GET['dest'] ?? 'index.php';
+        try {
+            $pdo->prepare("UPDATE notifikasi SET is_read = 1 WHERE id = :nid AND user_id = :uid")->execute([':nid' => $nid, ':uid' => $cur_user_id]);
+        } catch (PDOException $e) {}
+        header("Location: " . $dest);
+        exit;
+    }
+
+    try {
+        $st_notif_cnt = $pdo->prepare("SELECT COUNT(*) FROM notifikasi WHERE user_id = :uid AND is_read = 0");
+        $st_notif_cnt->execute([':uid' => $cur_user_id]);
+        $notif_unread_count = (int)$st_notif_cnt->fetchColumn();
+
+        $st_notif_list = $pdo->prepare("SELECT * FROM notifikasi WHERE user_id = :uid ORDER BY id DESC LIMIT 5");
+        $st_notif_list->execute([':uid' => $cur_user_id]);
+        $notif_list = $st_notif_list->fetchAll();
+    } catch (PDOException $e) {
+        $notif_unread_count = 0;
+        $notif_list = [];
+    }
+}
+
 $quick_error = '';
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action_quick_edit_navbar'])) {
     $new_u    = trim($_POST['quick_username'] ?? '');
@@ -109,8 +148,66 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             </div>
         </a>
 
-        <!-- Right Side User & Status Pill (Bisa Langsung Diklik Untuk Edit Nama) -->
+        <!-- Right Side User, Notifications & Status Pill -->
         <div class="d-flex align-items-center gap-3 text-white">
+            <!-- Dropdown Notifikasi Sistem (UPDATE Robi: tabel notifikasi) -->
+            <div class="dropdown">
+                <button class="btn btn-link text-white position-relative p-1 text-decoration-none shadow-none" 
+                        type="button" 
+                        id="dropdownNotifikasi" 
+                        data-bs-toggle="dropdown" 
+                        aria-expanded="false" 
+                        title="Notifikasi & Pemberitahuan Sistem">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                    <?php if ($notif_unread_count > 0): ?>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light" style="font-size: 0.62rem; padding: 0.25em 0.5em;">
+                            <?= $notif_unread_count > 9 ? '9+' : $notif_unread_count; ?>
+                        </span>
+                    <?php endif; ?>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-0" aria-labelledby="dropdownNotifikasi" style="min-width: 320px; max-width: 380px;">
+                    <li class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-dark small"><i class="bi bi-bell me-1 text-primary"></i>Pemberitahuan Sistem</span>
+                        <?php if ($notif_unread_count > 0): ?>
+                            <a href="?mark_all_read=1" class="text-decoration-none small text-primary fw-semibold" style="font-size: 0.72rem;">
+                                <i class="bi bi-check2-all me-1"></i>Tandai Dibaca
+                            </a>
+                        <?php endif; ?>
+                    </li>
+                    <?php if (empty($notif_list)): ?>
+                        <li class="p-4 text-center text-muted small">
+                            <i class="bi bi-bell-slash fs-3 d-block mb-1 text-secondary opacity-50"></i>
+                            Tidak ada notifikasi baru.
+                        </li>
+                    <?php else: ?>
+                        <?php foreach ($notif_list as $n): 
+                            $icon_n = 'bi-info-circle text-primary';
+                            if ($n['tipe'] === 'pembimbing') $icon_n = 'bi-award-fill text-warning';
+                            elseif ($n['tipe'] === 'sidang') $icon_n = 'bi-mortarboard-fill text-info';
+                            elseif ($n['tipe'] === 'revisi') $icon_n = 'bi-arrow-repeat text-danger';
+                            elseif ($n['tipe'] === 'sukses') $icon_n = 'bi-check-circle-fill text-success';
+                            $target_link = '?open_nid=' . $n['id'] . '&dest=' . urlencode($n['link_tujuan'] ?? 'index.php');
+                        ?>
+                            <li>
+                                <a class="dropdown-item p-3 border-bottom <?= empty($n['is_read']) ? 'bg-light' : ''; ?> text-wrap" href="<?= $target_link; ?>">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi <?= $icon_n; ?> fs-5 mt-1 flex-shrink-0"></i>
+                                        <div>
+                                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                                <strong class="small text-dark"><?= htmlspecialchars($n['judul']); ?></strong>
+                                                <small class="text-muted" style="font-size: 0.68rem;"><?= date('d/m H:i', strtotime($n['created_at'])); ?></small>
+                                            </div>
+                                            <p class="mb-0 text-muted small" style="font-size: 0.78rem; line-height: 1.3;">
+                                                <?= htmlspecialchars($n['pesan']); ?>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </ul>
+            </div>
             <button type="button" 
                     class="btn btn-link text-white text-decoration-none p-0 d-inline-flex align-items-center gap-2 shadow-none" 
                     data-bs-toggle="modal" 

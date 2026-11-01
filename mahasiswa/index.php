@@ -88,7 +88,7 @@ if (isset($_SESSION['user_id'])) {
         $stmt_n = $pdo->prepare("
             SELECT * FROM notifikasi 
             WHERE user_id = :uid 
-            ORDER BY id DESC LIMIT 3
+            ORDER BY id DESC LIMIT 5
         ");
         $stmt_n->execute([':uid' => $_SESSION['user_id']]);
         $daftar_notif = $stmt_n->fetchAll();
@@ -422,6 +422,64 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
             <a href="informasi_sidang.php" class="btn btn-outline-primary btn-sm px-3">
                 <i class="bi bi-arrow-right-circle me-1"></i>Buka Halaman Sidang
             </a>
+        </div>
+    </div>
+<?php endif; ?>
+
+<!-- ============================================================
+     KARTU NOTIFIKASI & PEMBERITAHUAN TERBARU (UPDATE ROBI)
+============================================================ -->
+<?php if (!empty($daftar_notif)): ?>
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+            <h6 class="m-0 fw-bold text-dark">
+                <i class="bi bi-bell-fill text-primary me-2"></i>Pemberitahuan & Notifikasi Sistem
+            </h6>
+            <a href="?mark_all_read=1" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;">
+                <i class="bi bi-check2-all me-1"></i>Tandai Semua Dibaca
+            </a>
+        </div>
+        <div class="list-group list-group-flush">
+            <?php foreach ($daftar_notif as $notif): 
+                $icon_class = 'bi-info-circle-fill text-primary';
+                $badge_class = 'bg-primary-subtle text-primary';
+                if ($notif['tipe'] === 'pembimbing') {
+                    $icon_class = 'bi-award-fill text-warning';
+                    $badge_class = 'bg-warning-subtle text-warning-emphasis';
+                } elseif ($notif['tipe'] === 'sidang') {
+                    $icon_class = 'bi-mortarboard-fill text-primary';
+                    $badge_class = 'bg-primary-subtle text-primary';
+                } elseif ($notif['tipe'] === 'revisi') {
+                    $icon_class = 'bi-arrow-repeat text-danger';
+                    $badge_class = 'bg-danger-subtle text-danger';
+                } elseif ($notif['tipe'] === 'sukses') {
+                    $icon_class = 'bi-check-circle-fill text-success';
+                    $badge_class = 'bg-success-subtle text-success';
+                }
+                $notif_link = !empty($notif['link_tujuan']) ? '?open_nid=' . $notif['id'] . '&dest=' . urlencode($notif['link_tujuan']) : '#';
+            ?>
+                <a href="<?= $notif_link; ?>" 
+                   class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between <?= empty($notif['is_read']) ? 'bg-light bg-opacity-75' : ''; ?>">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="fs-4 <?= $icon_class; ?>">
+                            <i class="bi <?= $icon_class; ?>"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                <span class="fw-bold text-dark small"><?= htmlspecialchars($notif['judul']); ?></span>
+                                <span class="badge <?= $badge_class; ?> small" style="font-size: 0.68rem;"><?= ucfirst($notif['tipe']); ?></span>
+                                <?php if (empty($notif['is_read'])): ?>
+                                    <span class="badge bg-danger rounded-pill" style="font-size: 0.6rem;">Baru</span>
+                                <?php endif; ?>
+                            </div>
+                            <p class="mb-0 text-muted small"><?= htmlspecialchars($notif['pesan']); ?></p>
+                        </div>
+                    </div>
+                    <small class="text-muted flex-shrink-0 ms-3" style="font-size: 0.75rem;">
+                        <i class="bi bi-clock me-1"></i><?= date('d M Y, H:i', strtotime($notif['created_at'])); ?>
+                    </small>
+                </a>
+            <?php endforeach; ?>
         </div>
     </div>
 <?php endif; ?>
