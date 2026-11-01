@@ -216,21 +216,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="card-body text-center p-4">
                 <div class="mb-3 position-relative d-inline-block">
-                    <?php if (!empty($mhs['foto_profil']) && $mhs['foto_profil'] !== 'default.png' && file_exists('../assets/uploads/' . $mhs['foto_profil'])): ?>
-                        <img src="../assets/uploads/<?= htmlspecialchars($mhs['foto_profil']); ?>" class="rounded-circle img-thumbnail shadow-sm" width="130" height="130" style="object-fit: cover;" alt="Foto Profil">
-                    <?php else: ?>
-                        <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 120px; height: 120px; font-size: 3rem;">
-                            <?= strtoupper(substr($mhs['nama_lengkap'] ?? 'M', 0, 1)); ?>
-                        </div>
-                    <?php endif; ?>
+                    <div class="student-avatar-frame">
+                        <?php if (!empty($mhs['foto_profil']) && $mhs['foto_profil'] !== 'default.png' && file_exists('../assets/uploads/' . $mhs['foto_profil'])): ?>
+                            <img src="../assets/uploads/<?= htmlspecialchars($mhs['foto_profil']); ?>" width="125" height="125" style="object-fit: cover;" alt="Foto Profil">
+                        <?php else: ?>
+                            <div class="avatar-placeholder bg-primary text-white d-inline-flex align-items-center justify-content-center fw-bold" style="width: 125px; height: 125px; font-size: 3rem;">
+                                <?= strtoupper(substr($mhs['nama_lengkap'] ?? 'M', 0, 1)); ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <h5 class="fw-bold text-dark mb-1"><?= htmlspecialchars($mhs['nama_lengkap']); ?></h5>
                 <p class="text-muted small mb-2">NIM: <strong><?= htmlspecialchars($mhs['nim']); ?></strong></p>
 
                 <div class="d-flex justify-content-center gap-2 mb-3">
-                    <span class="badge bg-primary px-3 py-1">
-                        <i class="bi bi-mortarboard me-1"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
+                    <span class="badge-kelas">
+                        <i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
                     </span>
                     <?php
                     $sk = $mhs['status_kelulusan'] ?? 'proses_bimbingan';

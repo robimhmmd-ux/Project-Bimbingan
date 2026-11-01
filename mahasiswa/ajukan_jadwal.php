@@ -355,22 +355,22 @@ $preset_jam = htmlspecialchars($_GET['jam'] ?? '');
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-logbook table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>No</th>
-                            <th>Jadwal Bimbingan</th>
+                            <th style="width: 50px;">No</th>
+                            <th style="width: 140px;">Jadwal Bimbingan</th>
                             <th>Bab Pembahasan</th>
                             <th>Berkas & Catatan</th>
-                            <th>Status</th>
+                            <th style="width: 120px;">Status</th>
                             <th>Respon Dosen</th>
-                            <th class="text-center">Aksi</th>
+                            <th class="text-center" style="width: 90px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($riwayat_pengajuan)): ?>
                             <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">
+                                <td colspan="7" class="text-center py-5 text-muted">
                                     <i class="bi bi-calendar-x fs-2 d-block mb-1"></i>
                                     Belum ada pengajuan jadwal bimbingan.
                                 </td>
@@ -384,7 +384,7 @@ $preset_jam = htmlspecialchars($_GET['jam'] ?? '');
                                         <small class="text-muted"><i class="bi bi-clock me-1"></i><?= substr($row['jam_bimbingan'], 0, 5); ?> WIB</small>
                                     </td>
                                     <td>
-                                        <span class="fw-semibold"><?= htmlspecialchars($row['bab_pembahasan']); ?></span>
+                                        <span class="fw-semibold text-dark"><?= htmlspecialchars($row['bab_pembahasan']); ?></span>
                                     </td>
                                     <td>
                                         <div class="d-flex flex-column gap-1">
@@ -393,15 +393,15 @@ $preset_jam = htmlspecialchars($_GET['jam'] ?? '');
                                                     <?= htmlspecialchars($row['catatan_mahasiswa']); ?>
                                                 </small>
                                             <?php endif; ?>
-                                            <div class="d-flex gap-1 mt-1">
+                                            <div class="d-flex gap-1 mt-1 flex-wrap">
                                                 <?php if (!empty($row['file_draft'])): ?>
-                                                    <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;">
-                                                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                                    <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="badge-pdf">
+                                                        <i class="bi bi-file-earmark-pdf"></i>PDF
                                                     </a>
                                                 <?php endif; ?>
                                                 <?php if (!empty($row['link_drive'])): ?>
-                                                    <a href="<?= htmlspecialchars($row['link_drive']); ?>" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;">
-                                                        <i class="bi bi-google me-1"></i>Drive
+                                                    <a href="<?= htmlspecialchars($row['link_drive']); ?>" target="_blank" class="badge-drive">
+                                                        <i class="bi bi-google"></i>Drive
                                                     </a>
                                                 <?php endif; ?>
                                             </div>

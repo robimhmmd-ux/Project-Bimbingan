@@ -187,7 +187,7 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
             <h1 class="h2 mb-0">Dashboard Mahasiswa</h1>
-            <span class="badge bg-primary rounded-pill px-2 py-1 small"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
+            <span class="badge-kelas"><i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
         </div>
         <p class="text-muted small mb-0">Selamat datang kembali, <strong><?= htmlspecialchars($mhs['nama_lengkap'] ?? $_SESSION['username']); ?></strong> (NIM: <?= htmlspecialchars($mhs['nim'] ?? '-'); ?>)</p>
     </div>
@@ -231,15 +231,15 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
      BANNER STATUS SK PEMBIMBING (UPDATE ROBI)
 ============================================================ -->
 <?php if ($status_pembimbing === 'menunggu_konfirmasi'): ?>
-    <div class="card border-warning bg-warning bg-opacity-10 shadow-sm mb-4">
+    <div class="card sk-banner-card mb-4 border-0">
         <div class="card-body p-4">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                <div class="d-flex align-items-start gap-3">
-                    <div class="bg-warning text-dark p-3 rounded-circle fs-3 shadow-sm">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="sk-seal-icon">
                         <i class="bi bi-award-fill"></i>
                     </div>
                     <div>
-                        <span class="badge bg-warning text-dark px-2 py-1 mb-1 fw-bold">PENETAPAN RESMI ADMIN</span>
+                        <span class="badge-konfirmasi mb-1 d-inline-block"><i class="bi bi-patch-check-fill me-1"></i>PENETAPAN RESMI ADMIN</span>
                         <h5 class="fw-bold text-dark mb-1">Surat Keputusan (SK) Dosen Pembimbing Telah Terbit!</h5>
                         <p class="text-muted small mb-0">
                             Admin Program Studi telah menetapkan <strong><?= htmlspecialchars($mhs['nama_dosen'] ?? 'Dosen'); ?></strong> (NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?>) sebagai dosen pembimbing tugas akhir Anda. Silakan konfirmasi penerimaan SK untuk membuka fitur pengajuan bimbingan & upload draf.
@@ -248,8 +248,8 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                 </div>
                 <form action="index.php" method="POST" class="flex-shrink-0">
                     <input type="hidden" name="action" value="konfirmasi_sk">
-                    <button type="submit" class="btn btn-warning fw-bold px-4 py-2 shadow-sm text-dark" onclick="return confirm('Apakah Anda menyetujui dan siap melaksanakan bimbingan dengan dosen pembimbing yang telah ditetapkan?')">
-                        <i class="bi bi-check2-circle me-1"></i>Konfirmasi Penerimaan SK & Siap Bimbingan
+                    <button type="submit" class="btn-konfirmasi-sk" onclick="return confirm('Apakah Anda menyetujui dan siap melaksanakan bimbingan dengan dosen pembimbing yang telah ditetapkan?')">
+                        <i class="bi bi-check2-circle fs-5"></i>Konfirmasi Penerimaan SK & Siap Bimbingan
                     </button>
                 </form>
             </div>
@@ -268,7 +268,7 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
      KARTU PENGUMUMAN JADWAL SIDANG SKRIPSI (UPDATE ROBI: sidang_skripsi)
 ============================================================ -->
 <?php if ($info_sidang): ?>
-    <div class="card shadow-sm mb-4 border-0 overflow-hidden" style="border-left: 5px solid #4f46e5 !important;">
+    <div class="card sidang-card-wrapper shadow-sm mb-4 border-0 overflow-hidden">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <div class="d-flex align-items-center gap-2">
                 <div class="bg-indigo-subtle text-primary p-2 rounded">
@@ -512,28 +512,27 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
 </div>
 
 <!-- Milestone Tahapan Skripsi (Bab 1 - Bab 5) -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
+<div class="card shadow-sm mb-4 border-0">
+    <div class="card-header bg-white py-3 border-bottom">
         <h6 class="m-0 fw-bold text-dark">
             <i class="bi bi-check2-circle text-primary me-2"></i>Pencatatan Progres Tahapan Bab Skripsi
         </h6>
     </div>
     <div class="card-body">
-        <div class="row g-2 text-center">
+        <div class="row g-3 text-center">
             <?php foreach ($bab_list as $b_key => $b_data): ?>
                 <div class="col-6 col-md">
-                    <div class="p-3 border rounded h-100 d-flex flex-column justify-content-between 
-                        <?= $b_data['status'] === 'acc' ? 'bg-success-subtle border-success' : ($b_data['status'] === 'revisi' ? 'bg-warning-subtle border-warning' : ($b_data['status'] === 'proses' ? 'bg-info-subtle border-info' : 'bg-light')); ?>">
+                    <div class="bab-step-card status-<?= $b_data['status']; ?> h-100 d-flex flex-column justify-content-between">
                         <div>
-                            <div class="mb-2">
+                            <div class="bab-icon-circle">
                                 <?php if ($b_data['status'] === 'acc'): ?>
-                                    <i class="bi bi-check-circle-fill text-success fs-3"></i>
+                                    <i class="bi bi-check2-circle"></i>
                                 <?php elseif ($b_data['status'] === 'revisi'): ?>
-                                    <i class="bi bi-arrow-repeat text-warning fs-3"></i>
+                                    <i class="bi bi-arrow-repeat"></i>
                                 <?php elseif ($b_data['status'] === 'proses'): ?>
-                                    <i class="bi bi-hourglass-split text-info fs-3"></i>
+                                    <i class="bi bi-hourglass-split"></i>
                                 <?php else: ?>
-                                    <i class="bi bi-circle text-muted fs-3"></i>
+                                    <i class="bi bi-dash-circle"></i>
                                 <?php endif; ?>
                             </div>
                             <h6 class="fw-bold mb-1 small text-dark"><?= $b_key; ?></h6>

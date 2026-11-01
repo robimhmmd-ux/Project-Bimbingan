@@ -233,22 +233,30 @@ $daftar_drafts = $stmt_drafts->fetchAll();
 
                     <!-- Input Berkas PDF -->
                     <div class="mb-3" id="input_file_box">
-                        <label for="file_skripsi" class="form-label small fw-semibold text-secondary">Pilih Berkas Naskah (PDF) <span class="text-danger">*</span></label>
-                        <input class="form-control" type="file" id="file_skripsi" name="file_skripsi" accept=".pdf" <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
-                        <div class="form-text small" style="font-size: 0.75rem;">
-                            <i class="bi bi-info-circle me-1"></i>Maksimal <strong>5 MB</strong> dalam format <strong>.pdf</strong>.
+                        <div class="upload-option-card">
+                            <label for="file_skripsi" class="form-label small fw-semibold text-secondary mb-1">
+                                <i class="bi bi-file-earmark-arrow-up text-danger me-1"></i>Pilih Berkas Naskah (PDF) <span class="text-danger">*</span>
+                            </label>
+                            <input class="form-control" type="file" id="file_skripsi" name="file_skripsi" accept=".pdf" <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                            <div class="form-text small mt-2" style="font-size: 0.75rem;">
+                                <i class="bi bi-info-circle me-1"></i>Maksimal <strong>5 MB</strong> dalam format <strong>.pdf</strong>.
+                            </div>
                         </div>
                     </div>
 
                     <!-- Input Tautan Google Drive (UPDATE ROBI) -->
                     <div class="mb-3 d-none" id="input_drive_box">
-                        <label for="link_drive" class="form-label small fw-semibold text-secondary">Tautan Link Google Drive / Docs <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bi bi-link-45deg"></i></span>
-                            <input type="url" class="form-control" id="link_drive" name="link_drive" placeholder="https://docs.google.com/... atau https://drive.google.com/..." <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
-                        </div>
-                        <div class="form-text small" style="font-size: 0.75rem;">
-                            <i class="bi bi-shield-lock me-1"></i>Pastikan izin akses dokumen diatur ke <em>"Siapa saja yang memiliki link dapat melihat/mengomentari"</em>.
+                        <div class="upload-option-card">
+                            <label for="link_drive" class="form-label small fw-semibold text-secondary mb-1">
+                                <i class="bi bi-cloud-check text-primary me-1"></i>Tautan Link Google Drive / Docs <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-link-45deg"></i></span>
+                                <input type="url" class="form-control" id="link_drive" name="link_drive" placeholder="https://docs.google.com/... atau https://drive.google.com/..." <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                            </div>
+                            <div class="form-text small mt-2" style="font-size: 0.75rem;">
+                                <i class="bi bi-shield-lock me-1"></i>Pastikan izin akses dokumen diatur ke <em>"Siapa saja yang memiliki link dapat melihat/mengomentari"</em>.
+                            </div>
                         </div>
                     </div>
 
@@ -339,23 +347,23 @@ $daftar_drafts = $stmt_drafts->fetchAll();
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-logbook table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>No</th>
-                        <th>Waktu Unggah</th>
+                        <th style="width: 50px;">No</th>
+                        <th style="width: 140px;">Waktu Unggah</th>
                         <th>Bab Pembahasan</th>
                         <th>Catatan Mahasiswa</th>
-                        <th>Status Evaluasi</th>
+                        <th style="width: 130px;">Status Evaluasi</th>
                         <th>Catatan Dosen</th>
-                        <th class="text-center">Akses Berkas</th>
+                        <th class="text-center" style="width: 140px;">Akses Berkas</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($daftar_drafts)): ?>
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
-                                <i class="bi bi-file-earmark-x fs-2 d-block mb-1"></i>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-file-earmark-x fs-2 d-block mb-2"></i>
                                 Belum ada berkas skripsi yang diserahkan. Silakan unggah naskah melalui formulir di atas.
                             </td>
                         </tr>
@@ -389,15 +397,15 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                                     <span class="small text-muted"><?= htmlspecialchars($draft['catatan_dosen'] ?? 'Belum ada catatan'); ?></span>
                                 </td>
                                 <td class="text-center">
-                                    <div class="d-flex justify-content-center gap-1">
+                                    <div class="d-flex justify-content-center gap-1 flex-wrap">
                                         <?php if (!empty($draft['file_draft'])): ?>
-                                            <a href="../assets/uploads/<?= htmlspecialchars($draft['file_draft']); ?>" target="_blank" class="btn btn-outline-danger btn-sm" title="Lihat Berkas PDF">
-                                                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                            <a href="../assets/uploads/<?= htmlspecialchars($draft['file_draft']); ?>" target="_blank" class="badge-pdf" title="Lihat Berkas PDF">
+                                                <i class="bi bi-file-earmark-pdf"></i>PDF
                                             </a>
                                         <?php endif; ?>
                                         <?php if (!empty($draft['link_drive'])): ?>
-                                            <a href="<?= htmlspecialchars($draft['link_drive']); ?>" target="_blank" class="btn btn-outline-primary btn-sm" title="Buka Link Google Drive">
-                                                <i class="bi bi-google me-1"></i>Drive
+                                            <a href="<?= htmlspecialchars($draft['link_drive']); ?>" target="_blank" class="badge-drive" title="Buka Link Google Drive">
+                                                <i class="bi bi-google"></i>Drive
                                             </a>
                                         <?php endif; ?>
                                     </div>

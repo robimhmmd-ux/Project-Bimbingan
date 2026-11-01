@@ -202,7 +202,7 @@ if (!empty($mhs['no_whatsapp'])) {
                                 <?php endif; ?>
 
                                 <div style="max-width: 75%;">
-                                    <div class="p-3 rounded-3 shadow-sm <?= $is_me ? 'bg-primary text-white' : 'bg-white text-dark border'; ?>">
+                                    <div class="p-3 shadow-sm <?= $is_me ? 'chat-bubble-mhs' : 'chat-bubble-dosen'; ?>">
                                         <?php if (!$is_me): ?>
                                             <div class="fw-bold small text-primary mb-1"><?= htmlspecialchars($mhs['nama_dosen']); ?></div>
                                         <?php endif; ?>

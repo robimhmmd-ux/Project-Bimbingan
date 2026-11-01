@@ -91,7 +91,7 @@ foreach ($logbook_list as $item) {
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
                         <i class="bi bi-mortarboard me-1"></i>Skripsi Mahasiswa
                     </span>
-                    <span class="badge bg-primary rounded-pill px-2 py-1 small"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
+                    <span class="badge-kelas"><i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
                 </div>
                 <h5 class="fw-bold text-dark mb-1"><?= htmlspecialchars($mhs['judul_skripsi'] ?? 'Judul Belum Diatur'); ?></h5>
                 <p class="text-muted small mb-0">
@@ -158,7 +158,7 @@ foreach ($logbook_list as $item) {
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-logbook table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
                         <th style="width: 50px;">No</th>
@@ -167,7 +167,7 @@ foreach ($logbook_list as $item) {
                         <th>Uraian Konsultasi & Masukan Dosen</th>
                         <th style="width: 100px;">Nilai</th>
                         <th style="width: 120px;">Status ACC</th>
-                        <th style="width: 120px;" class="text-center">Berkas Draf</th>
+                        <th style="width: 130px;" class="text-center">Berkas Draf</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -239,15 +239,15 @@ foreach ($logbook_list as $item) {
                                     ?>
                                 </td>
                                 <td class="text-center">
-                                    <div class="d-flex justify-content-center gap-1">
+                                    <div class="d-flex justify-content-center gap-1 flex-wrap">
                                         <?php if (!empty($row['file_draft'])): ?>
-                                            <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;" title="Lihat PDF">
-                                                <i class="bi bi-file-earmark-pdf"></i> PDF
+                                            <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="badge-pdf" title="Lihat PDF">
+                                                <i class="bi bi-file-earmark-pdf"></i>PDF
                                             </a>
                                         <?php endif; ?>
                                         <?php if (!empty($row['link_drive'])): ?>
-                                            <a href="<?= htmlspecialchars($row['link_drive']); ?>" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.75rem;" title="Buka Google Drive">
-                                                <i class="bi bi-google"></i> Drive
+                                            <a href="<?= htmlspecialchars($row['link_drive']); ?>" target="_blank" class="badge-drive" title="Buka Google Drive">
+                                                <i class="bi bi-google"></i>Drive
                                             </a>
                                         <?php endif; ?>
                                         <?php if (empty($row['file_draft']) && empty($row['link_drive'])): ?>

@@ -118,7 +118,7 @@ $is_eligible      = ($status_kelulusan === 'siap_sidang' || $total_acc >= 5);
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
             <h1 class="h2 mb-0">Halaman Progres & Informasi Sidang</h1>
-            <span class="badge bg-primary rounded-pill px-2 py-1 small"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
+            <span class="badge-kelas"><i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
         </div>
         <p class="text-muted small mb-0">Pusat informasi kelayakan, jadwal resmi, susunan dewan penguji, dan tata tertib ujian sidang skripsi.</p>
     </div>
@@ -191,7 +191,7 @@ $is_eligible      = ($status_kelulusan === 'siap_sidang' || $total_acc >= 5);
      2. PENGUMUMAN RESMI JADWAL SIDANG (JIKA SUDAH DIJADWALKAN / TERDAFTAR)
 ============================================================ -->
 <?php if ($info_sidang): ?>
-    <div class="card shadow-sm border-0 mb-4 overflow-hidden" style="border-left: 5px solid #4f46e5 !important;">
+    <div class="card sidang-card-wrapper shadow-sm border-0 mb-4 overflow-hidden">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <div class="d-flex align-items-center gap-2">
                 <div class="bg-indigo-subtle text-primary p-2 rounded">
@@ -252,7 +252,7 @@ $is_eligible      = ($status_kelulusan === 'siap_sidang' || $total_acc >= 5);
 
                         <!-- Nilai Akhir jika sudah dinilai -->
                         <?php if ($info_sidang['nilai_akhir'] !== null): ?>
-                            <div class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded text-center">
+                            <div class="mt-3 sidang-score-card">
                                 <span class="small fw-semibold text-success d-block mb-1">HASIL EVALUASI SIDANG SKRIPSI:</span>
                                 <h3 class="fw-bold text-success mb-1"><?= number_format((float)$info_sidang['nilai_akhir'], 2); ?> / 100</h3>
                                 <div class="d-flex justify-content-center gap-3 small text-muted mt-2">
@@ -418,3 +418,4 @@ $is_eligible      = ($status_kelulusan === 'siap_sidang' || $total_acc >= 5);
 <?php
 require_once '../templates/footer.php';
 ?>
+
