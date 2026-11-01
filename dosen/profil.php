@@ -23,22 +23,44 @@ $stmt_dosen->execute([':uid' => $user_id]);
 $dosen = $stmt_dosen->fetch();
 $dosen_id = $dosen['id'] ?? 0;
 
-// 1. PROSES UPDATE BIODATA & FOTO PROFIL
+// 1. PROSES UPDATE BIODATA, AKUN & FOTO PROFIL
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
+    $username     = trim($_POST['username'] ?? '');
+    $nidn         = trim($_POST['nidn'] ?? '');
     $nama_dosen   = trim($_POST['nama_dosen'] ?? '');
     $email        = trim($_POST['email'] ?? '');
     $no_whatsapp  = trim($_POST['no_whatsapp'] ?? '');
-    $kuota        = (int)($_POST['kuota_bimbingan'] ?? 10);
+    $kuota        = (int)($_POST['kuota_bimbingan'] ?? 5);
 
-    if (empty($nama_dosen) || empty($email)) {
-        $error_msg = "Nama lengkap dan email tidak boleh kosong.";
+    if (empty($nama_dosen) || empty($email) || empty($username) || empty($nidn)) {
+        $error_msg = "Username, NIDN, Nama lengkap, dan Email tidak boleh kosong.";
+    } elseif (preg_match('/\s/', $username)) {
+        $error_msg = "Username tidak boleh mengandung spasi.";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error_msg = "Format email tidak valid.";
     } else {
+        // Cek username unik
+        if ($username !== $dosen['username']) {
+            $stmt_u = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = :u AND id != :uid");
+            $stmt_u->execute([':u' => $username, ':uid' => $user_id]);
+            if ($stmt_u->fetchColumn() > 0) {
+                $error_msg = "Username '@{$username}' sudah digunakan oleh pengguna lain.";
+            }
+        }
+
+        // Cek NIDN unik
+        if (empty($error_msg) && $nidn !== $dosen['nidn']) {
+            $stmt_n = $pdo->prepare("SELECT COUNT(*) FROM dosen WHERE nidn = :nidn AND id != :did");
+            $stmt_n->execute([':nidn' => $nidn, ':did' => $dosen_id]);
+            if ($stmt_n->fetchColumn() > 0) {
+                $error_msg = "NIDN '{$nidn}' sudah terdaftar untuk dosen lain.";
+            }
+        }
+
         $foto_nama_baru = $dosen['foto_profil'] ?? 'default.png';
 
         // Cek apakah ada upload foto baru
-        if (isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === UPLOAD_ERR_OK) {
+        if (empty($error_msg) && isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === UPLOAD_ERR_OK) {
             $file_tmp  = $_FILES['foto_profil']['tmp_name'];
             $file_name = $_FILES['foto_profil']['name'];
             $file_size = $_FILES['foto_profil']['size'];
@@ -68,9 +90,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
 
         if (empty($error_msg)) {
             try {
+                $pdo->beginTransaction();
+
+                // Update users table (username)
+                $stmt_up_u = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
+                $stmt_up_u->execute([':u' => $username, ':uid' => $user_id]);
+
+                // Update dosen table
                 $stmt_up = $pdo->prepare("
                     UPDATE dosen 
-                    SET nama_dosen = :nama, 
+                    SET nidn = :nidn,
+                        nama_dosen = :nama, 
                         email = :email, 
                         no_whatsapp = :wa, 
                         kuota_bimbingan = :kuota,
@@ -78,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
                     WHERE user_id = :uid
                 ");
                 $stmt_up->execute([
+                    ':nidn'  => $nidn,
                     ':nama'  => $nama_dosen,
                     ':email' => $email,
                     ':wa'    => $no_whatsapp,
@@ -86,12 +117,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
                     ':uid'   => $user_id
                 ]);
 
-                $success_msg = "Biodata profil dosen berhasil diperbarui!";
+                $pdo->commit();
+                $_SESSION['username'] = $username;
+                $success_msg = "Biodata profil dan pengaturan akun dosen berhasil diperbarui!";
                 
                 // Refresh data
                 $stmt_dosen->execute([':uid' => $user_id]);
                 $dosen = $stmt_dosen->fetch();
             } catch (PDOException $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
                 $error_msg = "Terjadi kesalahan saat menyimpan profil: " . $e->getMessage();
             }
         }
@@ -139,7 +175,7 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
     <div>
         <h1 class="h3 fw-bold mb-1">Profil & Pengaturan Akun</h1>
-        <p class="text-muted small mb-0">Kelola informasi biodata akademik, perbarui foto profil, dan ubah kata sandi akun pembimbing Anda.</p>
+        <p class="text-muted small mb-0">Kelola dan perbarui informasi biodata akademik, ID login, kontak, foto profil, dan kata sandi akun pembimbing Anda.</p>
     </div>
 </div>
 
@@ -188,7 +224,7 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
             <div class="list-group list-group-flush text-start small border-top pt-3">
                 <div class="list-group-item d-flex justify-content-between px-0 bg-transparent">
                     <span class="text-muted"><i class="bi bi-person me-2 text-primary"></i> Username:</span>
-                    <strong><?= htmlspecialchars($dosen['username'] ?? '-'); ?></strong>
+                    <strong>@<?= htmlspecialchars($dosen['username'] ?? '-'); ?></strong>
                 </div>
                 <div class="list-group-item d-flex justify-content-between px-0 bg-transparent">
                     <span class="text-muted"><i class="bi bi-envelope me-2 text-primary"></i> Email:</span>
@@ -200,7 +236,7 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
                 </div>
                 <div class="list-group-item d-flex justify-content-between px-0 bg-transparent">
                     <span class="text-muted"><i class="bi bi-people me-2 text-primary"></i> Kuota Bimbingan:</span>
-                    <strong><?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?> Mahasiswa</strong>
+                    <strong><?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '5'); ?> Mahasiswa</strong>
                 </div>
             </div>
         </div>
@@ -213,7 +249,7 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
                 <ul class="nav nav-pills card-header-pills" id="profileTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold btn-sm px-3" id="biodata-tab" data-bs-toggle="tab" data-bs-target="#biodata-pane" type="button" role="tab">
-                            <i class="bi bi-person-lines-fill me-1"></i> Edit Biodata & Foto
+                            <i class="bi bi-person-lines-fill me-1"></i> Edit Biodata & Akun
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -225,20 +261,29 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
             </div>
             <div class="card-body p-4">
                 <div class="tab-content" id="profileTabContent">
-                    <!-- Tab 1: Form Biodata -->
+                    <!-- Tab 1: Form Biodata & Akun -->
                     <div class="tab-pane fade show active" id="biodata-pane" role="tabpanel">
                         <form action="profil.php" method="POST" enctype="multipart/form-data">
                             <input type="hidden" name="update_profil" value="1">
 
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-semibold">NIDN (Nomor Induk Dosen)</label>
-                                    <input type="text" class="form-control bg-light" value="<?= htmlspecialchars($dosen['nidn'] ?? ''); ?>" readonly>
-                                    <div class="form-text small">NIDN dikelola oleh Administrator sistem.</div>
+                                    <label for="username" class="form-label fw-semibold">ID Login / Username <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="bi bi-at"></i></span>
+                                        <input type="text" name="username" id="username" class="form-control" value="<?= htmlspecialchars($dosen['username'] ?? ''); ?>" required>
+                                    </div>
+                                    <div class="form-text small">Username digunakan untuk masuk ke portal.</div>
                                 </div>
                                 <div class="col-md-6">
+                                    <label for="nidn" class="form-label fw-semibold">NIDN (Nomor Induk Dosen) <span class="text-danger">*</span></label>
+                                    <input type="text" name="nidn" id="nidn" class="form-control" value="<?= htmlspecialchars($dosen['nidn'] ?? ''); ?>" required>
+                                    <div class="form-text small">NIDN resmi tenaga pengajar.</div>
+                                </div>
+
+                                <div class="col-md-12">
                                     <label for="nama_dosen" class="form-label fw-semibold">Nama Lengkap & Gelar <span class="text-danger">*</span></label>
-                                    <input type="text" name="nama_dosen" id="nama_dosen" class="form-control" value="<?= htmlspecialchars($dosen['nama_dosen'] ?? ''); ?>" required>
+                                    <input type="text" name="nama_dosen" id="nama_dosen" class="form-control" value="<?= htmlspecialchars($dosen['nama_dosen'] ?? ''); ?>" placeholder="Contoh: Dr. Budi Darmawan, M.Kom." required>
                                 </div>
 
                                 <div class="col-md-6">
@@ -252,7 +297,8 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 
                                 <div class="col-md-6">
                                     <label for="kuota_bimbingan" class="form-label fw-semibold">Kapasitas Kuota Mahasiswa</label>
-                                    <input type="number" name="kuota_bimbingan" id="kuota_bimbingan" class="form-control" min="1" max="50" value="<?= (int)($dosen['kuota_bimbingan'] ?? 10); ?>">
+                                    <input type="number" name="kuota_bimbingan" id="kuota_bimbingan" class="form-control" min="1" max="50" value="<?= (int)($dosen['kuota_bimbingan'] ?? 5); ?>">
+                                    <div class="form-text small">Standar rekomendasi sistem: maksimal 5 mahasiswa.</div>
                                 </div>
 
                                 <div class="col-md-6">
@@ -264,7 +310,7 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
 
                             <div class="mt-4 pt-3 border-top text-end">
                                 <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
-                                    <i class="bi bi-save me-1"></i> Simpan Perubahan Biodata
+                                    <i class="bi bi-save me-1"></i> Simpan Perubahan Akun
                                 </button>
                             </div>
                         </form>
@@ -275,25 +321,30 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
                         <form action="profil.php" method="POST">
                             <input type="hidden" name="update_password" value="1">
 
-                            <div class="mb-3">
-                                <label for="pass_lama" class="form-label fw-semibold">Password Saat Ini (Lama) <span class="text-danger">*</span></label>
-                                <input type="password" name="pass_lama" id="pass_lama" class="form-control" placeholder="Masukkan password saat ini..." required>
+                            <div class="alert alert-light border small text-muted mb-4">
+                                <i class="bi bi-shield-check text-success me-1"></i>
+                                Pastikan kata sandi baru Anda unik dan sulit ditebak untuk melindungi data mahasiswa bimbingan Anda.
                             </div>
 
-                            <div class="row g-3 mb-3">
+                            <div class="mb-3">
+                                <label for="pass_lama" class="form-label fw-semibold">Password Saat Ini <span class="text-danger">*</span></label>
+                                <input type="password" name="pass_lama" id="pass_lama" class="form-control" placeholder="Masukkan password saat ini" required>
+                            </div>
+
+                            <div class="row g-3 mb-4">
                                 <div class="col-md-6">
                                     <label for="pass_baru" class="form-label fw-semibold">Password Baru <span class="text-danger">*</span></label>
-                                    <input type="password" name="pass_baru" id="pass_baru" class="form-control" minlength="6" placeholder="Minimal 6 karakter..." required>
+                                    <input type="password" name="pass_baru" id="pass_baru" class="form-control" placeholder="Minimal 6 karakter" required minlength="6">
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="pass_konf" class="form-label fw-semibold">Konfirmasi Password Baru <span class="text-danger">*</span></label>
-                                    <input type="password" name="pass_konf" id="pass_konf" class="form-control" minlength="6" placeholder="Ulangi password baru..." required>
+                                    <label for="pass_konf" class="form-label fw-semibold">Ulangi Password Baru <span class="text-danger">*</span></label>
+                                    <input type="password" name="pass_konf" id="pass_konf" class="form-control" placeholder="Ketik ulang password baru" required minlength="6">
                                 </div>
                             </div>
 
-                            <div class="mt-4 pt-3 border-top text-end">
-                                <button type="submit" class="btn btn-warning px-4 fw-semibold shadow-sm">
-                                    <i class="bi bi-key-fill me-1"></i> Perbarui Kata Sandi
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-warning text-dark px-4 fw-bold shadow-sm">
+                                    <i class="bi bi-key-fill me-1"></i> Perbarui Password
                                 </button>
                             </div>
                         </form>

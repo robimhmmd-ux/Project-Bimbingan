@@ -1,6 +1,6 @@
 <?php
-// mahasiswa/profil.php - Manajemen Profil & Data Diri Mahasiswa
-$page_title   = "Profil Mahasiswa";
+// mahasiswa/profil.php - Manajemen Profil & Pengaturan Akun Mahasiswa
+$page_title   = "Profil & Pengaturan Akun";
 $current_page = "profil";
 
 require_once '../config/database.php';
@@ -34,22 +34,45 @@ if (!$mhs) {
 
 $mhs_id = $mhs['id'];
 
-// Handle Update Profil & Foto (POST)
+// Handle Update Profil & Akun (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    // 1. Update Data Diri & Foto Profil
+    // 1. UPDATE DATA AKUN, BIODATA & FOTO PROFIL
     if ($action === 'update_profil') {
-        $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
-        $nim          = trim($_POST['nim'] ?? '');
+        $username      = trim($_POST['username'] ?? '');
+        $nama_lengkap  = trim($_POST['nama_lengkap'] ?? '');
+        $nim           = trim($_POST['nim'] ?? '');
+        $kelas         = trim($_POST['kelas'] ?? 'TI-1A-2025');
         $judul_skripsi = trim($_POST['judul_skripsi'] ?? '');
-        $foto_baru    = $mhs['foto_profil'];
+        $foto_baru     = $mhs['foto_profil'];
 
-        if (empty($nama_lengkap) || empty($nim)) {
-            $error_msg = "Nama lengkap dan NIM wajib diisi.";
+        // Validasi input wajib
+        if (empty($nama_lengkap) || empty($nim) || empty($username)) {
+            $error_msg = "Nama lengkap, NIM, dan Username tidak boleh kosong.";
+        } elseif (preg_match('/\s/', $username)) {
+            $error_msg = "Username tidak boleh mengandung spasi.";
         } else {
-            // Cek jika ada unggahan foto profil baru
-            if (isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === UPLOAD_ERR_OK) {
+            // Cek apakah username diubah dan apakah sudah dipakai user lain
+            if ($username !== $mhs['username']) {
+                $stmt_cek_u = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = :u AND id != :uid");
+                $stmt_cek_u->execute([':u' => $username, ':uid' => $my_user_id]);
+                if ($stmt_cek_u->fetchColumn() > 0) {
+                    $error_msg = "Username '@{$username}' sudah digunakan oleh pengguna lain. Silakan pilih username lain.";
+                }
+            }
+
+            // Cek apakah NIM diubah dan apakah sudah dipakai mahasiswa lain
+            if (empty($error_msg) && $nim !== $mhs['nim']) {
+                $stmt_cek_nim = $pdo->prepare("SELECT COUNT(*) FROM mahasiswa WHERE nim = :nim AND id != :mid");
+                $stmt_cek_nim->execute([':nim' => $nim, ':mid' => $mhs_id]);
+                if ($stmt_cek_nim->fetchColumn() > 0) {
+                    $error_msg = "NIM '{$nim}' sudah terdaftar untuk mahasiswa lain.";
+                }
+            }
+
+            // Cek upload foto profil baru jika ada
+            if (empty($error_msg) && isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === UPLOAD_ERR_OK) {
                 $file_tmp  = $_FILES['foto_profil']['tmp_name'];
                 $file_name = $_FILES['foto_profil']['name'];
                 $file_size = $_FILES['foto_profil']['size'];
@@ -74,34 +97,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            // Eksekusi update jika seluruh validasi lolos
             if (empty($error_msg)) {
                 try {
-                    $stmt_update = $pdo->prepare("
+                    $pdo->beginTransaction();
+
+                    // Update data di tabel users (username)
+                    $stmt_u = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
+                    $stmt_u->execute([':u' => $username, ':uid' => $my_user_id]);
+
+                    // Update data di tabel mahasiswa (nama, nim, kelas, judul, foto)
+                    $stmt_m = $pdo->prepare("
                         UPDATE mahasiswa 
-                        SET nama_lengkap = :nama, nim = :nim, judul_skripsi = :judul, foto_profil = :foto 
+                        SET nama_lengkap = :nama, 
+                            nim = :nim, 
+                            kelas = :kelas, 
+                            judul_skripsi = :judul, 
+                            foto_profil = :foto 
                         WHERE id = :mid
                     ");
-                    $stmt_update->execute([
+                    $stmt_m->execute([
                         ':nama'  => $nama_lengkap,
                         ':nim'   => $nim,
+                        ':kelas' => $kelas,
                         ':judul' => $judul_skripsi,
                         ':foto'  => $foto_baru,
                         ':mid'   => $mhs_id
                     ]);
 
-                    $success_msg = "Data profil Anda berhasil diperbarui!";
-                    
+                    $pdo->commit();
+
+                    // Perbarui session
+                    $_SESSION['username'] = $username;
+                    $success_msg = "Data akun dan profil Anda berhasil diperbarui!";
+
                     // Refresh data mhs
                     $stmt_mhs->execute([':uid' => $my_user_id]);
                     $mhs = $stmt_mhs->fetch();
                 } catch (PDOException $e) {
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
                     $error_msg = "Gagal memperbarui profil: " . $e->getMessage();
                 }
             }
         }
     }
 
-    // 2. Ganti Password Akun
+    // 2. GANTI PASSWORD AKUN
     elseif ($action === 'ganti_password') {
         $password_lama = trim($_POST['password_lama'] ?? '');
         $password_baru = trim($_POST['password_baru'] ?? '');
@@ -120,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $current_hash = $stmt_u->fetchColumn();
 
             if (!password_verify($password_lama, $current_hash)) {
-                $error_msg = "Password lama yang Anda masukkan salah.";
+                $error_msg = "Password saat ini (lama) yang Anda masukkan salah.";
             } else {
                 try {
                     $hash_baru = password_hash($password_baru, PASSWORD_BCRYPT);
@@ -138,8 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <div>
-        <h1 class="h2 mb-0">Profil & Data Diri Mahasiswa</h1>
-        <p class="text-muted small mb-0">Kelola informasi pribadi, kelas, judul tugas akhir, dan foto profil akun Anda.</p>
+        <h1 class="h2 mb-0">Profil & Pengaturan Akun</h1>
+        <p class="text-muted small mb-0">Kelola dan perbarui identitas akun login, NIM, kelas akademik, judul skripsi, serta keamanan kata sandi Anda.</p>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0">
         <a href="index.php" class="btn btn-outline-secondary btn-sm">
@@ -202,8 +245,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="bg-light p-3 rounded text-start border small mb-3">
                     <div class="mb-2">
-                        <span class="text-muted d-block">Username / ID Login:</span>
-                        <span class="fw-semibold text-dark">@<?= htmlspecialchars($mhs['username']); ?></span>
+                        <span class="text-muted d-block">ID Login / Username:</span>
+                        <span class="fw-semibold text-dark"><i class="bi bi-at text-primary"></i><?= htmlspecialchars($mhs['username']); ?></span>
                     </div>
                     <div class="mb-2">
                         <span class="text-muted d-block">Kelas Mahasiswa:</span>
@@ -242,90 +285,138 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- Formulir Edit Data Diri & Ganti Password -->
+    <!-- Formulir Edit Pengaturan Akun & Ganti Password (Tab Navigation) -->
     <div class="col-lg-8">
-        <!-- Form Data Diri & Foto -->
-        <div class="card shadow-sm mb-4 border-0">
-            <div class="card-header bg-white py-3 border-bottom">
-                <h6 class="m-0 fw-bold text-dark">
-                    <i class="bi bi-pencil-square text-primary me-2"></i>Perbarui Data Diri & Foto Profil
-                </h6>
-            </div>
-            <div class="card-body p-4">
-                <form action="profil.php" method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="action" value="update_profil">
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label for="nama_lengkap" class="form-label small fw-semibold text-secondary">Nama Lengkap <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" value="<?= htmlspecialchars($mhs['nama_lengkap']); ?>" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="nim" class="form-label small fw-semibold text-secondary">Nomor Induk Mahasiswa (NIM) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="nim" name="nim" value="<?= htmlspecialchars($mhs['nim']); ?>" required>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold text-secondary">Kelas</label>
-                        <input type="text" class="form-control bg-light" value="<?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>" readonly>
-                        <div class="form-text small" style="font-size: 0.75rem;">Kelas ditetapkan secara resmi oleh sistem akademik.</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="judul_skripsi" class="form-label small fw-semibold text-secondary">Judul Tugas Akhir / Skripsi</label>
-                        <textarea class="form-control" id="judul_skripsi" name="judul_skripsi" rows="3" placeholder="Masukkan judul skripsi lengkap..."><?= htmlspecialchars($mhs['judul_skripsi'] ?? ''); ?></textarea>
-                        <div class="form-text small" style="font-size: 0.75rem;">
-                            Pastikan judul selalu diperbarui sesuai dengan kesepakatan bersama dosen pembimbing.
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="foto_profil" class="form-label small fw-semibold text-secondary">Unggah Foto Profil Baru</label>
-                        <input class="form-control" type="file" id="foto_profil" name="foto_profil" accept="image/jpeg,image/png,image/jpg,image/webp">
-                        <div class="form-text small" style="font-size: 0.75rem;">
-                            Format file didukung: JPG, PNG, WEBP. Ukuran maksimal <strong>2 MB</strong>.
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary px-4 fw-semibold">
-                        <i class="bi bi-save me-1"></i>Simpan Perubahan Profil
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Form Ubah Password Akun -->
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white py-3 border-bottom">
-                <h6 class="m-0 fw-bold text-dark">
-                    <i class="bi bi-shield-lock text-primary me-2"></i>Keamanan Akun & Ubah Password
-                </h6>
+                <ul class="nav nav-pills card-header-pills" id="profilTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold btn-sm px-3" id="akun-tab" data-bs-toggle="tab" data-bs-target="#tab-akun" type="button" role="tab">
+                            <i class="bi bi-person-gear me-1"></i> Pengaturan Akun & Biodata
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold btn-sm px-3 ms-2" id="password-tab" data-bs-toggle="tab" data-bs-target="#tab-password" type="button" role="tab">
+                            <i class="bi bi-shield-lock-fill me-1"></i> Ganti Password
+                        </button>
+                    </li>
+                </ul>
             </div>
             <div class="card-body p-4">
-                <form action="profil.php" method="POST">
-                    <input type="hidden" name="action" value="ganti_password">
+                <div class="tab-content" id="profilTabContent">
+                    <!-- Tab 1: Edit Akun & Biodata -->
+                    <div class="tab-pane fade show active" id="tab-akun" role="tabpanel">
+                        <form action="profil.php" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="update_profil">
 
-                    <div class="mb-3">
-                        <label for="password_lama" class="form-label small fw-semibold text-secondary">Password Saat Ini <span class="text-danger">*</span></label>
-                        <input type="password" class="form-control" id="password_lama" name="password_lama" placeholder="Masukkan password lama..." required>
+                            <div class="alert alert-light border small text-muted mb-4">
+                                <i class="bi bi-info-circle text-primary me-1"></i>
+                                Anda dapat mengedit seluruh data akun login, NIM, nama lengkap, kelas, judul tugas akhir, dan foto profil.
+                            </div>
+
+                            <!-- Baris Username & NIM -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="username" class="form-label small fw-semibold text-secondary">
+                                        Username / ID Login <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light"><i class="bi bi-at"></i></span>
+                                        <input type="text" class="form-control" id="username" name="username" value="<?= htmlspecialchars($mhs['username']); ?>" placeholder="Username login" required>
+                                    </div>
+                                    <div class="form-text small" style="font-size: 0.75rem;">Digunakan saat masuk ke portal sistem bimbingan.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="nim" class="form-label small fw-semibold text-secondary">
+                                        Nomor Induk Mahasiswa (NIM) <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="nim" name="nim" value="<?= htmlspecialchars($mhs['nim']); ?>" placeholder="Contoh: 41257158" required>
+                                    <div class="form-text small" style="font-size: 0.75rem;">NIM resmi mahasiswa.</div>
+                                </div>
+                            </div>
+
+                            <!-- Baris Nama Lengkap & Kelas -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-7">
+                                    <label for="nama_lengkap" class="form-label small fw-semibold text-secondary">
+                                        Nama Lengkap <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" value="<?= htmlspecialchars($mhs['nama_lengkap']); ?>" placeholder="Nama lengkap Anda" required>
+                                </div>
+                                <div class="col-md-5">
+                                    <label for="kelas" class="form-label small fw-semibold text-secondary">
+                                        Kelas Akademik <span class="text-danger">*</span>
+                                    </label>
+                                    <?php $current_kelas = $mhs['kelas'] ?? 'TI-1A-2025'; ?>
+                                    <select class="form-select" id="kelas" name="kelas" required>
+                                        <option value="TI-1A-2025" <?= $current_kelas === 'TI-1A-2025' ? 'selected' : ''; ?>>TI-1A-2025</option>
+                                        <option value="TI-1B-2025" <?= $current_kelas === 'TI-1B-2025' ? 'selected' : ''; ?>>TI-1B-2025</option>
+                                        <option value="TI-1C-2025" <?= $current_kelas === 'TI-1C-2025' ? 'selected' : ''; ?>>TI-1C-2025</option>
+                                    </select>
+                                    <div class="form-text small" style="font-size: 0.75rem;">Pilih rombel / kelas perkuliahan Anda.</div>
+                                </div>
+                            </div>
+
+                            <!-- Judul Skripsi -->
+                            <div class="mb-3">
+                                <label for="judul_skripsi" class="form-label small fw-semibold text-secondary">
+                                    Judul Tugas Akhir / Skripsi
+                                </label>
+                                <textarea class="form-control" id="judul_skripsi" name="judul_skripsi" rows="3" placeholder="Masukkan judul skripsi lengkap..."><?= htmlspecialchars($mhs['judul_skripsi'] ?? ''); ?></textarea>
+                                <div class="form-text small" style="font-size: 0.75rem;">
+                                    Pastikan judul selalu diperbarui sesuai dengan kesepakatan bersama dosen pembimbing.
+                                </div>
+                            </div>
+
+                            <!-- Upload Foto Profil Baru -->
+                            <div class="mb-4">
+                                <label for="foto_profil" class="form-label small fw-semibold text-secondary">
+                                    Unggah Foto Profil Baru
+                                </label>
+                                <input class="form-control" type="file" id="foto_profil" name="foto_profil" accept="image/jpeg,image/png,image/jpg,image/webp">
+                                <div class="form-text small" style="font-size: 0.75rem;">
+                                    Format file didukung: JPG, PNG, WEBP. Ukuran maksimal <strong>2 MB</strong>.
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
+                                <i class="bi bi-save me-1"></i>Simpan Perubahan Akun & Profil
+                            </button>
+                        </form>
                     </div>
 
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label for="password_baru" class="form-label small fw-semibold text-secondary">Password Baru <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" id="password_baru" name="password_baru" placeholder="Minimal 6 karakter" required minlength="6">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="konfirmasi_password" class="form-label small fw-semibold text-secondary">Ulangi Password Baru <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" id="konfirmasi_password" name="konfirmasi_password" placeholder="Ketik ulang password baru" required minlength="6">
-                        </div>
-                    </div>
+                    <!-- Tab 2: Form Ganti Password -->
+                    <div class="tab-pane fade" id="tab-password" role="tabpanel">
+                        <form action="profil.php" method="POST">
+                            <input type="hidden" name="action" value="ganti_password">
 
-                    <button type="submit" class="btn btn-warning text-dark px-4 fw-bold">
-                        <i class="bi bi-key me-1"></i>Perbarui Password
-                    </button>
-                </form>
+                            <div class="alert alert-light border small text-muted mb-4">
+                                <i class="bi bi-shield-check text-success me-1"></i>
+                                Untuk keamanan, gunakan kombinasi huruf dan angka minimal 6 karakter.
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password_lama" class="form-label small fw-semibold text-secondary">Password Saat Ini <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="password_lama" name="password_lama" placeholder="Masukkan password lama..." required>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label for="password_baru" class="form-label small fw-semibold text-secondary">Password Baru <span class="text-danger">*</span></label>
+                                    <input type="password" class="form-control" id="password_baru" name="password_baru" placeholder="Minimal 6 karakter" required minlength="6">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="konfirmasi_password" class="form-label small fw-semibold text-secondary">Ulangi Password Baru <span class="text-danger">*</span></label>
+                                    <input type="password" class="form-control" id="konfirmasi_password" name="konfirmasi_password" placeholder="Ketik ulang password baru" required minlength="6">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-warning text-dark px-4 fw-bold shadow-sm">
+                                <i class="bi bi-key me-1"></i>Perbarui Password
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
