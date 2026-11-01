@@ -9,12 +9,66 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$css_ver = file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : time();
+// Pastikan koneksi database tersedia untuk sinkronisasi akun
+if (!isset($pdo) && file_exists(__DIR__ . '/../config/database.php')) {
+    require_once __DIR__ . '/../config/database.php';
+}
 
-// Link profil sesuai role
-$profile_link = 'profil.php';
-if (isset($_SESSION['role'])) {
-    $profile_link = '../' . $_SESSION['role'] . '/profil.php';
+$css_ver     = file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : time();
+$cur_user_id = $_SESSION['user_id'];
+$cur_role    = $_SESSION['role'] ?? '';
+
+// Ambil info dosen jika role dosen
+$dosen_info = null;
+if (isset($pdo) && $cur_role === 'dosen') {
+    $stmt_d_info = $pdo->prepare("SELECT id, nama_dosen FROM dosen WHERE user_id = :uid LIMIT 1");
+    $stmt_d_info->execute([':uid' => $cur_user_id]);
+    $dosen_info = $stmt_d_info->fetch();
+}
+
+// Proses Cepat Ubah Username / Nama dari Modal Navbar
+$quick_error = '';
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action_quick_edit_navbar'])) {
+    $new_u    = trim($_POST['quick_username'] ?? '');
+    $new_nama = trim($_POST['quick_nama_dosen'] ?? '');
+
+    if (empty($new_u)) {
+        $quick_error = "Username tidak boleh kosong.";
+    } elseif (preg_match('/\s/', $new_u)) {
+        $quick_error = "Username tidak boleh mengandung spasi.";
+    } elseif (isset($pdo)) {
+        // Cek apakah username sudah dipakai pengguna lain
+        $stmt_cek = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = :u AND id != :uid");
+        $stmt_cek->execute([':u' => $new_u, ':uid' => $cur_user_id]);
+        if ($stmt_cek->fetchColumn() > 0) {
+            $quick_error = "Username '@{$new_u}' sudah digunakan.";
+        } else {
+            // Update username di tabel users
+            $stmt_up_u = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
+            $stmt_up_u->execute([':u' => $new_u, ':uid' => $cur_user_id]);
+            $_SESSION['username'] = $new_u;
+
+            // Jika dosen, update juga nama_dosen
+            if (!empty($new_nama) && $cur_role === 'dosen') {
+                $stmt_up_d = $pdo->prepare("UPDATE dosen SET nama_dosen = :nm WHERE user_id = :uid");
+                $stmt_up_d->execute([':nm' => $new_nama, ':uid' => $cur_user_id]);
+            }
+
+            // Redirect bersih ke halaman yang sama
+            header("Location: " . $_SERVER['REQUEST_URI']);
+            exit;
+        }
+    }
+}
+
+// Selalu sinkronkan username di session dengan database terkini
+if (isset($pdo) && isset($_SESSION['user_id'])) {
+    $stmt_sync_u = $pdo->prepare("SELECT username FROM users WHERE id = :uid LIMIT 1");
+    $stmt_sync_u->execute([':uid' => $cur_user_id]);
+    $live_u = $stmt_sync_u->fetchColumn();
+    if ($live_u) {
+        $_SESSION['username'] = $live_u;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -50,20 +104,86 @@ if (isset($_SESSION['role'])) {
             </div>
         </a>
 
-        <!-- Right Side User & Status Pill -->
+        <!-- Right Side User & Status Pill (Bisa Langsung Diklik Untuk Edit Nama) -->
         <div class="d-flex align-items-center gap-3 text-white">
-            <span class="small d-none d-md-inline text-white">
-                Halo, <a href="<?= $profile_link; ?>" class="text-white text-decoration-none fw-bold" title="Klik untuk edit profil & username">
-                    <span><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
-                    <i class="bi bi-pencil-square ms-1 text-white-50" style="font-size: 0.8rem;"></i>
-                </a>
-            </span>
+            <button type="button" 
+                    class="btn btn-link text-white text-decoration-none p-0 d-inline-flex align-items-center gap-2 shadow-none" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalQuickEditNavbar" 
+                    title="Klik untuk mengedit username atau nama Anda">
+                <span class="small d-none d-md-inline text-white-50">Halo,</span>
+                <span class="fw-bold text-white border-bottom border-white border-opacity-50 pb-0"><?= htmlspecialchars($_SESSION['username'] ?? 'User'); ?></span>
+                <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-2 py-1 shadow-sm" style="font-size: 0.72rem;">
+                    <i class="bi bi-pencil-fill me-1"></i>Edit
+                </span>
+            </button>
             <a href="../logout.php" class="btn btn-sm btn-outline-light px-3" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
                 <i class="bi bi-box-arrow-right me-1"></i>Logout
             </a>
         </div>
     </div>
 </nav>
+
+<!-- MODAL QUICK EDIT USERNAME & NAMA DOSEN LANGSUNG DARI NAVBAR -->
+<div class="modal fade" id="modalQuickEditNavbar" tabindex="-1" aria-labelledby="modalQuickEditNavbarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0 text-dark">
+            <form method="POST" action="">
+                <input type="hidden" name="action_quick_edit_navbar" value="1">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="modalQuickEditNavbarLabel">
+                        <i class="bi bi-pencil-square me-2"></i>Edit Username / Nama Akun
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-start">
+                    <?php if (!empty($quick_error)): ?>
+                        <div class="alert alert-danger py-2 small mb-3">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i><?= htmlspecialchars($quick_error); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <p class="text-muted small mb-3">
+                        Ubah tulisan username yang tampil pada ucapan <strong>Halo, ...</strong> di pojok kanan atas serta kredensial akun Anda:
+                    </p>
+
+                    <!-- Input Username -->
+                    <div class="mb-3">
+                        <label for="quick_username" class="form-label fw-bold small text-dark">
+                            <i class="bi bi-person-badge text-primary me-1"></i>ID Login / Username (Tampil di Navbar) *
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light fw-bold text-muted">@</span>
+                            <input type="text" name="quick_username" id="quick_username" class="form-control fw-bold text-primary" 
+                                   value="<?= htmlspecialchars($_SESSION['username'] ?? ''); ?>" 
+                                   placeholder="Contoh: dosen1" required autofocus>
+                        </div>
+                        <div class="form-text small text-muted">Tanpa spasi. Contoh: <code>salsa</code>, <code>dosen_hendra</code>, <code>dosen1</code>.</div>
+                    </div>
+
+                    <?php if ($cur_role === 'dosen'): ?>
+                    <!-- Input Nama Lengkap Dosen -->
+                    <div class="mb-3">
+                        <label for="quick_nama_dosen" class="form-label fw-bold small text-dark">
+                            <i class="bi bi-person-lines-fill text-primary me-1"></i>Nama Lengkap & Gelar Resmi Dosen
+                        </label>
+                        <input type="text" name="quick_nama_dosen" id="quick_nama_dosen" class="form-control" 
+                               value="<?= htmlspecialchars($dosen_info['nama_dosen'] ?? ''); ?>" 
+                               placeholder="Contoh: Dr. Hendra Gunawan, M.T.">
+                        <div class="form-text small text-muted">Nama resmi yang tampil di lembar laporan dan kartu bimbingan mahasiswa.</div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <div class="container-fluid">
     <div class="row">
