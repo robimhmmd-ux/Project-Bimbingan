@@ -37,10 +37,6 @@ $mhs_terbaru = $pdo->query("
 <!-- Hero Banner Header -->
 <div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
-        <div class="hero-tag">
-            <i class="bi bi-stars text-warning"></i>
-            <span>Executive Command Center</span>
-        </div>
         <h2 class="fw-bold text-white mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Administrator'); ?>!</h2>
         <p class="text-white-50 small mb-0">Kelola master data akademik, jadwal dosen, plotting bimbingan, dan evaluasi kelulusan skripsi.</p>
     </div>
