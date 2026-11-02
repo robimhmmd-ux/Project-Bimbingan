@@ -1,5 +1,5 @@
 <!-- templates/sidebar_admin.php -->
-<nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 min-vh-100 border-end">
+<nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky d-flex flex-column h-100">
         <!-- Section: Dashboard -->
         <div class="sidebar-category mb-2">
@@ -104,4 +104,4 @@
         </div>
     </div>
 </nav>
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 main-content-wrapper">
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 main-content-wrapper" id="mainContent">

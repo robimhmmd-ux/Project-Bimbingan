@@ -144,22 +144,38 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Custom CSS with Cache Buster -->
     <link href="../assets/css/style.css?v=<?= $css_ver; ?>" rel="stylesheet">
+    <script>
+        // Terapkan preferensi sidebar langsung sebelum render untuk mencegah layout flicker
+        if (window.innerWidth >= 768 && localStorage.getItem('sidebar_collapsed') === 'true') {
+            document.documentElement.classList.add('sidebar-collapsed');
+        }
+    </script>
 </head>
 <body class="bg-light">
 
 <!-- Topbar Navbar (Solid High-Contrast Navy Blue) -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm py-2" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;">
     <div class="container-fluid px-md-4">
-        <!-- Logo & Brand Title -->
-        <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none" href="#">
-            <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning">
-                <i class="bi bi-mortarboard-fill"></i>
-            </span>
-            <div class="d-flex flex-column">
-                <span class="fs-6 lh-1">Bimbingan Skripsi</span>
-                <span class="text-white-50 small" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
-            </div>
-        </a>
+        <!-- Tombol Buka/Tutup Sidebar & Brand Logo -->
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-light border-0 p-1 px-2 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none" 
+                    id="sidebarToggleBtn" 
+                    type="button" 
+                    aria-label="Toggle Sidebar" 
+                    title="Buka / Tutup Sidebar"
+                    style="background: rgba(255, 255, 255, 0.12); border-radius: 8px;">
+                <i class="bi bi-layout-sidebar fs-5" id="sidebarToggleIcon"></i>
+            </button>
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none m-0" href="#">
+                <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning">
+                    <i class="bi bi-mortarboard-fill"></i>
+                </span>
+                <div class="d-flex flex-column">
+                    <span class="fs-6 lh-1">Bimbingan Skripsi</span>
+                    <span class="text-white-50 small" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
+                </div>
+            </a>
+        </div>
 
         <!-- Right Side User, Notifications & Status Pill -->
         <div class="d-flex align-items-center gap-3 text-white">
@@ -385,6 +401,9 @@ document.querySelectorAll(".toggle-navbar-pw").forEach(function(btn) {
     });
 });
 </script>
+
+<!-- Backdrop untuk mobile saat sidebar dibuka -->
+<div class="sidebar-mobile-backdrop" id="sidebarBackdrop"></div>
 
 <div class="container-fluid">
     <div class="row">

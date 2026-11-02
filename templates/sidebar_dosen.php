@@ -39,7 +39,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     }
 }
 ?>
-<nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 min-vh-100 border-end">
+<nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky">
         <h6 class="sidebar-heading px-3 mt-2 mb-3 text-muted text-uppercase small fw-bold">Menu Dosen</h6>
         <ul class="nav flex-column nav-pills">
@@ -101,4 +101,4 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
         </ul>
     </div>
 </nav>
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 main-content-wrapper" id="mainContent">
