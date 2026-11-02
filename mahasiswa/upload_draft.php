@@ -40,6 +40,23 @@ $judul_terdaftar  = trim($mhs['judul_skripsi'] ?? '');
 $has_judul_text   = (!empty($judul_terdaftar) && !in_array(strtolower($judul_terdaftar), ['belum ditentukan', 'judul belum diatur', 'judul belum ditentukan', '-', 'null']));
 $has_judul        = $is_judul_acc; // Tahap 2 HANYA terbuka jika judul telah di-ACC resmi oleh dosen
 
+// Parameter auto-select bab saat diklik dari dashboard progres
+$param_bab = strtolower(trim($_GET['bab'] ?? ''));
+$map_bab_options = [
+    '1'      => 'Bab 1: Pendahuluan',
+    'bab1'   => 'Bab 1: Pendahuluan',
+    '2'      => 'Bab 2: Tinjauan Pustaka',
+    'bab2'   => 'Bab 2: Tinjauan Pustaka',
+    '3'      => 'Bab 3: Metodologi Penelitian',
+    'bab3'   => 'Bab 3: Metodologi Penelitian',
+    '4'      => 'Bab 4: Hasil dan Pembahasan',
+    'bab4'   => 'Bab 4: Hasil dan Pembahasan',
+    '5'      => 'Bab 5: Kesimpulan dan Saran',
+    'bab5'   => 'Bab 5: Kesimpulan dan Saran',
+    'sidang' => 'Naskah Skripsi Lengkap',
+];
+$auto_select_bab = $map_bab_options[$param_bab] ?? '';
+
 // ============================================================
 // 1. HANDLE PENGAJUAN / PEMBARUAN JUDUL SKRIPSI (TAHAP 1)
 // ============================================================
@@ -344,7 +361,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
     <div class="col-lg-5">
         <?php if (!$is_judul_acc): ?>
             <!-- FORM TAHAP 1: PENGAJUAN JUDUL & UNGGAH DOKUMEN SKRIPSI -->
-            <div class="card shadow-sm h-100 border-0">
+            <div class="card shadow-sm h-100 border-0" id="formTahapJudul">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                     <h6 class="m-0 fw-bold text-dark">
                         <i class="bi bi-file-earmark-text text-primary me-2"></i>Tahap 1: Pengajuan Usulan Judul Skripsi
@@ -486,7 +503,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                         <small class="text-muted" style="font-size: 0.78rem;">Dosen Pembimbing: <strong><?= htmlspecialchars($mhs['nama_dosen'] ?? 'Belum Diplot'); ?></strong></small>
 
                         <!-- Collapse Form Ubah Judul -->
-                        <div class="collapse mt-2 pt-2 border-top" id="boxUbahJudul">
+                        <div class="collapse <?= (isset($_GET['tahap']) && $_GET['tahap'] === 'judul') ? 'show' : ''; ?> mt-2 pt-2 border-top" id="boxUbahJudul">
                             <form action="upload_draft.php" method="POST">
                                 <input type="hidden" name="action_ajukan_judul" value="1">
                                 <label class="form-label small fw-semibold text-secondary mb-1">Revisi / Judul Baru:</label>
@@ -506,14 +523,14 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                         <div class="mb-3">
                             <label for="bab_pembahasan" class="form-label small fw-semibold text-secondary">Bab yang Diajukan <span class="text-danger">*</span></label>
                             <select class="form-select" id="bab_pembahasan" name="bab_pembahasan" required <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
-                                <option value="" selected disabled>-- Pilih Bagian Skripsi --</option>
-                                <option value="Bab 1: Pendahuluan">Bab 1: Pendahuluan</option>
-                                <option value="Bab 2: Tinjauan Pustaka">Bab 2: Tinjauan Pustaka</option>
-                                <option value="Bab 3: Metodologi Penelitian">Bab 3: Metodologi Penelitian</option>
-                                <option value="Bab 4: Hasil dan Pembahasan">Bab 4: Hasil & Pembahasan</option>
-                                <option value="Bab 5: Kesimpulan dan Saran">Bab 5: Kesimpulan & Saran</option>
-                                <option value="Proposal Skripsi Lengkap">Proposal Skripsi Lengkap (Bab 1-3)</option>
-                                <option value="Naskah Skripsi Lengkap">Naskah Skripsi Lengkap (Bab 1-5)</option>
+                                <option value="" <?= empty($auto_select_bab) ? 'selected' : ''; ?> disabled>-- Pilih Bagian Skripsi --</option>
+                                <option value="Bab 1: Pendahuluan" <?= $auto_select_bab === 'Bab 1: Pendahuluan' ? 'selected' : ''; ?>>Bab 1: Pendahuluan</option>
+                                <option value="Bab 2: Tinjauan Pustaka" <?= $auto_select_bab === 'Bab 2: Tinjauan Pustaka' ? 'selected' : ''; ?>>Bab 2: Tinjauan Pustaka</option>
+                                <option value="Bab 3: Metodologi Penelitian" <?= $auto_select_bab === 'Bab 3: Metodologi Penelitian' ? 'selected' : ''; ?>>Bab 3: Metodologi Penelitian</option>
+                                <option value="Bab 4: Hasil dan Pembahasan" <?= $auto_select_bab === 'Bab 4: Hasil dan Pembahasan' ? 'selected' : ''; ?>>Bab 4: Hasil & Pembahasan</option>
+                                <option value="Bab 5: Kesimpulan dan Saran" <?= $auto_select_bab === 'Bab 5: Kesimpulan dan Saran' ? 'selected' : ''; ?>>Bab 5: Kesimpulan & Saran</option>
+                                <option value="Proposal Skripsi Lengkap" <?= $auto_select_bab === 'Proposal Skripsi Lengkap' ? 'selected' : ''; ?>>Proposal Skripsi Lengkap (Bab 1-3)</option>
+                                <option value="Naskah Skripsi Lengkap" <?= $auto_select_bab === 'Naskah Skripsi Lengkap' ? 'selected' : ''; ?>>Naskah Skripsi Lengkap (Bab 1-5)</option>
                             </select>
                         </div>
 
