@@ -297,9 +297,6 @@ if (file_exists('config/database.php')) {
                     <a class="nav-link" href="#skala">Skala Kami</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#peran">3 Peran</a>
-                </li>
-                <li class="nav-item">
                     <a class="nav-link" href="#dosen">Dosen</a>
                 </li>
                 <li class="nav-item">
@@ -488,91 +485,6 @@ if (file_exists('config/database.php')) {
     </div>
 </section>
 
-<!-- 5. SECTION BERTUMBUH BERSAMA 3 PERAN (Inspirasi Section Gojek: Bertumbuh Bersama) -->
-<section id="peran" class="py-5 bg-white border-bottom">
-    <div class="container py-4">
-        <div class="text-center max-w-700 mx-auto mb-5">
-            <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill mb-2">#PASTIADAJALAN BERKOLABORASI</span>
-            <h2 class="fw-extrabold text-dark display-6">Menuntaskan Skripsi Bersama di Satu Platform</h2>
-            <p class="text-muted">Setiap entitas sivitas akademika terhubung dengan alur kerja yang transparan dan akuntabel.</p>
-        </div>
-
-        <div class="row g-4">
-            <!-- Kartu 1: Mahasiswa -->
-            <div class="col-md-4">
-                <div class="card-peran-gojek">
-                    <div class="card-peran-header">
-                        <span class="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill mb-3">ROLE 01</span>
-                        <h4 class="fw-bold text-dark mb-2">Untuk Mahasiswa</h4>
-                        <p class="text-muted small mb-0">Fokus menyelesaikan penulisan karya ilmiah tanpa kendala teknis birokrasi.</p>
-                    </div>
-                    <div class="px-4 pb-4 flex-grow-1">
-                        <ul class="list-unstyled small text-muted d-flex flex-column gap-2 mb-0">
-                            <li><i class="bi bi-check2-circle text-primary me-2"></i>Reservasi sesi bimbingan mingguan anti-bentrok.</li>
-                            <li><i class="bi bi-check2-circle text-primary me-2"></i>Unggah draf naskah bab dalam format PDF (maks. 5MB).</li>
-                            <li><i class="bi bi-check2-circle text-primary me-2"></i>Pantau status persetujuan, catatan perbaikan, & nilai.</li>
-                            <li><i class="bi bi-check2-circle text-primary me-2"></i>Cetak Kartu Bimbingan resmi bergaris rapi.</li>
-                        </ul>
-                    </div>
-                    <div class="p-4 bg-light border-top mt-auto">
-                        <a href="login.php" class="btn btn-outline-primary w-100 rounded-pill fw-bold">
-                            Masuk sebagai Mahasiswa
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Kartu 2: Dosen Pembimbing -->
-            <div class="col-md-4">
-                <div class="card-peran-gojek">
-                    <div class="card-peran-header">
-                        <span class="badge bg-success text-white fw-bold px-3 py-1 rounded-pill mb-3" style="background-color: var(--gojek-green) !important;">ROLE 02</span>
-                        <h4 class="fw-bold text-dark mb-2">Untuk Dosen Pembimbing</h4>
-                        <p class="text-muted small mb-0">Kendali penuh mengelola bimbingan dan memantau capaian mahasiswa bimbingan.</p>
-                    </div>
-                    <div class="px-4 pb-4 flex-grow-1">
-                        <ul class="list-unstyled small text-muted d-flex flex-column gap-2 mb-0">
-                            <li><i class="bi bi-check2-circle text-success me-2"></i>Atur ketersediaan slot hari & jam konsultasi mingguan.</li>
-                            <li><i class="bi bi-check2-circle text-success me-2"></i>Setujui, tolak, atau minta jadwal ulang pengajuan.</li>
-                            <li><i class="bi bi-check2-circle text-success me-2"></i>Unduh naskah draf skripsi mahasiswa dalam 1 klik.</li>
-                            <li><i class="bi bi-check2-circle text-success me-2"></i>Beri umpan balik revisi, nilai progres, dan ACC bab.</li>
-                        </ul>
-                    </div>
-                    <div class="p-4 bg-light border-top mt-auto">
-                        <a href="login.php" class="btn btn-gojek-green w-100 justify-content-center">
-                            Masuk sebagai Dosen
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Kartu 3: Administrator Prodi -->
-            <div class="col-md-4">
-                <div class="card-peran-gojek">
-                    <div class="card-peran-header">
-                        <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill mb-3">ROLE 03</span>
-                        <h4 class="fw-bold text-dark mb-2">Untuk Admin Akademik</h4>
-                        <p class="text-muted small mb-0">Penjamin mutu distribusi pembimbing dan pemantau jadwal sidang akhir.</p>
-                    </div>
-                    <div class="px-4 pb-4 flex-grow-1">
-                        <ul class="list-unstyled small text-muted d-flex flex-column gap-2 mb-0">
-                            <li><i class="bi bi-check2-circle text-warning me-2"></i>Kelola master data sivitas akademika (dosen & mhs).</li>
-                            <li><i class="bi bi-check2-circle text-warning me-2"></i>Plotting mahasiswa dengan proteksi batas kuota 5.</li>
-                            <li><i class="bi bi-check2-circle text-warning me-2"></i>Penjadwalan sidang tugas akhir (3 dosen penguji).</li>
-                            <li><i class="bi bi-check2-circle text-warning me-2"></i>Monitoring rekapitulasi kelulusan skripsi program studi.</li>
-                        </ul>
-                    </div>
-                    <div class="p-4 bg-light border-top mt-auto">
-                        <a href="login.php" class="btn btn-outline-dark w-100 rounded-pill fw-bold">
-                            Masuk sebagai Admin
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
 <!-- 6. SECTION DOSEN PEMBIMBING (Gaya Kartu Mitra Gojek) -->
 <section id="dosen" class="py-5 bg-light border-bottom">
     <div class="container py-4">
@@ -734,7 +646,6 @@ if (file_exists('config/database.php')) {
                     <li><a href="#beranda" class="text-white-50 text-decoration-none">Beranda</a></li>
                     <li><a href="#solusi" class="text-white-50 text-decoration-none">Solusi Bimbingan</a></li>
                     <li><a href="#skala" class="text-white-50 text-decoration-none">Skala Kami</a></li>
-                    <li><a href="#peran" class="text-white-50 text-decoration-none">3 Peran Pengguna</a></li>
                     <li><a href="#dosen" class="text-white-50 text-decoration-none">Daftar Dosen</a></li>
                     <li><a href="login.php" class="text-success text-decoration-none fw-bold">Portal Masuk</a></li>
                 </ul>
