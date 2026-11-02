@@ -58,8 +58,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                 // 1. Tambah user mahasiswa
                 $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-                $stmtUser = $pdo->prepare("INSERT INTO users (username, password, role) VALUES (:u, :p, 'mahasiswa')");
-                $stmtUser->execute([':u' => $username, ':p' => $hashed_password]);
+                $stmtUser = $pdo->prepare("INSERT INTO users (username, password, password_plain, role) VALUES (:u, :p, :pp, 'mahasiswa')");
+                $stmtUser->execute([':u' => $username, ':p' => $hashed_password, ':pp' => $password]);
                 $user_id = $pdo->lastInsertId();
 
                 // 2. Tambah profil mahasiswa
@@ -141,8 +141,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 // Update users
                 if (!empty($password)) {
                     $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-                    $stmtUpU = $pdo->prepare("UPDATE users SET username = :u, password = :p WHERE id = :uid");
-                    $stmtUpU->execute([':u' => $username, ':p' => $hashed_password, ':uid' => $user_id]);
+                    $stmtUpU = $pdo->prepare("UPDATE users SET username = :u, password = :p, password_plain = :pp WHERE id = :uid");
+                    $stmtUpU->execute([':u' => $username, ':p' => $hashed_password, ':pp' => $password, ':uid' => $user_id]);
                 } else {
                     $stmtUpU = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
                     $stmtUpU->execute([':u' => $username, ':uid' => $user_id]);
@@ -287,6 +287,7 @@ $queryMhs = "
     SELECT 
         m.*,
         u.username,
+        u.password_plain,
         d.nama_dosen,
         COALESCE(
             (SELECT nilai_progres FROM pengajuan_bimbingan WHERE mahasiswa_id = m.id ORDER BY id DESC LIMIT 1),
@@ -512,7 +513,7 @@ require_once '../templates/sidebar_admin.php';
                                         <div>
                                             <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
                                             <div class="font-monospace text-primary small fw-semibold">NIM: <?= htmlspecialchars($row['nim']); ?></div>
-                                            <small class="text-muted" style="font-size: 0.725rem;">user: <?= htmlspecialchars($row['username']); ?></small>
+                                            <small class="text-muted" style="font-size: 0.725rem;">user: <?= htmlspecialchars($row['username']); ?> · <span title="Password default: sama dengan NIM"><i class="bi bi-key-fill text-warning me-1"></i>Def: <?= htmlspecialchars($row['nim']); ?></span></small>
                                         </div>
                                     </div>
                                 </td>
@@ -594,6 +595,7 @@ require_once '../templates/sidebar_admin.php';
                                                 data-dosenid="<?= $row['dosen_pembimbing_id']; ?>"
                                                 data-status="<?= $row['status_kelulusan']; ?>"
                                                 data-username="<?= htmlspecialchars($row['username']); ?>"
+                                                data-password="<?= htmlspecialchars($row['password_plain'] ?: $row['nim']); ?>"
                                                 title="Edit Data Mahasiswa">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
@@ -679,7 +681,12 @@ require_once '../templates/sidebar_admin.php';
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
-                                    <input type="password" class="form-control" name="password" placeholder="Minimal 6 karakter" required>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" name="password" id="mhs_create_pw" placeholder="Minimal 6 karakter" required autocomplete="new-password">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePass('mhs_create_pw', this)" title="Lihat / Sembunyikan Kata Sandi">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -756,9 +763,16 @@ require_once '../templates/sidebar_admin.php';
                                     <input type="text" class="form-control" name="username" id="edit_username" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-semibold">Password Baru (Opsional)</label>
-                                    <input type="password" class="form-control" name="password" placeholder="Kosongkan jika tidak diubah">
-                                    <div class="form-text">Isi hanya bila ingin mereset password mahasiswa.</div>
+                                    <label class="form-label small fw-semibold">Password Akun Login <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control font-monospace" name="password" id="mhs_edit_pw" placeholder="Password mahasiswa" required autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePass('mhs_edit_pw', this)" title="Lihat / Sembunyikan Kata Sandi">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text text-muted small mt-1">
+                                        <i class="bi bi-info-circle text-primary me-1"></i>Klik ikon mata untuk <strong>melihat password saat ini</strong>. Anda juga bisa langsung mengedit/mengganti password baru di kolom ini.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -860,6 +874,12 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_dosen_id').value         = this.dataset.dosenid;
             document.getElementById('edit_status_kelulusan').value = this.dataset.status;
             document.getElementById('edit_username').value         = this.dataset.username;
+            // Isi dengan password saat ini dan set type password
+            const editPw = document.getElementById('mhs_edit_pw');
+            if (editPw) {
+                editPw.value = this.dataset.password || '';
+                editPw.type  = 'password';
+            }
         });
     });
 
@@ -885,6 +905,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+function togglePass(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) {
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        }
+    } else {
+        input.type = 'password';
+        if (icon) {
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+}
 </script>
 
 <?php

@@ -57,12 +57,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 // 1. Tambah user baru (role: dosen)
                 $hashed_password = password_hash($password, PASSWORD_BCRYPT);
                 $stmtUser = $pdo->prepare("
-                    INSERT INTO users (username, password, role) 
-                    VALUES (:username, :password, 'dosen')
+                    INSERT INTO users (username, password, password_plain, role) 
+                    VALUES (:username, :password, :password_plain, 'dosen')
                 ");
                 $stmtUser->execute([
-                    ':username' => $username,
-                    ':password' => $hashed_password
+                    ':username'       => $username,
+                    ':password'       => $hashed_password,
+                    ':password_plain' => $password
                 ]);
                 $user_id = $pdo->lastInsertId();
 
@@ -128,8 +129,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 // Update users
                 if (!empty($password)) {
                     $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-                    $stmtUpUser = $pdo->prepare("UPDATE users SET username = :u, password = :p WHERE id = :uid");
-                    $stmtUpUser->execute([':u' => $username, ':p' => $hashed_password, ':uid' => $user_id]);
+                    $stmtUpUser = $pdo->prepare("UPDATE users SET username = :u, password = :p, password_plain = :pp WHERE id = :uid");
+                    $stmtUpUser->execute([':u' => $username, ':p' => $hashed_password, ':pp' => $password, ':uid' => $user_id]);
                 } else {
                     $stmtUpUser = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
                     $stmtUpUser->execute([':u' => $username, ':uid' => $user_id]);
@@ -189,11 +190,12 @@ $query = "
     SELECT 
         d.*,
         u.username,
+        u.password_plain,
         COUNT(m.id) AS total_mahasiswa
     FROM dosen d
     INNER JOIN users u ON d.user_id = u.id
     LEFT JOIN mahasiswa m ON d.id = m.dosen_pembimbing_id
-    GROUP BY d.id, u.username
+    GROUP BY d.id, u.username, u.password_plain
     ORDER BY d.nama_dosen ASC
 ";
 $dosen_list = $pdo->query($query)->fetchAll();
@@ -360,6 +362,11 @@ require_once '../templates/sidebar_admin.php';
                                     <span class="badge bg-light text-dark border">
                                         <i class="bi bi-person me-1"></i><?= htmlspecialchars($row['username']); ?>
                                     </span>
+                                    <div class="mt-1">
+                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle font-monospace" style="font-size: 0.75rem;" title="Password login dosen">
+                                            <i class="bi bi-key-fill text-warning me-1"></i><?= htmlspecialchars($row['password_plain'] ?: 'password123'); ?>
+                                        </span>
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="d-flex justify-content-between align-items-center small mb-1">
@@ -391,6 +398,7 @@ require_once '../templates/sidebar_admin.php';
                                                 data-wa="<?= htmlspecialchars($row['no_whatsapp']); ?>"
                                                 data-kuota="<?= $row['kuota_bimbingan']; ?>"
                                                 data-username="<?= htmlspecialchars($row['username']); ?>"
+                                                data-password="<?= htmlspecialchars($row['password_plain'] ?: 'password123'); ?>"
                                                 title="Edit Dosen">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
@@ -459,7 +467,12 @@ require_once '../templates/sidebar_admin.php';
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-semibold">Password <span class="text-danger">*</span></label>
-                                    <input type="password" class="form-control" name="password" placeholder="Minimal 6 karakter" required>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" name="password" id="dsn_create_pw" placeholder="Minimal 6 karakter" required autocomplete="new-password">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePass('dsn_create_pw', this)" title="Lihat / Sembunyikan Kata Sandi">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -519,9 +532,16 @@ require_once '../templates/sidebar_admin.php';
                                     <input type="text" class="form-control" name="username" id="edit_username" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-semibold">Password Baru (Opsional)</label>
-                                    <input type="password" class="form-control" name="password" placeholder="Kosongkan jika tidak diubah">
-                                    <div class="form-text">Isi hanya jika ingin mereset kata sandi dosen.</div>
+                                    <label class="form-label small fw-semibold">Password Akun Login <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control font-monospace" name="password" id="dsn_edit_pw" placeholder="Password dosen" required autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePass('dsn_edit_pw', this)" title="Lihat / Sembunyikan Kata Sandi">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text text-muted small mt-1">
+                                        <i class="bi bi-info-circle text-primary me-1"></i>Klik ikon mata untuk <strong>melihat password saat ini</strong>. Anda juga bisa langsung mengedit/mengganti password baru di kolom ini.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -577,6 +597,12 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_no_whatsapp').value     = this.dataset.wa;
             document.getElementById('edit_kuota_bimbingan').value = this.dataset.kuota;
             document.getElementById('edit_username').value        = this.dataset.username;
+            // Isi dengan password saat ini dan set type password
+            const editPw = document.getElementById('dsn_edit_pw');
+            if (editPw) {
+                editPw.value = this.dataset.password || 'password123';
+                editPw.type  = 'password';
+            }
         });
     });
 
@@ -589,6 +615,25 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+function togglePass(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) {
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
+        }
+    } else {
+        input.type = 'password';
+        if (icon) {
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
+        }
+    }
+}
 </script>
 
 <?php

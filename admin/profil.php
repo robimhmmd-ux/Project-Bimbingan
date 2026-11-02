@@ -189,8 +189,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         } else {
             try {
                 $hash_baru = password_hash($password_baru, PASSWORD_BCRYPT);
-                $stmt_pw   = $pdo->prepare("UPDATE users SET password = :p WHERE id = :uid");
-                $stmt_pw->execute([':p' => $hash_baru, ':uid' => $user_id]);
+                $stmt_pw   = $pdo->prepare("UPDATE users SET password = :p, password_plain = :pp WHERE id = :uid");
+                $stmt_pw->execute([':p' => $hash_baru, ':pp' => $password_baru, ':uid' => $user_id]);
 
                 $success_msg = "Kata sandi akun administrator berhasil diperbarui!";
                 

@@ -316,6 +316,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             pointer-events: none;
         }
 
+        .btn-toggle-eye {
+            position: absolute;
+            right: 1.15rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            transition: color 0.15s ease;
+        }
+        .btn-toggle-eye:hover {
+            color: var(--primary);
+        }
+
         .form-label-custom {
             font-size: 0.85rem; font-weight: 600; color: #334155;
             margin-bottom: 0.4rem; display: block;
@@ -673,13 +694,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="mb-4">
                 <label for="password" class="form-label-custom">Password</label>
-                <div class="input-icon-wrap">
+                <div class="input-icon-wrap" style="position: relative;">
                     <i class="bi bi-lock field-icon"></i>
                     <input type="password"
                            class="input-pill <?= !empty($error_message) ? 'error' : '' ?>"
                            id="password" name="password"
                            placeholder="Masukkan password"
-                           required autocomplete="current-password">
+                           required autocomplete="current-password"
+                           style="padding-right: 2.8rem !important;">
+                    <button type="button" class="btn-toggle-eye" id="btnToggleLoginPass" title="Lihat/Sembunyikan Kata Sandi">
+                        <i class="bi bi-eye" id="loginEyeIcon"></i>
+                    </button>
                 </div>
             </div>
 
@@ -695,5 +720,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div><!-- /login-wrapper -->
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.getElementById("btnToggleLoginPass")?.addEventListener("click", function() {
+    const input = document.getElementById("password");
+    const icon = document.getElementById("loginEyeIcon");
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove("bi-eye");
+        icon.classList.add("bi-eye-slash");
+    } else {
+        input.type = "password";
+        icon.classList.remove("bi-eye-slash");
+        icon.classList.add("bi-eye");
+    }
+});
+</script>
 </body>
 </html>
