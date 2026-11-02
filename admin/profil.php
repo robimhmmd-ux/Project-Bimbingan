@@ -282,8 +282,9 @@ $has_foto = (!empty($admin['foto_profil']) && $admin['foto_profil'] !== 'default
                     <?= htmlspecialchars($admin['nama_lengkap'] ?? 'Administrator'); ?>
                 </h5>
                 <div class="text-white-50 small mb-2">@<?= htmlspecialchars($admin['username'] ?? 'admin'); ?></div>
-                <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-3 py-1 fw-semibold small border border-white border-opacity-25">
-                    <i class="bi bi-shield-check me-1"></i>Administrator Utama
+                <span class="badge rounded-pill px-3 py-1 shadow-sm" style="background-color: #ffffff !important; color: #1e1b4b !important; font-weight: 700 !important; font-size: 0.825rem !important; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid rgba(255, 255, 255, 0.9);">
+                    <i class="bi bi-shield-fill-check text-primary fs-6"></i>
+                    <span>Administrator Utama</span>
                 </span>
             </div>
             
