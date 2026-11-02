@@ -962,9 +962,19 @@ $bab_list = [
                 }
             ?>
                 <div class="col">
-                    <div class="bab-step-card status-<?= $t_data['status']; ?> h-100 d-flex flex-column justify-content-between">
+                    <?php
+                    // URL link upload berkas sesuai tahapan
+                    if ($t_key === 'judul') {
+                        $target_upload_url = 'upload_draft.php?tahap=judul';
+                    } elseif (preg_match('/^bab(\d+)$/', $t_key, $m_b)) {
+                        $target_upload_url = 'upload_draft.php?bab=' . $m_b[1] . '#formUploadBab';
+                    } else {
+                        $target_upload_url = 'upload_draft.php?bab=sidang#formUploadBab';
+                    }
+                    ?>
+                    <a href="<?= $target_upload_url; ?>" class="bab-step-card status-<?= $t_data['status']; ?> h-100 d-flex flex-column justify-content-between text-decoration-none" title="Klik untuk membuka progres upload berkas <?= htmlspecialchars($t_data['nama']); ?>" style="cursor: pointer; color: inherit;">
                         <div>
-                            <div class="bab-icon-circle">
+                            <div class="bab-icon-circle" title="Klik untuk upload berkas <?= htmlspecialchars($t_data['nama']); ?>">
                                 <?php if ($t_data['status'] === 'acc'): ?>
                                     <i class="bi bi-check2-circle"></i>
                                 <?php elseif ($t_data['status'] === 'revisi'): ?>
@@ -995,7 +1005,7 @@ $bab_list = [
                                 <?php endif; ?>
                             <?php endif; ?>
                         </div>
-                    </div>
+                    </a>
                 </div>
             <?php endforeach; ?>
         </div>
