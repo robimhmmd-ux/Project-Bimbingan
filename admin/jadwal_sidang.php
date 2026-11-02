@@ -336,7 +336,7 @@ require_once '../templates/sidebar_admin.php';
             <i class="bi bi-mortarboard-fill"></i>
             <span>Penjadwalan Sidang Skripsi & 3 Dewan Penguji</span>
         </div>
-        <h2 class="fw-bold text-white mb-1">Manajemen Sidang Munaqasyah Skripsi</h2>
+        <h2 class="fw-bold text-white mb-1">Manajemen Sidang Skripsi</h2>
         <p class="text-white-50 small mb-0">Verifikasi mahasiswa siap sidang, tetapkan jadwal & ruangan, tunjuk 3 dewan penguji, serta catat evaluasi nilai kelulusan.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
@@ -399,7 +399,7 @@ require_once '../templates/sidebar_admin.php';
                 <div>
                     <span class="small text-muted fw-bold text-uppercase">Lulus Sidang</span>
                     <h3 class="fw-bold text-success mb-0 mt-1"><?= $count_sidang_lulus; ?></h3>
-                    <small class="text-muted" style="font-size: 0.72rem;">Telah lulus munaqasyah</small>
+                    <small class="text-muted" style="font-size: 0.72rem;">Telah lulus sidang skripsi</small>
                 </div>
                 <div class="metric-icon-box bg-success-subtle text-success">
                     <i class="bi bi-patch-check-fill"></i>
@@ -720,7 +720,7 @@ require_once '../templates/sidebar_admin.php';
 
                     <!-- Ruangan Sidang -->
                     <div class="col-12">
-                        <label class="form-label small fw-semibold">Ruangan Sidang Munaqasyah <span class="text-danger">*</span></label>
+                        <label class="form-label small fw-semibold">Ruangan Sidang Skripsi <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="ruangan" placeholder="Contoh: Ruang Sidang Utama Gd. Rektorat Lt. 2 / Lab Komputer 1" required>
                     </div>
 

@@ -93,19 +93,30 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #f8f9fa;
-            color: #212529;
-            font-family: 'Times New Roman', Times, serif;
+* {
+            box-shadow: none !important;
+            text-shadow: none !important;
+            font-family: 'Times New Roman', Times, 'Liberation Serif', serif;
         }
+        }
+
+        body {
+            background-color: #f1f5f9;
+            color: #000000;
+            font-family: 'Times New Roman', Times, 'Liberation Serif', serif;
+            margin: 0;
+            padding: 0;
+        }
+
         .report-sheet {
             background: #ffffff;
-            box-shadow: 0 0 10px rgba(0,0,0,0.08);
-            border-radius: 8px;
-            padding: 40px;
-            margin-top: 25px;
-            margin-bottom: 40px;
-            font-family: 'Times New Roman', Times, serif;
+border: 1px solid #000000;
+            border-radius: 0;
+            box-shadow: none !important;
+            padding: 15mm 20mm;
+            max-width: 210mm;
+            margin: 25px auto 40px auto;
+            color: #000000;
         }
         .report-sheet,
         .report-sheet table,
@@ -123,25 +134,61 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
         .report-sheet small {
             font-family: 'Times New Roman', Times, serif !important;
         }
+
         .kop-surat {
-            border-bottom: 3px double #000;
-            padding-bottom: 15px;
-            margin-bottom: 25px;
+            border-bottom: 3px double #000000;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #000000;
         }
+
+        .table-bordered {
+            border: 1px solid #000000 !important;
+            border-collapse: collapse !important;
+            width: 100%;
+        }
+
+        .table-bordered th, .table-bordered td {
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background-color: #ffffff !important;
+            font-size: 10pt;
+            vertical-align: middle;
+            padding: 6px 8px;
+        }
+
+        .table-bordered thead th {
+            border-bottom: 2px solid #000000 !important;
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 15mm 15mm 15mm 15mm;
+        }
+
         @media print {
             body {
-                background-color: #ffffff;
-                margin: 0;
-                padding: 0;
+background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                color: #000000 !important;
                 font-family: 'Times New Roman', Times, serif !important;
             }
             .no-print {
                 display: none !important;
             }
             .report-sheet {
-                box-shadow: none;
-                padding: 0;
-                margin: 0;
+box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
                 border-radius: 0;
                 font-family: 'Times New Roman', Times, serif !important;
             }
@@ -159,7 +206,7 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
 
 <!-- Panel Kontrol & Filter (Hanya tampil di layar, tidak tercetak) -->
 <div class="container my-3 no-print">
-    <div class="card shadow-sm border-0">
+    <div class="card border">
         <div class="card-body p-3">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div class="d-flex align-items-center gap-2">
@@ -207,18 +254,21 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
     <div class="report-sheet">
         <!-- Kop Surat Akademik -->
         <div class="kop-surat text-center position-relative">
-            <h4 class="fw-bold mb-1 text-uppercase">PROGRAM STUDI TEKNIK INFORMATIKA</h4>
-            <h5 class="fw-semibold mb-1 text-uppercase">FAKULTAS ILMU KOMPUTER & SAINS</h5>
-            <p class="small mb-0 text-muted">Sistem Informasi Pengelolaan & Pemantauan Bimbingan Skripsi Terintegrasi</p>
+            <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.5px; font-size: 13pt;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI</h5>
+            <h4 class="fw-bold mb-1 text-uppercase" style="font-size: 15pt;">UNIVERSITAS TEKNOLOGI DAN ILMU KOMPUTER</h4>
+            <h6 class="mb-1 text-uppercase fw-semibold" style="font-size: 11pt;">FAKULTAS ILMU KOMPUTER - PROGRAM STUDI TEKNIK INFORMATIKA</h6>
+            <p class="mb-0" style="font-size: 9.5pt;">
+                Jl. Pendidikan No. 45 Kampus Terpadu | Telp: (021) 1234-5678 | Email: akademik@univ.ac.id | Laman: www.univ.ac.id
+            </p>
         </div>
 
         <div class="text-center mb-4">
-            <h5 class="fw-bold text-uppercase text-decoration-underline mb-1">LEMBAR REKAPITULASI HASIL BIMBINGAN SKRIPSI</h5>
-            <p class="small text-muted mb-0">Dicetak pada: <?= date('d F Y, H:i'); ?> WIB</p>
+            <h5 class="fw-bold text-uppercase text-decoration-underline mb-1" style="font-size: 13pt;">LEMBAR REKAPITULASI HASIL BIMBINGAN SKRIPSI</h5>
+            <p class="mb-0" style="font-size: 10pt;">Dicetak pada: <?= date('d F Y, H:i'); ?> WIB</p>
         </div>
 
         <!-- Identitas Dosen & Mahasiswa -->
-        <div class="row g-2 mb-4 small">
+        <div class="row g-2 mb-4" style="font-size: 10.5pt; color: #000000;">
             <div class="col-6">
                 <table class="table table-sm table-borderless mb-0">
                     <tr>
@@ -271,7 +321,7 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
         <!-- Tabel Rekapan Data -->
         <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle">
-                <thead class="table-light text-center small fw-bold">
+                <thead>
                     <tr>
                         <th style="width: 35px;">No</th>
                         <?php if (!$info_mhs_terpilih): ?>
@@ -282,13 +332,13 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
                         <th>Bab Pembahasan</th>
                         <th>Catatan Revisi / Umpan Balik Dosen</th>
                         <th style="width: 60px;">Nilai</th>
-                        <th style="width: 80px;">Status</th>
+                        <th style="width: 85px;">Status</th>
                     </tr>
                 </thead>
-                <tbody class="small">
+                <tbody>
                     <?php if (empty($data_rekap)): ?>
                         <tr>
-                            <td colspan="<?= (!$info_mhs_terpilih) ? '8' : '7'; ?>" class="text-center py-4 text-muted">
+                            <td colspan="<?= (!$info_mhs_terpilih) ? '8' : '7'; ?>" class="text-center py-4 fst-italic">
                                 Tidak ada data rekapitulasi bimbingan yang ditemukan.
                             </td>
                         </tr>
@@ -299,16 +349,16 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
                                 <?php if (!$info_mhs_terpilih): ?>
                                     <td>
                                         <div class="fw-bold"><?= htmlspecialchars($r['nama_lengkap']); ?></div>
-                                        <small class="text-muted"><?= htmlspecialchars($r['nim']); ?></small>
+                                        <div>NIM: <?= htmlspecialchars($r['nim']); ?></div>
                                     </td>
                                 <?php endif; ?>
                                 <td class="text-center"><?= date('d/m/Y', strtotime($r['tanggal_bimbingan'])); ?></td>
-                                <td class="text-center"><?= substr($r['jam_bimbingan'], 0, 5); ?></td>
+                                <td class="text-center"><?= substr($r['jam_bimbingan'], 0, 5); ?> WIB</td>
                                 <td>
-                                    <span class="fw-semibold"><?= htmlspecialchars($r['bab_pembahasan']); ?></span>
+                                    <strong><?= htmlspecialchars($r['bab_pembahasan']); ?></strong>
                                 </td>
                                 <td>
-                                    <?= !empty($r['catatan_dosen']) ? nl2br(htmlspecialchars($r['catatan_dosen'])) : '<span class="text-muted fst-italic">-</span>'; ?>
+                                    <?= !empty($r['catatan_dosen']) ? nl2br(htmlspecialchars($r['catatan_dosen'])) : '<span class="fst-italic">-</span>'; ?>
                                 </td>
                                 <td class="text-center fw-bold">
                                     <?= (int)$r['nilai_progres']; ?>%
@@ -316,10 +366,10 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
                                 <td class="text-center">
                                     <?php
                                     $s = $r['status'];
-                                    if ($s === 'disetujui') echo 'Disetujui';
-                                    elseif ($s === 'selesai') echo '<strong>Selesai</strong>';
-                                    elseif ($s === 'revisi') echo 'Revisi';
-                                    elseif ($s === 'ditolak') echo 'Ditolak';
+                                    if ($s === 'disetujui') echo '<span class="fw-bold">Disetujui</span>';
+                                    elseif ($s === 'selesai') echo '<span class="fw-bold">Selesai</span>';
+                                    elseif ($s === 'revisi') echo '<span>Revisi</span>';
+                                    elseif ($s === 'ditolak') echo '<span>Ditolak</span>';
                                     else echo ucfirst($s);
                                     ?>
                                 </td>
@@ -331,24 +381,24 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
         </div>
 
         <!-- Kolom Pengesahan Tanda Tangan -->
-        <div class="row mt-5 pt-3">
+        <div class="row mt-5 pt-3" style="font-size: 10.5pt; color: #000000; page-break-inside: avoid;">
             <div class="col-7">
-                <div class="small text-muted">
-                    <p class="mb-1"><strong>Keterangan Catatan:</strong></p>
+                <div class="border p-2" style="border: 1px solid #000000 !important; font-size: 9.5pt;">
+                    <p class="mb-1 fw-bold">Catatan Ketentuan Akademik:</p>
                     <ul class="ps-3 mb-0">
-                        <li>Dokumen ini merupakan rekapan sah hasil proses bimbingan skripsi akademik.</li>
+                        <li>Dokumen ini merupakan rekapan sah hasil proses konsultasi dan bimbingan skripsi mahasiswa.</li>
                         <li>Dapat dilampirkan bersama Kartu Bimbingan Mahasiswa saat pendaftaran sidang tugas akhir.</li>
                     </ul>
                 </div>
             </div>
-            <div class="col-5 text-end small">
+            <div class="col-5 text-end">
                 <p class="mb-0">Ditetapkan di: Kampus</p>
                 <p class="mb-5">Pada tanggal: <?= date('d F Y'); ?></p>
                 
-                <div style="margin-top: 55px;">
+                <div style="margin-top: 50px;">
                     <p class="fw-bold text-decoration-underline mb-0"><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Nama Dosen Pembimbing'); ?></p>
                     <p class="mb-0">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
-                    <p class="text-muted">Dosen Pembimbing Skripsi</p>
+                    <p class="mb-0">Dosen Pembimbing Skripsi</p>
                 </div>
             </div>
         </div>
@@ -364,4 +414,3 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
 <?php endif; ?>
 </body>
 </html>
-

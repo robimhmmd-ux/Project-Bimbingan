@@ -106,8 +106,64 @@ require_once '../templates/header.php';
 require_once '../templates/sidebar_admin.php';
 ?>
 
-<!-- STYLE KHUSUS CETAK LAPORAN RESMI -->
+<!-- STYLE KHUSUS FORMAT AKADEMIK CETAK LAPORAN RESMI -->
 <style>
+.academic-sheet, .academic-sheet * {
+    font-family: 'Times New Roman', Times, 'Liberation Serif', serif !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+.academic-sheet {
+    background: #ffffff;
+    border: 1px solid #000000;
+    border-radius: 0;
+    padding: 15mm 20mm;
+    color: #000000;
+    margin-bottom: 30px;
+}
+
+.kop-surat-admin {
+    border-bottom: 3px double #000000;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #000000;
+}
+
+.table-academic {
+    border: 1px solid #000000 !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+    color: #000000 !important;
+}
+
+.table-academic th, .table-academic td {
+    border: 1px solid #000000 !important;
+    padding: 6px 8px !important;
+    font-size: 10pt !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    vertical-align: middle !important;
+}
+
+.table-academic thead th {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    text-align: center !important;
+    font-weight: bold !important;
+    border-bottom: 2px solid #000000 !important;
+}
+
+.no-print .card, .no-print .metric-card {
+    box-shadow: none !important;
+}
+
+@page {
+    size: A4 portrait;
+    margin: 15mm 15mm 15mm 15mm;
+}
+
 @media print {
     /* Sembunyikan elemen navigasi dan tombol interaktif saat cetak */
     .sidebar, .navbar, .btn, .no-print, footer, form, .badge-filter, .hero-banner {
@@ -117,9 +173,11 @@ require_once '../templates/sidebar_admin.php';
         background-color: #ffffff !important;
         font-size: 11pt;
         color: #000000 !important;
+margin: 0 !important;
+        padding: 0 !important;
         font-family: 'Times New Roman', Times, serif !important;
     }
-    .print-sheet, .table-print, .table-print th, .table-print td, h2, h3, h4, h5, h6, p, div {
+    .print-sheet, .table-print, .table-print th, .table-print td, h2, h3, h4, h5, h6, p, div, .academic-sheet {
         font-family: 'Times New Roman', Times, serif !important;
     }
     main {
@@ -128,70 +186,34 @@ require_once '../templates/sidebar_admin.php';
         margin: 0 !important;
         padding: 0 !important;
     }
-    .card {
+    .academic-sheet {
         border: none !important;
         box-shadow: none !important;
         padding: 0 !important;
-    }
-    .print-header {
-        display: block !important;
-    }
-    .table-print {
-        border: 1px solid #000 !important;
+        margin: 0 !important;
         width: 100% !important;
-    }
-    .table-print th, .table-print td {
-        border: 1px solid #333 !important;
-        padding: 6px 8px !important;
-    }
-    .table-print thead {
-        background-color: #f0f0f0 !important;
-        -webkit-print-color-adjust: exact;
     }
     .page-break {
         page-break-after: always;
     }
 }
-
-.print-header {
-    display: none;
-}
 </style>
 
-<!-- KOP SURAT RESMI (HANYA MUNCUL DI CETAK) -->
-<div class="print-header mb-4 text-center">
-    <div style="font-size: 13pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
-        KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET, DAN TEKNOLOGI
-    </div>
-    <div style="font-size: 15pt; font-weight: bold; text-transform: uppercase;">
-        FAKULTAS ILMU KOMPUTER & SAINS DATA
-    </div>
-    <div style="font-size: 11pt; font-style: italic;">
-        Sistem Informasi Bimbingan Skripsi & Laporan Progres Akademik
-    </div>
-    <div style="font-size: 9pt; color: #555;">
-        Jl. Kampus Terpadu No. 1, Gedung Akademik Lt. 3 • Laman: https://univ.ac.id
-    </div>
-    <hr style="border-top: 3px double #000; margin-top: 8px; margin-bottom: 20px;">
-    <h5 class="fw-bold text-uppercase mb-1">LAPORAN REKAPITULASI PEMBAGIAN DOSEN PEMBIMBING SKRIPSI</h5>
-    <div class="small text-muted mb-3">Tahun Akademik <?= date('Y'); ?> / <?= date('Y')+1; ?> • Dicetak pada: <?= date('d F Y, H:i'); ?> WIB</div>
-</div>
-
 <!-- Hero Banner Header (Non-Print) -->
-<div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 no-print">
+<div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 no-print mb-4">
     <div>
         <div class="hero-tag">
             <i class="bi bi-printer-fill text-danger"></i>
             <span>Pelaporan & Pengesahan Resmi</span>
         </div>
         <h2 class="fw-bold text-white mb-1">Rekapitulasi Pembagian Pembimbing</h2>
-        <p class="text-white-50 small mb-0">Laporan resmi alokasi mahasiswa tugas akhir kepada masing-masing dosen pembimbing skripsi.</p>
+        <p class="text-white-50 small mb-0">Format akademik resmi alokasi mahasiswa tugas akhir kepada masing-masing dosen pembimbing skripsi.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
         <a href="plot_pembimbing.php" class="btn btn-outline-light">
             <i class="bi bi-diagram-3 me-1"></i> Atur Pembimbing
         </a>
-        <button type="button" class="btn btn-light shadow-sm fw-bold" onclick="window.print()">
+        <button type="button" class="btn btn-light fw-bold" onclick="window.print()">
             <i class="bi bi-printer-fill text-primary me-1"></i> Cetak / Simpan PDF
         </button>
     </div>
@@ -200,28 +222,28 @@ require_once '../templates/sidebar_admin.php';
 <!-- Kartu Ringkasan Metrik (Non-Print) -->
 <div class="row g-3 mb-4 no-print">
     <div class="col-md-3">
-        <div class="metric-card p-3">
+        <div class="metric-card p-3 border">
             <span class="small text-muted text-uppercase fw-bold">Total Mahasiswa</span>
             <h3 class="fw-bold text-dark mb-0 mt-1"><?= $total_mhs_all; ?></h3>
             <small class="text-muted">Terdaftar di jurusan</small>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="metric-card p-3">
+        <div class="metric-card p-3 border">
             <span class="small text-muted text-uppercase fw-bold">Sudah Terplot</span>
             <h3 class="fw-bold text-success mb-0 mt-1"><?= $total_terplot; ?></h3>
             <small class="text-success"><?= $total_mhs_all > 0 ? round(($total_terplot / $total_mhs_all) * 100) : 0; ?>% terdistribusi</small>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="metric-card p-3">
+        <div class="metric-card p-3 border">
             <span class="small text-muted text-uppercase fw-bold">Belum Terplot</span>
             <h3 class="fw-bold text-warning mb-0 mt-1"><?= $total_belum; ?></h3>
             <small class="text-muted">Perlu alokasi admin</small>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="metric-card p-3">
+        <div class="metric-card p-3 border">
             <span class="small text-muted text-uppercase fw-bold">Total Kuota Jurusan</span>
             <h3 class="fw-bold text-info mb-0 mt-1"><?= $total_kapasitas; ?></h3>
             <small class="text-muted">Kapasitas seluruh dosen</small>
@@ -230,12 +252,12 @@ require_once '../templates/sidebar_admin.php';
 </div>
 
 <!-- Filter Laporan (Non-Print) -->
-<div class="card shadow-sm border-0 mb-4 no-print">
+<div class="card border mb-4 no-print">
     <div class="card-body p-3">
         <form method="GET" action="laporan_plotting.php" class="row g-2 align-items-center">
             <div class="col-md-5">
                 <label class="form-label small fw-semibold text-secondary mb-1">Filter Dosen Pembimbing:</label>
-                <select name="dosen_id" class="form-select" onchange="this.form.submit()">
+                <select name="dosen_id" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="0">-- Semua Dosen Pembimbing --</option>
                     <?php foreach ($dosen_filter_list as $d): ?>
                         <option value="<?= $d['id']; ?>" <?= ($filter_dosen_id == $d['id']) ? 'selected' : ''; ?>>
@@ -246,7 +268,7 @@ require_once '../templates/sidebar_admin.php';
             </div>
             <div class="col-md-4">
                 <label class="form-label small fw-semibold text-secondary mb-1">Status Kelulusan Mahasiswa:</label>
-                <select name="status" class="form-select" onchange="this.form.submit()">
+                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="all" <?= ($filter_status === 'all') ? 'selected' : ''; ?>>-- Semua Status --</option>
                     <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Proses Bimbingan</option>
                     <option value="siap_sidang" <?= ($filter_status === 'siap_sidang') ? 'selected' : ''; ?>>Siap Sidang</option>
@@ -255,130 +277,133 @@ require_once '../templates/sidebar_admin.php';
             </div>
             <div class="col-md-3 pt-md-4">
                 <?php if ($filter_dosen_id > 0 || $filter_status !== 'all'): ?>
-                    <a href="laporan_plotting.php" class="btn btn-outline-secondary w-100">Reset Filter</a>
+                    <a href="laporan_plotting.php" class="btn btn-outline-secondary btn-sm w-100">Reset Filter</a>
                 <?php endif; ?>
             </div>
         </form>
     </div>
 </div>
 
-<!-- KONTEN LAPORAN: DAFTAR MAHASISWA PER DOSEN PEMBIMBING -->
-<div class="card shadow-sm border-0 mb-4">
-    <div class="card-body p-0">
-        <?php if (empty($laporan_dosen)): ?>
-            <div class="text-center py-5 text-muted">Tidak ada data pembagian bimbingan sesuai filter.</div>
-        <?php else: ?>
-            <?php foreach ($laporan_dosen as $dosen): 
-                $mhs_list = $mhs_by_dosen[$dosen['id']] ?? [];
-                $bimbingan_count = count($mhs_list);
-                $kuota = (int)$dosen['kuota_bimbingan'];
-                $sisa  = $kuota - $bimbingan_count;
-                $initial = strtoupper(substr($dosen['nama_dosen'], 0, 1));
-            ?>
-                <div class="p-4 border-bottom">
-                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="avatar-initial bg-primary-subtle text-primary fs-5" style="width: 44px; height: 44px;">
-                                <?= $initial; ?>
-                            </div>
-                            <div>
-                                <h5 class="fw-bold text-dark mb-0">
-                                    <?= htmlspecialchars($dosen['nama_dosen']); ?>
-                                </h5>
-                                <div class="small text-muted">
-                                    <span class="font-monospace">NIDN: <?= htmlspecialchars($dosen['nidn']); ?></span>
-                                    <span class="mx-2">•</span>
-                                    <span><i class="bi bi-envelope me-1"></i><?= htmlspecialchars($dosen['email']); ?></span>
-                                    <?php if (!empty($dosen['no_whatsapp'])): ?>
-                                        <span class="mx-2">•</span>
-                                        <span><i class="bi bi-whatsapp me-1 text-success"></i><?= htmlspecialchars($dosen['no_whatsapp']); ?></span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="text-end mt-2 mt-md-0">
-                            <span class="badge bg-light text-dark border px-3 py-2 fs-6">
-                                Beban Bimbingan: <strong><?= $bimbingan_count; ?></strong> / <?= $kuota; ?> Mahasiswa
-                                <span class="ms-1 <?= ($sisa > 0) ? 'text-success' : 'text-danger'; ?>">
-                                    (<?= ($sisa > 0) ? "Sisa {$sisa}" : 'Kuota Penuh'; ?>)
-                                </span>
-                            </span>
-                        </div>
-                    </div>
+<!-- ============================================================
+     LEMBAR DOKUMEN CETAK AKADEMIK RESMI (PRINT & ON-SCREEN SHEET)
+============================================================ -->
+<div class="academic-sheet">
 
-                    <?php if (empty($mhs_list)): ?>
-                        <div class="alert alert-light border small text-muted mb-0 py-2">
-                            <i class="bi bi-info-circle me-1"></i>Belum ada mahasiswa yang dialokasikan ke dosen ini.
-                        </div>
-                    <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover align-middle mb-0 table-print">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 40px;" class="text-center">No</th>
-                                        <th style="width: 110px;">NIM</th>
-                                        <th style="width: 200px;">Nama Mahasiswa</th>
-                                        <th style="width: 100px;" class="text-center">Kelas</th>
-                                        <th>Judul Penelitian Skripsi</th>
-                                        <th style="width: 80px;" class="text-center">Progres</th>
-                                        <th style="width: 120px;" class="text-center">Status Kelulusan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    $no = 1;
-                                    foreach ($mhs_list as $m): 
-                                    ?>
-                                        <tr>
-                                            <td class="text-center"><?= $no++; ?></td>
-                                            <td class="font-monospace fw-bold text-primary"><?= htmlspecialchars($m['nim']); ?></td>
-                                            <td class="fw-semibold text-dark"><?= htmlspecialchars($m['nama_lengkap']); ?></td>
-                                            <td class="text-center"><span class="badge bg-light text-dark border"><?= htmlspecialchars($m['kelas'] ?? '-'); ?></span></td>
-                                            <td><?= htmlspecialchars($m['judul_skripsi']); ?></td>
-                                            <td class="text-center font-monospace fw-bold">
-                                                <?= (int)$m['nilai_terakhir']; ?>%
-                                            </td>
-                                            <td class="text-center">
-                                                <?php if ($m['status_kelulusan'] === 'lulus'): ?>
-                                                    <span class="badge bg-success">Lulus</span>
-                                                <?php elseif ($m['status_kelulusan'] === 'siap_sidang'): ?>
-                                                    <span class="badge bg-primary">Siap Sidang</span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-secondary">Bimbingan</span>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
+    <!-- KOP SURAT RESMI AKADEMIK -->
+    <div class="kop-surat-admin">
+        <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.5px; font-size: 13pt;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI</h5>
+        <h4 class="fw-bold mb-1 text-uppercase" style="font-size: 15pt;">UNIVERSITAS TEKNOLOGI DAN ILMU KOMPUTER</h4>
+        <h6 class="mb-1 text-uppercase fw-semibold" style="font-size: 11pt;">FAKULTAS ILMU KOMPUTER - PROGRAM STUDI TEKNIK INFORMATIKA</h6>
+        <p class="mb-0" style="font-size: 9.5pt;">
+            Jl. Pendidikan No. 45 Kampus Terpadu | Telp: (021) 1234-5678 | Email: akademik@univ.ac.id | Laman: www.univ.ac.id
+        </p>
     </div>
-</div>
 
-<!-- Bagian Mahasiswa Belum Diplot (Hanya jika melihat semua dosen) -->
-<?php if (!empty($mhs_unassigned)): ?>
-    <div class="card shadow-sm border-0 mb-4 page-break">
-        <div class="card-header bg-warning bg-opacity-25 py-3">
-            <h6 class="fw-bold mb-0 text-dark">
-                <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
-                Lampiran: Daftar Mahasiswa Belum Memiliki Dosen Pembimbing (<?= count($mhs_unassigned); ?> Mahasiswa)
-            </h6>
+    <!-- JUDUL DOKUMEN LAPORAN -->
+    <div class="text-center mb-4">
+        <h5 class="fw-bold text-uppercase mb-1" style="text-decoration: underline; font-size: 13pt;">
+            LAPORAN REKAPITULASI PEMBAGIAN DOSEN PEMBIMBING SKRIPSI
+        </h5>
+        <div style="font-size: 10pt;">
+            Tahun Akademik <?= date('Y'); ?> / <?= date('Y')+1; ?> • Dicetak pada: <?= date('d F Y, H:i'); ?> WIB
         </div>
-        <div class="card-body p-0">
+    </div>
+
+    <!-- DAFTAR MAHASISWA PER DOSEN PEMBIMBING -->
+    <?php if (empty($laporan_dosen)): ?>
+        <div class="text-center py-5 fst-italic">Tidak ada data pembagian bimbingan sesuai filter.</div>
+    <?php else: ?>
+        <?php foreach ($laporan_dosen as $dosen): 
+            $mhs_list = $mhs_by_dosen[$dosen['id']] ?? [];
+            $bimbingan_count = count($mhs_list);
+            $kuota = (int)$dosen['kuota_bimbingan'];
+            $sisa  = $kuota - $bimbingan_count;
+        ?>
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-dark flex-wrap">
+                    <div>
+                        <span style="font-size: 11pt; font-weight: bold;">
+                            Dosen Pembimbing: <?= htmlspecialchars($dosen['nama_dosen']); ?>
+                        </span>
+                        <span style="font-size: 10pt; margin-left: 10px;">
+                            (NIDN: <?= htmlspecialchars($dosen['nidn']); ?> • Email: <?= htmlspecialchars($dosen['email']); ?>)
+                        </span>
+                    </div>
+                    <div class="text-end" style="font-size: 10pt;">
+                        Alokasi: <strong><?= $bimbingan_count; ?></strong> / <?= $kuota; ?> Mahasiswa
+                        <span>(<?= ($sisa > 0) ? "Sisa {$sisa}" : 'Kuota Penuh'; ?>)</span>
+                    </div>
+                </div>
+
+                <?php if (empty($mhs_list)): ?>
+                    <div class="border p-2 mb-3 fst-italic" style="border: 1px solid #000 !important; font-size: 9.5pt;">
+                        Belum ada mahasiswa yang dialokasikan ke dosen pembimbing ini.
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive mb-3">
+                        <table class="table table-academic mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 35px;" class="text-center">No</th>
+                                    <th style="width: 110px;" class="text-center">NIM</th>
+                                    <th style="width: 200px;">Nama Mahasiswa</th>
+                                    <th style="width: 80px;" class="text-center">Kelas</th>
+                                    <th>Judul Penelitian Skripsi</th>
+                                    <th style="width: 70px;" class="text-center">Progres</th>
+                                    <th style="width: 110px;" class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                $no = 1;
+                                foreach ($mhs_list as $m): 
+                                ?>
+                                    <tr>
+                                        <td class="text-center"><?= $no++; ?></td>
+                                        <td class="text-center"><?= htmlspecialchars($m['nim']); ?></td>
+                                        <td><?= htmlspecialchars($m['nama_lengkap']); ?></td>
+                                        <td class="text-center"><?= htmlspecialchars($m['kelas'] ?? '-'); ?></td>
+                                        <td><?= htmlspecialchars($m['judul_skripsi']); ?></td>
+                                        <td class="text-center">
+                                            <?= (int)$m['nilai_terakhir']; ?>%
+                                        </td>
+                                        <td class="text-center">
+                                            <?php if ($m['status_kelulusan'] === 'lulus'): ?>
+                                                <span class="fw-bold">Lulus</span>
+                                            <?php elseif ($m['status_kelulusan'] === 'siap_sidang'): ?>
+                                                <span class="fw-bold">Siap Sidang</span>
+                                            <?php else: ?>
+                                                <span>Bimbingan</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
+    <!-- Bagian Mahasiswa Belum Diplot (Hanya jika melihat semua dosen) -->
+    <?php if (!empty($mhs_unassigned)): ?>
+        <div class="page-break mt-4">
+            <div class="border-bottom border-dark pb-1 mb-2">
+                <h6 class="fw-bold mb-0 text-dark" style="font-size: 11pt;">
+                    Lampiran: Daftar Mahasiswa Belum Memiliki Dosen Pembimbing (<?= count($mhs_unassigned); ?> Mahasiswa)
+                </h6>
+            </div>
             <div class="table-responsive">
-                <table class="table table-bordered align-middle mb-0 table-print">
-                    <thead class="table-light">
+                <table class="table table-academic mb-0">
+                    <thead>
                         <tr>
-                            <th style="width: 40px;" class="text-center">No</th>
-                            <th style="width: 120px;">NIM</th>
+                            <th style="width: 35px;" class="text-center">No</th>
+                            <th style="width: 110px;" class="text-center">NIM</th>
                             <th style="width: 200px;">Nama Mahasiswa</th>
-                            <th style="width: 100px;" class="text-center">Kelas</th>
+                            <th style="width: 80px;" class="text-center">Kelas</th>
                             <th>Rencana Judul Skripsi</th>
-                            <th style="width: 130px;" class="text-center">Status</th>
+                            <th style="width: 110px;" class="text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -388,37 +413,39 @@ require_once '../templates/sidebar_admin.php';
                         ?>
                             <tr>
                                 <td class="text-center"><?= $no++; ?></td>
-                                <td class="font-monospace fw-bold"><?= htmlspecialchars($mu['nim']); ?></td>
-                                <td class="fw-semibold"><?= htmlspecialchars($mu['nama_lengkap']); ?></td>
+                                <td class="text-center"><?= htmlspecialchars($mu['nim']); ?></td>
+                                <td><?= htmlspecialchars($mu['nama_lengkap']); ?></td>
+                                <td class="text-center"><?= htmlspecialchars($mu['kelas'] ?? '-'); ?></td>
                                 <td><?= htmlspecialchars($mu['judul_skripsi']); ?></td>
-                                <td class="text-center text-danger fw-semibold">Belum Diplot</td>
+                                <td class="text-center">Belum Diplot</td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
         </div>
-    </div>
-<?php endif; ?>
+    <?php endif; ?>
 
-<!-- LEMBAR PENGESAHAN RESMI (MUNCUL DI HASIL CETAK) -->
-<div class="print-signature mt-5 pt-3" style="page-break-inside: avoid;">
-    <div class="row text-center">
-        <div class="col-6">
-            <p class="mb-1">Mengetahui,</p>
-            <p class="fw-bold text-uppercase">Koordinator Skripsi / Tugas Akhir</p>
-            <div style="height: 70px;"></div>
-            <p class="fw-bold text-decoration-underline mb-0">( ..................................................... )</p>
-            <p class="small text-muted">NIP. .................................................</p>
-        </div>
-        <div class="col-6">
-            <p class="mb-1">Ditetapkan di: Jakarta, <?= date('d F Y'); ?></p>
-            <p class="fw-bold text-uppercase">Ketua Program Studi</p>
-            <div style="height: 70px;"></div>
-            <p class="fw-bold text-decoration-underline mb-0">( ..................................................... )</p>
-            <p class="small text-muted">NIP. .................................................</p>
+    <!-- LEMBAR PENGESAHAN RESMI AKADEMIK -->
+    <div class="mt-5 pt-3" style="page-break-inside: avoid; font-size: 10.5pt; color: #000000;">
+        <div class="row text-center">
+            <div class="col-6">
+                <p class="mb-1">Mengetahui,</p>
+                <p class="fw-bold text-uppercase">Koordinator Skripsi / Tugas Akhir</p>
+                <div style="height: 60px;"></div>
+                <p class="fw-bold text-decoration-underline mb-0">( ..................................................... )</p>
+                <p>NIP. .................................................</p>
+            </div>
+            <div class="col-6">
+                <p class="mb-1">Ditetapkan di: Jakarta, <?= date('d F Y'); ?></p>
+                <p class="fw-bold text-uppercase">Ketua Program Studi</p>
+                <div style="height: 60px;"></div>
+                <p class="fw-bold text-decoration-underline mb-0">( ..................................................... )</p>
+                <p>NIP. .................................................</p>
+            </div>
         </div>
     </div>
+
 </div>
 
 <?php
