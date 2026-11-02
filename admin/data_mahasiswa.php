@@ -444,7 +444,7 @@ require_once '../templates/sidebar_admin.php';
                 <select name="status" class="form-select" onchange="this.form.submit()">
                     <option value="all" <?= ($filter_status === 'all') ? 'selected' : ''; ?>>-- Semua Status Kelulusan --</option>
                     <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Proses Bimbingan (Aktif)</option>
-                    <option value="siap_sidang" <?= ($filter_status === 'siap_sidang') ? 'selected' : ''; ?>>Siap Sidang Munaqasyah</option>
+                    <option value="siap_sidang" <?= ($filter_status === 'siap_sidang') ? 'selected' : ''; ?>>Siap Sidang</option>
                     <option value="lulus" <?= ($filter_status === 'lulus') ? 'selected' : ''; ?>>Telah Lulus</option>
                 </select>
             </div>
@@ -811,7 +811,7 @@ require_once '../templates/sidebar_admin.php';
                     <select name="status_kelulusan" id="kelulusan_status" class="form-select" required>
                         <option value="proses_bimbingan">Proses Bimbingan (Masih aktif bimbingan/revisi)</option>
                         <option value="siap_sidang">Siap Sidang (ACC seluruh bab skripsi)</option>
-                        <option value="lulus">Lulus (Telah lulus sidang munaqasyah)</option>
+                        <option value="lulus">Lulus (Telah lulus sidang skripsi)</option>
                     </select>
                 </div>
 
