@@ -1484,3 +1484,148 @@ h6 {
     padding: 0.95rem 1rem;
     vertical-align: middle;
 }
+/* ==========================================================================
+   STANDARISASI INDIKATOR STATUS AKADEMIK & MEDIA PRINT (YOGA - LEAD FRONTEND)
+   ========================================================================== */
+
+/* Standarisasi Indikator Status Akademik (Panduan Operasional BAB 4) */
+.badge-menunggu {
+    background-color: #ffc107 !important;
+    color: #000000 !important;
+    font-weight: 600 !important;
+} /* Menunggu Konfirmasi */
+
+.badge-disetujui {
+    background-color: #198754 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+} /* Disetujui Dosen */
+
+.badge-ditolak {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+} /* Ditolak / Dibatalkan */
+
+.badge-revisi {
+    background-color: #0dcaf0 !important;
+    color: #000000 !important;
+    font-weight: 600 !important;
+} /* Catatan Perbaikan */
+
+/* Transisi Visual Tombol Halus (Button Hover State) */
+.btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Responsivitas Mobile & Tablet */
+@media (max-width: 991.98px) {
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 1rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .hero-academic {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+}
+/* ==========================================================================
+   GOJEK-INSPIRED ACADEMIC LANDING DESIGN SYSTEM (YOGA - LEAD FRONTEND)
+   ========================================================================== */
+.navbar-gojek {
+    background-color: #0b0f19 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-gojek {
+    background: #0f172a;
+    background-image: linear-gradient(180deg, #0b0f19 0%, #111827 50%, #0f172a 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.bubble-card-gojek {
+    background: linear-gradient(145deg, #005f2b 0%, #004d23 100%);
+    border-radius: 36px;
+    padding: 3rem 3rem;
+    color: #ffffff;
+    box-shadow: 0 20px 40px -15px rgba(0, 78, 40, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    position: relative;
+}
+
+@media (max-width: 767.98px) {
+    .bubble-card-gojek {
+        padding: 2rem 1.5rem;
+        border-radius: 24px;
+    }
+}
+
+.bubble-headline {
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    color: #ffffff;
+}
+
+.btn-gojek-green {
+    background-color: #00aa13 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    border-radius: 9999px !important;
+    border: none !important;
+    padding: 0.8rem 1.8rem !important;
+    transition: all 0.25s ease !important;
+}
+
+.btn-gojek-green:hover {
+    background-color: #00880d !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(0, 170, 19, 0.4) !important;
+}
+
+.card-pillar-gojek {
+    border-radius: 24px;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.card-pillar-gojek:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1;
+}
+
+.card-pillar-gojek .pillar-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 1.25rem;
+}
+
+.stat-box-gojek {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 1.5rem 1.25rem;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.stat-box-gojek:hover {
+    border-color: #00aa13;
+    box-shadow: 0 8px 20px -6px rgba(0, 170, 19, 0.15);
+}

@@ -410,6 +410,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
+
+<!-- Tombol Cepat Kembali ke Beranda -->
+<a href="index.php" class="btn btn-sm btn-light border rounded-pill shadow-sm position-fixed top-0 start-0 m-3 d-inline-flex align-items-center gap-2 text-dark text-decoration-none" style="z-index: 1050; font-weight: 600; padding: 0.45rem 1rem;">
+    <i class="bi bi-arrow-left"></i> Kembali ke Beranda
+</a>
+
 <div class="login-wrapper">
 
     <!-- ============================================================
@@ -712,6 +718,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="bi bi-box-arrow-in-right"></i>
                 Masuk ke Portal
             </button>
+
+            <div class="text-center mt-3 pt-1">
+                <a href="index.php" class="text-muted text-decoration-none small d-inline-flex align-items-center gap-1" style="font-weight: 600; font-size: 0.85rem;">
+                    <i class="bi bi-arrow-left"></i> Kembali ke Beranda Utama
+                </a>
+            </div>
 
         </form>
 
