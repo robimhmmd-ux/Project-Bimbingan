@@ -18,15 +18,6 @@ $css_ver     = file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__D
 $cur_user_id = $_SESSION['user_id'];
 $cur_role    = $_SESSION['role'] ?? '';
 
-// Ambil info dosen jika role dosen
-$dosen_info = null;
-if (isset($pdo) && $cur_role === 'dosen') {
-    $stmt_d_info = $pdo->prepare("SELECT id, nama_dosen FROM dosen WHERE user_id = :uid LIMIT 1");
-    $stmt_d_info->execute([':uid' => $cur_user_id]);
-    $dosen_info = $stmt_d_info->fetch();
-}
-
-// Proses Cepat Ubah Username / Nama dari Modal Navbar
 // Ambil data notifikasi aktif untuk pengguna saat ini (UPDATE Robi: tabel notifikasi)
 $notif_unread_count = 0;
 $notif_list = [];
@@ -66,58 +57,6 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     }
 }
 
-$quick_error = '';
-if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action_quick_edit_navbar'])) {
-    $new_u     = trim($_POST['quick_username'] ?? '');
-    $new_nama  = trim($_POST['quick_nama_dosen'] ?? '');
-    $new_pass  = trim($_POST['quick_password'] ?? '');
-    $konf_pass = trim($_POST['quick_password_konfirm'] ?? '');
-
-    if (empty($new_u)) {
-        $quick_error = "Username tidak boleh kosong.";
-    } elseif (preg_match('/\s/', $new_u)) {
-        $quick_error = "Username tidak boleh mengandung spasi.";
-    } elseif (!empty($new_pass) && strlen($new_pass) < 6) {
-        $quick_error = "Password baru minimal 6 karakter.";
-    } elseif (!empty($new_pass) && $new_pass !== $konf_pass) {
-        $quick_error = "Konfirmasi password baru tidak cocok.";
-    } elseif (isset($pdo)) {
-        // Cek apakah username sudah dipakai pengguna lain
-        $stmt_cek = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = :u AND id != :uid");
-        $stmt_cek->execute([':u' => $new_u, ':uid' => $cur_user_id]);
-        if ($stmt_cek->fetchColumn() > 0) {
-            $quick_error = "Username '@{$new_u}' sudah digunakan.";
-        } else {
-            // Update username di tabel users
-            $stmt_up_u = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
-            $stmt_up_u->execute([':u' => $new_u, ':uid' => $cur_user_id]);
-            $_SESSION['username'] = $new_u;
-
-            // Jika diisi password baru, hash dan update
-            if (!empty($new_pass)) {
-                $hash_pw = password_hash($new_pass, PASSWORD_BCRYPT);
-                $stmt_up_p = $pdo->prepare("UPDATE users SET password = :p, password_plain = :pp WHERE id = :uid");
-                $stmt_up_p->execute([':p' => $hash_pw, ':pp' => $new_pass, ':uid' => $cur_user_id]);
-            }
-
-            // Jika dosen, update juga nama_dosen
-            if (!empty($new_nama) && $cur_role === 'dosen') {
-                $stmt_up_d = $pdo->prepare("UPDATE dosen SET nama_dosen = :nm WHERE user_id = :uid");
-                $stmt_up_d->execute([':nm' => $new_nama, ':uid' => $cur_user_id]);
-                $_SESSION['nama_lengkap'] = $new_nama;
-            } elseif (!empty($new_nama) && $cur_role === 'admin') {
-                $stmt_up_a = $pdo->prepare("UPDATE admin_profil SET nama_lengkap = :nm WHERE user_id = :uid");
-                $stmt_up_a->execute([':nm' => $new_nama, ':uid' => $cur_user_id]);
-                $_SESSION['nama_lengkap'] = $new_nama;
-            }
-
-            // Redirect bersih ke halaman yang sama
-            header("Location: " . $_SERVER['REQUEST_URI']);
-            exit;
-        }
-    }
-}
-
 // Selalu sinkronkan username di session dengan database terkini
 if (isset($pdo) && isset($_SESSION['user_id'])) {
     $stmt_sync_u = $pdo->prepare("SELECT username FROM users WHERE id = :uid LIMIT 1");
@@ -144,22 +83,277 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Custom CSS with Cache Buster -->
     <link href="../assets/css/style.css?v=<?= $css_ver; ?>" rel="stylesheet">
+    <style>
+        /* =========================================================================
+           JAMINAN MUTLAK: TOPBAR TETAP FIX DI ATAS & SIDEBAR TIDAK IKUT SCROLL
+           ========================================================================= */
+        :root {
+            --navbar-height: 60px;
+            --sidebar-width: 250px;
+            --sidebar-collapsed-width: 72px;
+        }
+
+        /* 1. Body wajib diberi padding-top presisi sama dengan tinggi navbar */
+        body {
+            padding-top: var(--navbar-height, 60px) !important;
+            overflow-x: hidden;
+        }
+
+        /* 2. Topbar Navbar: Fixed di Atas (TIDAK BISA TER-SCROLL SAMA SEKALI) */
+        #topNavbar.navbar,
+        .navbar.fixed-top {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: var(--navbar-height, 60px) !important;
+            min-height: var(--navbar-height, 60px) !important;
+            max-height: var(--navbar-height, 60px) !important;
+            z-index: 1060 !important;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2) !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            margin: 0 !important;
+        }
+
+        /* 3. Sidebar Desktop (>= 768px): Stationary (Fixed di Kiri di Bawah Navbar) */
+        @media (min-width: 768px) {
+            .sidebar,
+            #sidebarMenu {
+                position: fixed !important;
+                top: var(--navbar-height, 60px) !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                width: var(--sidebar-width, 250px) !important;
+                height: calc(100vh - var(--navbar-height, 60px)) !important;
+                max-height: calc(100vh - var(--navbar-height, 60px)) !important;
+                z-index: 1020 !important;
+                background-color: #ffffff !important;
+                border-right: 1px solid #e2e8f0 !important;
+                border-top: none !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                padding: 1.25rem 0.85rem !important;
+                margin: 0 !important;
+                transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), padding 0.22s ease !important;
+            }
+
+            .sidebar::-webkit-scrollbar {
+                width: 4px;
+            }
+            .sidebar::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+
+            /* Area Konten Utama Desktop Berada Pas di Kanan Sidebar */
+            main,
+            .main-content-wrapper,
+            #mainContent {
+                margin-left: var(--sidebar-width, 250px) !important;
+                width: calc(100% - var(--sidebar-width, 250px)) !important;
+                max-width: calc(100% - var(--sidebar-width, 250px)) !important;
+                min-height: calc(100vh - var(--navbar-height, 60px)) !important;
+                padding: 1.5rem 2rem !important;
+                transition: margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1), width 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            /* Mode Mini-Sidebar (Collapsed): Ikon Menu Tetap Tampil, Teks Disembunyikan */
+            html.sidebar-collapsed .sidebar,
+            body.sidebar-collapsed .sidebar,
+            html.sidebar-collapsed #sidebarMenu,
+            body.sidebar-collapsed #sidebarMenu {
+                display: block !important;
+                visibility: visible !important;
+                width: var(--sidebar-collapsed-width, 72px) !important;
+                max-width: var(--sidebar-collapsed-width, 72px) !important;
+                padding: 1.25rem 0.4rem !important;
+                overflow-x: hidden !important;
+            }
+
+            html.sidebar-collapsed .sidebar .sidebar-heading,
+            body.sidebar-collapsed .sidebar .sidebar-heading,
+            html.sidebar-collapsed .sidebar .menu-text,
+            body.sidebar-collapsed .sidebar .menu-text,
+            html.sidebar-collapsed .sidebar .badge,
+            body.sidebar-collapsed .sidebar .badge,
+            html.sidebar-collapsed .sidebar .sidebar-category > span,
+            body.sidebar-collapsed .sidebar .sidebar-category > span,
+            html.sidebar-collapsed .sidebar .sidebar-system-card,
+            body.sidebar-collapsed .sidebar .sidebar-system-card,
+            html.sidebar-collapsed .sidebar .lock-icon,
+            body.sidebar-collapsed .sidebar .lock-icon,
+            html.sidebar-collapsed .sidebar .nav-link > span,
+            body.sidebar-collapsed .sidebar .nav-link > span {
+                display: none !important;
+            }
+
+            html.sidebar-collapsed .sidebar .nav-link,
+            body.sidebar-collapsed .sidebar .nav-link {
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                padding: 0.75rem 0 !important;
+                width: 48px !important;
+                height: 48px !important;
+                margin: 0 auto 6px auto !important;
+                text-align: center !important;
+                border-radius: 10px !important;
+                font-size: 0 !important;
+            }
+
+            html.sidebar-collapsed .sidebar .nav-link i,
+            body.sidebar-collapsed .sidebar .nav-link i {
+                margin-right: 0 !important;
+                font-size: 1.35rem !important;
+            }
+
+            html.sidebar-collapsed main,
+            html.sidebar-collapsed .main-content-wrapper,
+            html.sidebar-collapsed #mainContent,
+            body.sidebar-collapsed main,
+            body.sidebar-collapsed .main-content-wrapper,
+            body.sidebar-collapsed #mainContent {
+                margin-left: var(--sidebar-collapsed-width, 72px) !important;
+                width: calc(100% - var(--sidebar-collapsed-width, 72px)) !important;
+                max-width: calc(100% - var(--sidebar-collapsed-width, 72px)) !important;
+            }
+        }
+
+        /* 4. Mobile (< 768px): Drawer Menu Melayang */
+        @media (max-width: 767.98px) {
+            .sidebar,
+            #sidebarMenu {
+                display: block !important;
+                position: fixed !important;
+                top: var(--navbar-height, 60px) !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                width: 260px !important;
+                max-width: 85vw !important;
+                height: calc(100vh - var(--navbar-height, 60px)) !important;
+                z-index: 1045 !important;
+                transform: translateX(-100%) !important;
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                box-shadow: none !important;
+            }
+
+            body.sidebar-open-mobile .sidebar,
+            body.sidebar-mobile-open .sidebar,
+            body.sidebar-open-mobile #sidebarMenu,
+            body.sidebar-mobile-open #sidebarMenu {
+                transform: translateX(0) !important;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+            }
+
+            .sidebar-mobile-backdrop {
+                display: none;
+                position: fixed !important;
+                top: var(--navbar-height, 60px) !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                background: rgba(15, 23, 42, 0.55) !important;
+                backdrop-filter: blur(2px) !important;
+                z-index: 1040 !important;
+            }
+
+            body.sidebar-open-mobile .sidebar-mobile-backdrop,
+            body.sidebar-mobile-open .sidebar-mobile-backdrop {
+                display: block !important;
+            }
+
+            main,
+            .main-content-wrapper,
+            #mainContent {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 1rem !important;
+            }
+        }
+
+        /* Tombol Toggle Sidebar */
+        .btn-sidebar-toggle {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-sidebar-toggle:hover {
+            background: rgba(255, 255, 255, 0.28) !important;
+            transform: scale(1.06);
+        }
+    </style>
+    <script>
+        // State awal instan sebelum render
+        if (window.innerWidth >= 768 && localStorage.getItem('sidebar_collapsed') === 'true') {
+            document.documentElement.classList.add('sidebar-collapsed');
+        }
+
+        // FUNGSI UTAMA TOGGLE SIDEBAR (Tunggal & Handal)
+        window.toggleSidebarMenu = function() {
+            const isMobile = window.innerWidth < 768;
+            const html = document.documentElement;
+            const body = document.body;
+            const icon = document.getElementById('sidebarToggleIcon');
+
+            if (isMobile) {
+                const isOpen = body.classList.toggle('sidebar-open-mobile');
+                body.classList.toggle('sidebar-mobile-open', isOpen);
+                if (icon) {
+                    icon.className = isOpen ? 'bi bi-x-lg fs-4 text-white' : 'bi bi-list fs-3 text-white';
+                }
+            } else {
+                const isCollapsed = body.classList.toggle('sidebar-collapsed');
+                html.classList.toggle('sidebar-collapsed', isCollapsed);
+                localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+
+                if (icon) {
+                    icon.className = isCollapsed ? 'bi bi-list fs-3 text-warning' : 'bi bi-list fs-3 text-white';
+                }
+            }
+        };
+
+        // Sinkronisasi ikon saat DOM siap
+        document.addEventListener('DOMContentLoaded', function() {
+            const isCollapsed = document.body.classList.contains('sidebar-collapsed') || document.documentElement.classList.contains('sidebar-collapsed');
+            const icon = document.getElementById('sidebarToggleIcon');
+            if (icon && window.innerWidth >= 768 && isCollapsed) {
+                icon.className = 'bi bi-list fs-3 text-warning';
+            }
+        });
+    </script>
 </head>
 <body class="bg-light">
 
-<!-- Topbar Navbar (Solid High-Contrast Navy Blue) -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm py-2" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;">
+<!-- Topbar Navbar (Fixed Top - Solid High-Contrast Navy Blue) -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 60px; min-height: 60px; max-height: 60px; z-index: 1060 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
     <div class="container-fluid px-md-4">
-        <!-- Logo & Brand Title -->
-        <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none" href="#">
-            <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning">
-                <i class="bi bi-mortarboard-fill"></i>
-            </span>
-            <div class="d-flex flex-column">
-                <span class="fs-6 lh-1">Bimbingan Skripsi</span>
-                <span class="text-white-50 small" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
-            </div>
-        </a>
+        <!-- Tombol Buka/Tutup Sidebar & Brand Logo -->
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-light border-0 p-1 px-2 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none me-1" 
+                    id="sidebarToggleBtn" 
+                    type="button" 
+                    onclick="toggleSidebarMenu()" 
+                    aria-label="Toggle Sidebar" 
+                    title="Buka / Tutup Sidebar"
+                    style="background: rgba(255, 255, 255, 0.18); border-radius: 8px; cursor: pointer; min-width: 42px; min-height: 40px;">
+                <i class="bi bi-list fs-3 text-white" id="sidebarToggleIcon"></i>
+            </button>
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none m-0" href="#">
+                <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning">
+                    <i class="bi bi-mortarboard-fill"></i>
+                </span>
+                <div class="d-flex flex-column">
+                    <span class="fs-6 lh-1">Bimbingan Skripsi</span>
+                    <span class="text-white-50 small" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
+                </div>
+            </a>
+        </div>
 
         <!-- Right Side User, Notifications & Status Pill -->
         <div class="d-flex align-items-center gap-3 text-white">
@@ -221,17 +415,10 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                     <?php endif; ?>
                 </ul>
             </div>
-            <button type="button" 
-                    class="btn btn-link text-white text-decoration-none p-0 d-inline-flex align-items-center gap-2 shadow-none" 
-                    data-bs-toggle="modal" 
-                    data-bs-target="#modalQuickEditNavbar" 
-                    title="Klik untuk mengedit username atau nama Anda">
+            <div class="d-inline-flex align-items-center gap-1 text-white">
                 <span class="small d-none d-md-inline text-white-50">Halo,</span>
-                <span class="fw-bold text-white border-bottom border-white border-opacity-50 pb-0"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
-                <span class="badge bg-white bg-opacity-25 text-white rounded-pill px-2 py-1 shadow-sm" style="font-size: 0.72rem;">
-                    <i class="bi bi-pencil-fill me-1"></i>Edit
-                </span>
-            </button>
+                <span class="fw-bold text-white"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
+            </div>
             <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
                 <i class="bi bi-person-gear"></i><span class="d-none d-md-inline">Profil</span>
             </a>
@@ -242,149 +429,8 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     </div>
 </nav>
 
-<!-- MODAL QUICK EDIT USERNAME & NAMA DOSEN / ADMIN LANGSUNG DARI NAVBAR -->
-<div class="modal fade" id="modalQuickEditNavbar" tabindex="-1" aria-labelledby="modalQuickEditNavbarLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow border-0 text-dark">
-            <form method="POST" action="">
-                <input type="hidden" name="action_quick_edit_navbar" value="1">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold" id="modalQuickEditNavbarLabel">
-                        <i class="bi bi-pencil-square me-2"></i>Edit Username / Nama Akun
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4 text-start">
-                    <?php if (!empty($quick_error)): ?>
-                        <div class="alert alert-danger py-2 small mb-3">
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i><?= htmlspecialchars($quick_error); ?>
-                        </div>
-                    <?php endif; ?>
-
-                    <p class="text-muted small mb-3">
-                        Ubah tulisan username yang tampil pada ucapan <strong>Halo, ...</strong> di pojok kanan atas serta kredensial akun Anda:
-                    </p>
-
-                    <!-- Input Username -->
-                    <div class="mb-3">
-                        <label for="quick_username" class="form-label fw-bold small text-dark">
-                            <i class="bi bi-person-badge text-primary me-1"></i>ID Login / Username (Tampil di Navbar) *
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light fw-bold text-muted">@</span>
-                            <input type="text" name="quick_username" id="quick_username" class="form-control fw-bold text-primary" 
-                                   value="<?= htmlspecialchars($_SESSION['username'] ?? ''); ?>" 
-                                   placeholder="Contoh: dosen1" required autofocus>
-                        </div>
-                        <div class="form-text small text-muted">Tanpa spasi. Contoh: <code>salsa</code>, <code>dosen_hendra</code>, <code>admin</code>.</div>
-                    </div>
-
-                    <?php if ($cur_role === 'dosen'): ?>
-                    <!-- Input Nama Lengkap Dosen -->
-                    <div class="mb-3">
-                        <label for="quick_nama_dosen" class="form-label fw-bold small text-dark">
-                            <i class="bi bi-person-lines-fill text-primary me-1"></i>Nama Lengkap & Gelar Resmi Dosen
-                        </label>
-                        <input type="text" name="quick_nama_dosen" id="quick_nama_dosen" class="form-control" 
-                                value="<?= htmlspecialchars($dosen_info['nama_dosen'] ?? $_SESSION['nama_lengkap'] ?? ''); ?>" 
-                                placeholder="Contoh: Dr. Hendra Gunawan, M.T.">
-                        <div class="form-text small text-muted">Nama resmi yang tampil di lembar laporan dan kartu bimbingan mahasiswa.</div>
-                    </div>
-                    <?php elseif ($cur_role === 'admin'): ?>
-                    <!-- Input Nama Lengkap Admin -->
-                    <div class="mb-3">
-                        <label for="quick_nama_dosen" class="form-label fw-bold small text-dark">
-                            <i class="bi bi-person-lines-fill text-primary me-1"></i>Nama Lengkap Administrator
-                        </label>
-                        <input type="text" name="quick_nama_dosen" id="quick_nama_dosen" class="form-control" 
-                                value="<?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Administrator'); ?>" 
-                                placeholder="Contoh: Talita Nabila, S.Kom.">
-                        <div class="form-text small text-muted">Nama resmi yang tampil pada navbar sistem dan kop surat laporan akademik.</div>
-                    </div>
-                    <?php endif; ?>
-
-                    <!-- Ubah Kata Sandi Akun -->
-                    <div class="border-top pt-3 mt-3">
-                        <div class="d-flex align-items-center justify-content-between mb-2">
-                            <label class="form-label fw-bold small text-dark mb-0">
-                                <i class="bi bi-shield-lock text-danger me-1"></i>Ubah Password Akun
-                            </label>
-                            <span class="text-muted" style="font-size: 0.72rem;">Kosongkan bila tidak ingin ganti</span>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <label for="quick_password" class="form-label small text-muted mb-1" style="font-size: 0.75rem;">Password Baru</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-lock"></i></span>
-                                    <input type="password" name="quick_password" id="quick_password" class="form-control" placeholder="Min. 6 karakter" autocomplete="new-password">
-                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassHeader('quick_password', this)" title="Lihat/Sembunyikan">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="quick_password_konfirm" class="form-label small text-muted mb-1" style="font-size: 0.75rem;">Ulangi Password Baru</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-shield-check"></i></span>
-                                    <input type="password" name="quick_password_konfirm" id="quick_password_konfirm" class="form-control" placeholder="Konfirmasi" autocomplete="new-password">
-                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassHeader('quick_password_konfirm', this)" title="Lihat/Sembunyikan">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary btn-sm fw-semibold">
-                        <i class="bi bi-check2-circle me-1"></i> Simpan Perubahan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-function togglePassHeader(inputId, btn) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-    const icon = btn.querySelector("i");
-    if (input.type === "password") {
-        input.type = "text";
-        if (icon) {
-            icon.classList.remove("bi-eye");
-            icon.classList.add("bi-eye-slash");
-        }
-    } else {
-        input.type = "password";
-        if (icon) {
-            icon.classList.remove("bi-eye-slash");
-            icon.classList.add("bi-eye");
-        }
-    }
-}
-
-document.querySelectorAll(".toggle-navbar-pw").forEach(function(btn) {
-    btn.addEventListener("click", function() {
-        const targetId = this.getAttribute("data-target");
-        const input = document.getElementById(targetId);
-        const icon = this.querySelector("i");
-        if (input) {
-            if (input.type === "password") {
-                input.type = "text";
-                icon.classList.remove("bi-eye");
-                icon.classList.add("bi-eye-slash");
-            } else {
-                input.type = "password";
-                icon.classList.remove("bi-eye-slash");
-                icon.classList.add("bi-eye");
-            }
-        }
-    });
-});
-</script>
+<!-- Backdrop untuk mobile saat sidebar dibuka -->
+<div class="sidebar-mobile-backdrop" id="sidebarBackdrop" onclick="toggleSidebarMenu()"></div>
 
 <div class="container-fluid">
     <div class="row">

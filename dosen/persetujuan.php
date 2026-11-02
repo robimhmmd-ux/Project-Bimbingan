@@ -59,6 +59,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_keputusan'])) 
                         : "Permohonan bimbingan {$m_u['bab_pembahasan']} ditolak. Catatan: " . (!empty($catatan_dosen) ? $catatan_dosen : 'Silakan ajukan jadwal baru.');
                     $st_notif = $pdo->prepare("INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) VALUES (:uid, :jdl, :psn, :tp, 'logbook.php')");
                     $st_notif->execute([':uid' => $m_u['user_id'], ':jdl' => $judul_n, ':psn' => $pesan_n, ':tp' => $tipe_n]);
+
+                    // Notifikasi konfirmasi ke akun Dosen sendiri
+                    if (!empty($_SESSION['user_id'])) {
+                        $judul_d = ($status_baru === 'disetujui') ? 'Konfirmasi Bimbingan Disetujui' : 'Pengajuan Bimbingan Ditolak';
+                        $pesan_d = ($status_baru === 'disetujui') 
+                            ? "Anda telah menyetujui sesi bimbingan {$m_u['bab_pembahasan']} pada tanggal " . date('d/m/Y', strtotime($m_u['tanggal_bimbingan'])) . "."
+                            : "Anda telah menolak pengajuan bimbingan {$m_u['bab_pembahasan']}.";
+                        $pdo->prepare("INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) VALUES (:uid, :jdl, :psn, 'pembimbing', 'riwayat_bimbingan.php')")->execute([
+                            ':uid' => $_SESSION['user_id'], ':jdl' => $judul_d, ':psn' => $pesan_d
+                        ]);
+                    }
                 }
             } catch (Exception $ne) {}
 
@@ -119,6 +130,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_reschedule']))
                         ':uid' => $m_u['user_id'],
                         ':psn' => "Jadwal bimbingan {$m_u['bab_pembahasan']} telah dijadwalkan ulang oleh Dosen ke tanggal {$tgl_format} pukul {$jam_format} WIB."
                     ]);
+
+                    // Notifikasi konfirmasi ke akun Dosen sendiri
+                    if (!empty($_SESSION['user_id'])) {
+                        $pdo->prepare("INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) VALUES (:uid, 'Jadwal Bimbingan Dijadwalkan Ulang', :psn, 'pembimbing', 'riwayat_bimbingan.php')")->execute([
+                            ':uid' => $_SESSION['user_id'],
+                            ':psn' => "Anda telah berhasil menjadwalkan ulang bimbingan {$m_u['bab_pembahasan']} ke tanggal {$tgl_format} pukul {$jam_format} WIB."
+                        ]);
+                    }
                 }
             } catch (Exception $ne) {}
 

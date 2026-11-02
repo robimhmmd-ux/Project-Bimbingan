@@ -58,6 +58,180 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 $error_msg = "Gagal memperbarui status: " . $e->getMessage();
             }
         }
+    } elseif ($action === 'reset_all') {
+        // =====================================================================
+        // PROSES RESET PROGRESS KESELURUHAN (GLOBAL / PER KELAS)
+        // =====================================================================
+        $confirm_text = strtoupper(trim($_POST['confirm_text'] ?? ''));
+        $target_scope = $_POST['target_scope'] ?? 'all';
+        $reset_mode   = $_POST['reset_mode'] ?? 'soft';
+        $notify_mhs   = isset($_POST['notify_mhs']) && $_POST['notify_mhs'] == '1';
+
+        if ($confirm_text !== 'RESET') {
+            $error_msg = "Konfirmasi keamanan tidak sesuai. Harap ketik 'RESET' untuk mengeksekusi reset progress.";
+        } else {
+            try {
+                // Ambil daftar target mahasiswa
+                if ($target_scope !== 'all') {
+                    $stmtTarget = $pdo->prepare("SELECT id, user_id, nama_lengkap, kelas FROM mahasiswa WHERE kelas = :kls");
+                    $stmtTarget->execute([':kls' => $target_scope]);
+                } else {
+                    $stmtTarget = $pdo->query("SELECT id, user_id, nama_lengkap, kelas FROM mahasiswa");
+                }
+                $targetList = $stmtTarget->fetchAll();
+
+                if (empty($targetList)) {
+                    $error_msg = "Tidak ditemukan data mahasiswa pada lingkup target yang dipilih.";
+                } else {
+                    $mhs_ids = array_column($targetList, 'id');
+                    $user_ids = array_filter(array_column($targetList, 'user_id'));
+                    $placeholders = implode(',', array_fill(0, count($mhs_ids), '?'));
+
+                    $pdo->beginTransaction();
+
+                    if ($target_scope === 'all') {
+                        if ($reset_mode === 'hard') {
+                            // Hard Reset Global: Bersihkan seluruh riwayat bimbingan & sidang semua mahasiswa
+                            $pdo->exec("DELETE FROM logbook_bimbingan");
+                            $pdo->exec("DELETE FROM sidang_skripsi");
+                            $pdo->exec("DELETE FROM pengajuan_bimbingan");
+                            $pdo->exec("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan'");
+
+                            $mode_label = "Reset Total Keseluruhan (Seluruh riwayat bimbingan, logbook, dan sidang dibersihkan total ke 0%)";
+                        } else {
+                            // Soft Reset Global: Set seluruh status bimbingan ke revisi & nilai ke 0%
+                            $pdo->exec("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan'");
+                            $pdo->exec("UPDATE pengajuan_bimbingan SET status = 'revisi', nilai_progres = 0");
+                            $pdo->exec("UPDATE logbook_bimbingan SET status_bab = 'revisi'");
+                            $pdo->exec("UPDATE sidang_skripsi SET status_sidang = 'pengajuan', nilai_penguji_1 = NULL, nilai_penguji_2 = NULL, nilai_penguji_3 = NULL, nilai_akhir = NULL, tanggal_sidang = NULL, jam_sidang = NULL, ruangan = NULL");
+
+                            $mode_label = "Soft Reset Keseluruhan (Status kelulusan kembali ke 'proses_bimbingan' dan capaian bab dinolkan)";
+                        }
+                    } else {
+                        if ($reset_mode === 'hard') {
+                            // Hard Reset per Kelas: Bersihkan rekam logbook, bimbingan, dan sidang mahasiswa kelas terpilih
+                            $stmtDelLog = $pdo->prepare("DELETE FROM logbook_bimbingan WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtDelLog->execute($mhs_ids);
+
+                            $stmtDelSid = $pdo->prepare("DELETE FROM sidang_skripsi WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtDelSid->execute($mhs_ids);
+
+                            $stmtDelBim = $pdo->prepare("DELETE FROM pengajuan_bimbingan WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtDelBim->execute($mhs_ids);
+
+                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
+                            $stmtUpMhs->execute($mhs_ids);
+
+                            $mode_label = "Reset Total Kelas";
+                        } else {
+                            // Soft Reset per Kelas
+                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
+                            $stmtUpMhs->execute($mhs_ids);
+
+                            $stmtUpBim = $pdo->prepare("UPDATE pengajuan_bimbingan SET status = 'revisi', nilai_progres = 0 WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtUpBim->execute($mhs_ids);
+
+                            $stmtUpLog = $pdo->prepare("UPDATE logbook_bimbingan SET status_bab = 'revisi' WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtUpLog->execute($mhs_ids);
+
+                            $stmtUpSid = $pdo->prepare("UPDATE sidang_skripsi SET status_sidang = 'pengajuan', nilai_penguji_1 = NULL, nilai_penguji_2 = NULL, nilai_penguji_3 = NULL, nilai_akhir = NULL, tanggal_sidang = NULL, jam_sidang = NULL, ruangan = NULL WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtUpSid->execute($mhs_ids);
+
+                            $mode_label = "Soft Reset Kelas (Nilai & Status di-set 0%)";
+                        }
+                    }
+
+                    // Notifikasi otomatis ke dashboard mahasiswa terdampak
+                    if ($notify_mhs && !empty($user_ids)) {
+                        $stmtNotif = $pdo->prepare("
+                            INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
+                            VALUES (:uid, 'Reset Periode Evaluasi Skripsi', 'Administrator akademik telah mereset status evaluasi & progres skripsi untuk periode penilaian baru. Silakan konsultasi kembali dengan dosen pembimbing.', 'info', 'index.php')
+                        ");
+                        foreach ($user_ids as $uid) {
+                            $stmtNotif->execute([':uid' => $uid]);
+                        }
+                    }
+
+                    $pdo->commit();
+                    $scope_name = ($target_scope === 'all') ? "Seluruh Mahasiswa (" . count($mhs_ids) . " orang)" : "Kelas {$target_scope} (" . count($mhs_ids) . " orang)";
+                    $success_msg = "Berhasil me-reset progress untuk {$scope_name}. Mode: {$mode_label}.";
+                }
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $error_msg = "Gagal me-reset progress keseluruhan: " . $e->getMessage();
+            }
+        }
+    } elseif ($action === 'reset_single') {
+        // =====================================================================
+        // PROSES RESET PROGRESS MAHASISWA TUNGGAL
+        // =====================================================================
+        $mahasiswa_id = (int)($_POST['mahasiswa_id'] ?? 0);
+        $reset_mode   = $_POST['reset_mode'] ?? 'soft';
+        $notify_mhs   = isset($_POST['notify_mhs']) && $_POST['notify_mhs'] == '1';
+
+        if ($mahasiswa_id <= 0) {
+            $error_msg = "ID Mahasiswa tidak valid.";
+        } else {
+            try {
+                $stmtMhs = $pdo->prepare("SELECT id, user_id, nama_lengkap, nim FROM mahasiswa WHERE id = :mid LIMIT 1");
+                $stmtMhs->execute([':mid' => $mahasiswa_id]);
+                $mhsTarget = $stmtMhs->fetch();
+
+                if (!$mhsTarget) {
+                    $error_msg = "Data mahasiswa tidak ditemukan.";
+                } else {
+                    $pdo->beginTransaction();
+
+                    if ($reset_mode === 'hard') {
+                        $stmtDelLog = $pdo->prepare("DELETE FROM logbook_bimbingan WHERE mahasiswa_id = :mid");
+                        $stmtDelLog->execute([':mid' => $mahasiswa_id]);
+
+                        $stmtDelSid = $pdo->prepare("DELETE FROM sidang_skripsi WHERE mahasiswa_id = :mid");
+                        $stmtDelSid->execute([':mid' => $mahasiswa_id]);
+
+                        $stmtDelBim = $pdo->prepare("DELETE FROM pengajuan_bimbingan WHERE mahasiswa_id = :mid");
+                        $stmtDelBim->execute([':mid' => $mahasiswa_id]);
+
+                        $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id = :mid");
+                        $stmtUpMhs->execute([':mid' => $mahasiswa_id]);
+
+                        $mode_label = "Reset Total (0% dan data pengajuan dibersihkan)";
+                    } else {
+                        $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id = :mid");
+                        $stmtUpMhs->execute([':mid' => $mahasiswa_id]);
+
+                        $stmtUpBim = $pdo->prepare("UPDATE pengajuan_bimbingan SET status = 'revisi', nilai_progres = 0 WHERE mahasiswa_id = :mid");
+                        $stmtUpBim->execute([':mid' => $mahasiswa_id]);
+
+                        $stmtUpLog = $pdo->prepare("UPDATE logbook_bimbingan SET status_bab = 'revisi' WHERE mahasiswa_id = :mid");
+                        $stmtUpLog->execute([':mid' => $mahasiswa_id]);
+
+                        $stmtUpSid = $pdo->prepare("UPDATE sidang_skripsi SET status_sidang = 'pengajuan', nilai_penguji_1 = NULL, nilai_penguji_2 = NULL, nilai_penguji_3 = NULL, nilai_akhir = NULL, tanggal_sidang = NULL, jam_sidang = NULL, ruangan = NULL WHERE mahasiswa_id = :mid");
+                        $stmtUpSid->execute([':mid' => $mahasiswa_id]);
+
+                        $mode_label = "Soft Reset (Nilai & Status di-set 0%)";
+                    }
+
+                    if ($notify_mhs && !empty($mhsTarget['user_id'])) {
+                        $stmtNotif = $pdo->prepare("
+                            INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
+                            VALUES (:uid, 'Reset Progress Bimbingan Skripsi', 'Administrator akademik telah mereset status evaluasi & progres skripsi Anda. Silakan hubungi dosen pembimbing untuk konsultasi tahapan selanjutnya.', 'info', 'index.php')
+                        ");
+                        $stmtNotif->execute([':uid' => $mhsTarget['user_id']]);
+                    }
+
+                    $pdo->commit();
+                    $success_msg = "Berhasil me-reset progress untuk mahasiswa: {$mhsTarget['nama_lengkap']} ({$mhsTarget['nim']}). Mode: {$mode_label}.";
+                }
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $error_msg = "Gagal me-reset progress mahasiswa: " . $e->getMessage();
+            }
+        }
     }
 }
 
@@ -139,6 +313,9 @@ $persen_bimb  = $total_mhs > 0 ? round(($count_bimbingan / $total_mhs) * 100) : 
 // Daftar Dosen untuk Filter
 $dosen_filter = $pdo->query("SELECT id, nama_dosen FROM dosen ORDER BY nama_dosen ASC")->fetchAll();
 
+// Daftar Kelas untuk Filter & Lingkup Reset
+$kelas_list = $pdo->query("SELECT DISTINCT kelas FROM mahasiswa WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC")->fetchAll(PDO::FETCH_COLUMN);
+
 $page_title   = "Monitoring Kelulusan Mahasiswa";
 $current_page = "monitoring";
 
@@ -156,7 +333,10 @@ require_once '../templates/sidebar_admin.php';
         <h2 class="fw-bold text-white mb-1">Monitoring Kelulusan & Sidang</h2>
         <p class="text-white-50 small mb-0">Pantau progres tahapan bimbingan skripsi, verifikasi kesiapan munaqasyah, dan evaluasi hasil kelulusan mahasiswa.</p>
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button type="button" class="btn btn-danger text-white shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#modalResetProgressAll">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Progress Keseluruhan
+        </button>
         <a href="jadwal_sidang.php" class="btn btn-warning text-dark shadow-sm fw-bold">
             <i class="bi bi-calendar2-check-fill me-1"></i> Penjadwalan Sidang (3 Penguji)
         </a>
@@ -267,9 +447,11 @@ require_once '../templates/sidebar_admin.php';
             <div class="col-md-2">
                 <select name="kelas" class="form-select" onchange="this.form.submit()">
                     <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Semua Kelas --</option>
-                    <option value="TI-1A-2025" <?= ($filter_kelas === 'TI-1A-2025') ? 'selected' : ''; ?>>TI-1A-2025</option>
-                    <option value="TI-1B-2025" <?= ($filter_kelas === 'TI-1B-2025') ? 'selected' : ''; ?>>TI-1B-2025</option>
-                    <option value="TI-1C-2025" <?= ($filter_kelas === 'TI-1C-2025') ? 'selected' : ''; ?>>TI-1C-2025</option>
+                    <?php foreach ($kelas_list as $kls): ?>
+                        <option value="<?= htmlspecialchars($kls); ?>" <?= ($filter_kelas === $kls) ? 'selected' : ''; ?>>
+                            <?= htmlspecialchars($kls); ?>
+                        </option>
+                    <?php endforeach; ?>
                 </select>
             </div>
             <!-- Filter Status -->
@@ -426,6 +608,16 @@ require_once '../templates/sidebar_admin.php';
                                                 <i class="bi bi-calendar2-check"></i>
                                             </a>
                                         <?php endif; ?>
+                                        <!-- Tombol Reset Progress Mahasiswa Tunggal -->
+                                        <button type="button" class="btn btn-outline-danger btn-reset-single"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalResetSingle"
+                                                data-id="<?= $row['id']; ?>"
+                                                data-nama="<?= htmlspecialchars($row['nama_lengkap']); ?>"
+                                                data-nim="<?= htmlspecialchars($row['nim']); ?>"
+                                                title="Reset Progress Mahasiswa Ini">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -482,8 +674,193 @@ require_once '../templates/sidebar_admin.php';
     </div>
 </div>
 
+<!-- ========================================================================= -->
+<!-- MODAL RESET PROGRESS KESELURUHAN MAHASISWA -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="modalResetProgressAll" tabindex="-1" aria-labelledby="modalResetProgressAllLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="POST" action="monitoring_kelulusan.php" class="modal-content border-0 shadow-lg">
+            <input type="hidden" name="action" value="reset_all">
+            
+            <div class="modal-header bg-danger text-white">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded bg-white bg-opacity-25">
+                        <i class="bi bi-arrow-counterclockwise fs-4 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="modalResetProgressAllLabel">Reset Progress Keseluruhan Mahasiswa</h5>
+                        <small class="text-white-50">Siklus Evaluasi Akademik & Pemulihan Capaian Bimbingan Skripsi</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <!-- Alert Peringatan -->
+                <div class="alert alert-danger d-flex align-items-start gap-3 mb-4 shadow-sm">
+                    <i class="bi bi-exclamation-octagon-fill fs-3 text-danger flex-shrink-0 mt-1"></i>
+                    <div>
+                        <h6 class="fw-bold text-danger mb-1">Perhatian: Tindakan Ini Mengatur Ulang Capaian Skripsi</h6>
+                        <p class="small text-danger mb-0">
+                            Fitur ini digunakan oleh Administrator untuk mengulang periode evaluasi bimbingan skripsi. 
+                            <strong>Akun login mahasiswa, data profil, dan plotting dosen pembimbing TETAP AMAN dan TIDAK AKAN TERHAPUS.</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Pilihan Lingkup (Target Scope) -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-dark mb-1">
+                        <i class="bi bi-people-fill text-primary me-1"></i> Lingkup Target Mahasiswa:
+                    </label>
+                    <select name="target_scope" class="form-select form-select-lg">
+                        <option value="all">Semua Mahasiswa (Seluruh Angkatan & Kelas - Total <?= $total_mhs; ?> Mahasiswa)</option>
+                        <?php foreach ($kelas_list as $kls): ?>
+                            <option value="<?= htmlspecialchars($kls); ?>">Hanya Kelas: <?= htmlspecialchars($kls); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Pilihan Mode Reset -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-dark mb-2">
+                        <i class="bi bi-sliders text-warning me-1"></i> Pilihan Mode Reset:
+                    </label>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="card h-100 p-3 border-2 border-primary-subtle rounded-3 cursor-pointer shadow-sm" style="cursor: pointer;">
+                                <div class="d-flex align-items-start gap-2">
+                                    <input type="radio" name="reset_mode" value="soft" class="form-check-input mt-1" checked>
+                                    <div>
+                                        <div class="fw-bold text-primary mb-1">
+                                            <i class="bi bi-arrow-repeat me-1"></i> 1. Soft Reset (Rekomendasi)
+                                        </div>
+                                        <p class="small text-muted mb-0">
+                                            Status kelulusan dikembalikan ke <strong>Proses Bimbingan</strong>. Nilai progres diatur ke <strong>0%</strong> dan bab diset ke revisi. 
+                                            <em>Arsip naskah draf bimbingan dan logbook tetap disimpan sebagai rekam jejak.</em>
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="card h-100 p-3 border-2 border-danger-subtle rounded-3 cursor-pointer shadow-sm" style="cursor: pointer;">
+                                <div class="d-flex align-items-start gap-2">
+                                    <input type="radio" name="reset_mode" value="hard" class="form-check-input mt-1">
+                                    <div>
+                                        <div class="fw-bold text-danger mb-1">
+                                            <i class="bi bi-trash3-fill me-1"></i> 2. Hard Reset (Bersih Total)
+                                        </div>
+                                        <p class="small text-muted mb-0">
+                                            Menghapus seluruh riwayat pengajuan draf bimbingan, logbook bab, dan pendaftaran/jadwal sidang skripsi. 
+                                            Mahasiswa memulai kembali dari pengajuan Bab 1 murni (0%).
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Opsi Notifikasi Otomatis -->
+                <div class="mb-4 p-3 bg-light rounded-3 border">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" name="notify_mhs" id="notifyMhsCheck" value="1" checked>
+                        <label class="form-check-label fw-semibold text-dark" for="notifyMhsCheck">
+                            Kirim Notifikasi Sistem Otomatis ke Mahasiswa yang Terdampak
+                        </label>
+                        <small class="d-block text-muted">Mahasiswa akan menerima pemberitahuan di akun mereka bahwa periode evaluasi skripsi telah di-reset oleh Admin.</small>
+                    </div>
+                </div>
+
+                <!-- Konfirmasi Kata Kunci Keamanan -->
+                <div class="p-3 bg-danger-subtle border border-danger-subtle rounded-3">
+                    <label class="form-label fw-bold text-danger mb-1" for="confirmResetInput">
+                        <i class="bi bi-shield-lock-fill me-1"></i> Konfirmasi Keamanan Administrator
+                    </label>
+                    <p class="small text-muted mb-2">Ketik kata <strong class="text-danger font-monospace">RESET</strong> pada kolom di bawah ini untuk mengaktifkan tombol eksekusi:</p>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white text-danger fw-bold border-danger-subtle"><i class="bi bi-key-fill"></i></span>
+                        <input type="text" class="form-control font-monospace border-danger-subtle" name="confirm_text" id="confirmResetInput" placeholder="Ketik RESET di sini..." autocomplete="off" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Batal
+                </button>
+                <button type="submit" class="btn btn-danger fw-bold shadow-sm" id="btnSubmitResetAll" disabled>
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Eksekusi Reset Sekarang
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL RESET PROGRESS MAHASISWA TUNGGAL -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="modalResetSingle" tabindex="-1" aria-labelledby="modalResetSingleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" action="monitoring_kelulusan.php" class="modal-content border-0 shadow-lg">
+            <input type="hidden" name="action" value="reset_single">
+            <input type="hidden" name="mahasiswa_id" id="single_reset_mhs_id">
+
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="modalResetSingleLabel">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Progress Mahasiswa
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="small text-muted">Mahasiswa Terpilih:</div>
+                    <div class="fw-bold text-dark fs-6" id="single_reset_nama"></div>
+                    <div class="small text-muted font-monospace" id="single_reset_nim"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark mb-2">Pilih Mode Reset:</label>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="reset_mode" id="single_mode_soft" value="soft" checked>
+                        <label class="form-check-label" for="single_mode_soft">
+                            <strong class="text-primary">Soft Reset (Nilai & Status 0%)</strong>
+                            <small class="d-block text-muted">Kembalikan ke status proses bimbingan dan nilai 0%, arsip tetap tersimpan.</small>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="reset_mode" id="single_mode_hard" value="hard">
+                        <label class="form-check-label" for="single_mode_hard">
+                            <strong class="text-danger">Hard Reset (Bersih Total)</strong>
+                            <small class="d-block text-muted">Hapus seluruh riwayat bimbingan & sidang mahasiswa ini kembali ke Bab 1 murni.</small>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" role="switch" name="notify_mhs" id="single_notify_mhs" value="1" checked>
+                    <label class="form-check-label small fw-semibold text-dark" for="single_notify_mhs">
+                        Kirim notifikasi otomatis ke mahasiswa ini
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-danger fw-bold">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Progress
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Evaluasi modal
     const evalBtns = document.querySelectorAll('.btn-evaluasi');
     evalBtns.forEach(btn => {
         btn.addEventListener('click', function () {
@@ -494,6 +871,29 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('eval_nilai').value      = this.dataset.nilai;
         });
     });
+
+    // Reset single modal
+    const resetSingleBtns = document.querySelectorAll('.btn-reset-single');
+    resetSingleBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.getElementById('single_reset_mhs_id').value     = this.dataset.id;
+            document.getElementById('single_reset_nama').textContent = this.dataset.nama;
+            document.getElementById('single_reset_nim').textContent  = "NIM: " + this.dataset.nim;
+        });
+    });
+
+    // Validasi kata kunci konfirmasi RESET
+    const confirmInput = document.getElementById('confirmResetInput');
+    const submitResetAllBtn = document.getElementById('btnSubmitResetAll');
+    if (confirmInput && submitResetAllBtn) {
+        confirmInput.addEventListener('input', function () {
+            if (this.value.trim().toUpperCase() === 'RESET') {
+                submitResetAllBtn.disabled = false;
+            } else {
+                submitResetAllBtn.disabled = true;
+            }
+        });
+    }
 });
 </script>
 

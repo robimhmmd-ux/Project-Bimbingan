@@ -16,9 +16,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
 // Ambil info mahasiswa & dosen pembimbing
 $stmt_mhs = $pdo->prepare("
     SELECT m.*, d.id AS dosen_id, d.user_id AS dosen_user_id, d.nidn, d.nama_dosen, 
-           d.email AS email_dosen, d.no_whatsapp, d.foto_profil AS foto_dosen
+           d.email AS email_dosen, d.no_whatsapp, d.foto_profil AS foto_dosen, d.kuota_bimbingan,
+           u_dos.username AS username_dosen
     FROM mahasiswa m 
     LEFT JOIN dosen d ON m.dosen_pembimbing_id = d.id 
+    LEFT JOIN users u_dos ON d.user_id = u_dos.id
     WHERE m.user_id = :uid LIMIT 1
 ");
 $stmt_mhs->execute([':uid' => $_SESSION['user_id']]);
@@ -26,6 +28,23 @@ $mhs = $stmt_mhs->fetch();
 
 $dosen_user_id = $mhs['dosen_user_id'] ?? null;
 $my_user_id    = $_SESSION['user_id'];
+
+// Ambil jadwal ketersediaan konsultasi dosen pembimbing
+$jadwal_dosen_list = [];
+if (!empty($mhs['dosen_id'])) {
+    try {
+        $st_jd = $pdo->prepare("
+            SELECT hari, jam_mulai, jam_selesai, status_aktif 
+            FROM jadwal_dosen 
+            WHERE dosen_id = :did AND status_aktif = 'aktif'
+            ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu')
+        ");
+        $st_jd->execute([':did' => $mhs['dosen_id']]);
+        $jadwal_dosen_list = $st_jd->fetchAll();
+    } catch (PDOException $e) {
+        $jadwal_dosen_list = [];
+    }
+}
 $success_msg   = '';
 $error_msg     = '';
 
@@ -134,11 +153,11 @@ if (!empty($mhs['no_whatsapp'])) {
             </p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-wrap">
-            <a href="jadwal_dosen.php" class="btn btn-hero-action btn-hero-white">
-                <i class="bi bi-calendar3"></i>Jadwal Dosen
+            <a href="jadwal_bimbingan.php" class="btn btn-hero-action btn-hero-white">
+                <i class="bi bi-calendar-week"></i>Jadwal Bimbingan
             </a>
-            <a href="ajukan_jadwal.php" class="btn btn-hero-action btn-hero-blue">
-                <i class="bi bi-calendar-plus"></i>Ajukan Jadwal
+            <a href="upload_draft.php" class="btn btn-hero-action btn-hero-blue">
+                <i class="bi bi-cloud-arrow-up"></i>Upload Berkas
             </a>
             <a href="index.php" class="btn btn-hero-action btn-hero-outline">
                 <i class="bi bi-speedometer2"></i>Dashboard
@@ -172,16 +191,29 @@ if (!empty($mhs['no_whatsapp'])) {
                 <!-- Header Chat Box -->
                 <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
                     <div class="d-flex align-items-center">
-                        <div class="position-relative me-3">
-                            <?php if (!empty($mhs['foto_dosen']) && file_exists('../assets/uploads/' . $mhs['foto_dosen'])): ?>
-                                <img src="../assets/uploads/<?= htmlspecialchars($mhs['foto_dosen']); ?>" class="rounded-circle border" width="48" height="48" style="object-fit: cover;" alt="Dosen">
-                            <?php else: ?>
-                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px; font-size: 1.2rem;">
-                                    <?= strtoupper(substr($mhs['nama_dosen'], 0, 1)); ?>
-                                </div>
-                            <?php endif; ?>
-                            <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle" style="width: 12px; height: 12px;" title="Online"></span>
+                        <?php 
+            $foto_dosen_src = null;
+            if (!empty($mhs['foto_dosen']) && $mhs['foto_dosen'] !== 'default.png') {
+                $fname_dosen = basename($mhs['foto_dosen']);
+                if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname_dosen)) {
+                    $foto_dosen_src = '../assets/uploads/profile/' . htmlspecialchars($fname_dosen);
+                } elseif (file_exists(__DIR__ . '/../assets/uploads/' . $fname_dosen)) {
+                    $foto_dosen_src = '../assets/uploads/' . htmlspecialchars($fname_dosen);
+                }
+            }
+            ?>
+            <div class="position-relative me-3">
+                <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#modalProfilDosen" title="Klik untuk melihat profil dosen">
+                    <?php if ($foto_dosen_src): ?>
+                        <img src="<?= $foto_dosen_src; ?>" class="rounded-circle border shadow-sm object-fit-cover" width="50" height="50" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" alt="Foto Profil Dosen">
+                    <?php else: ?>
+                        <div class="avatar-circle avatar-primary shadow-sm rounded-circle d-flex align-items-center justify-content-center text-primary" style="width: 50px; height: 50px; font-size: 1.4rem; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+                            <i class="bi bi-person-fill"></i>
                         </div>
+                    <?php endif; ?>
+                </a>
+                <span class="position-absolute bottom-0 end-0 bg-success border border-white rounded-circle" style="width: 12px; height: 12px;" title="Dosen Aktif"></span>
+            </div>
                         <div>
                             <h6 class="fw-bold mb-0 text-dark"><?= htmlspecialchars($mhs['nama_dosen']); ?></h6>
                             <span class="text-muted small">
@@ -269,15 +301,23 @@ if (!empty($mhs['no_whatsapp'])) {
                 </div>
                 <div class="card-body p-3">
                     <div class="text-center mb-3">
-                        <?php if (!empty($mhs['foto_dosen']) && file_exists('../assets/uploads/' . $mhs['foto_dosen'])): ?>
-                            <img src="../assets/uploads/<?= htmlspecialchars($mhs['foto_dosen']); ?>" class="rounded-circle border mb-2 shadow-sm" width="70" height="70" style="object-fit: cover;" alt="Dosen">
-                        <?php else: ?>
-                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center fw-bold mb-2 shadow-sm" style="width: 70px; height: 70px; font-size: 1.8rem;">
-                                <?= strtoupper(substr($mhs['nama_dosen'], 0, 1)); ?>
-                            </div>
-                        <?php endif; ?>
+                        <div class="position-relative d-inline-block mb-2">
+                            <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#modalProfilDosen" title="Klik untuk melihat profil dosen">
+                                <?php if ($foto_dosen_src): ?>
+                                    <img src="<?= $foto_dosen_src; ?>" class="rounded-circle border shadow-sm img-thumbnail object-fit-cover" width="80" height="80" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'" alt="Foto Profil Dosen">
+                                <?php else: ?>
+                                    <div class="avatar-circle avatar-primary shadow-sm rounded-circle d-flex align-items-center justify-content-center text-primary mx-auto" style="width: 80px; height: 80px; font-size: 2.2rem; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                                        <i class="bi bi-person-fill"></i>
+                                    </div>
+                                <?php endif; ?>
+                            </a>
+                            <span class="position-absolute bottom-0 end-0 p-1.5 bg-success border border-2 border-white rounded-circle shadow-sm" title="Dosen Aktif"></span>
+                        </div>
                         <h6 class="fw-bold mb-0 text-dark"><?= htmlspecialchars($mhs['nama_dosen']); ?></h6>
-                        <span class="text-muted small">NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></span>
+                        <span class="text-muted small d-block mb-2">NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></span>
+                        <button type="button" class="btn btn-outline-primary btn-sm py-1 px-3 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#modalProfilDosen" style="font-size: 0.75rem;">
+                            <i class="bi bi-person-vcard me-1"></i>Lihat Profil Lengkap
+                        </button>
                     </div>
 
                     <div class="list-group list-group-flush small">
@@ -370,6 +410,127 @@ if (!empty($mhs['no_whatsapp'])) {
     </script>
 
 <?php endif; ?>
+
+
+<!-- ============================================================
+     MODAL LIHAT PROFIL DOSEN PEMBIMBING (SESUAI PROFIL DOSEN)
+============================================================ -->
+<div class="modal fade" id="modalProfilDosen" tabindex="-1" aria-labelledby="modalProfilDosenLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header text-white border-0 py-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #1e40af 100%);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-vcard-fill text-info fs-5"></i>
+                    <h5 class="modal-title fw-bold text-white mb-0" id="modalProfilDosenLabel">Profil Dosen Pembimbing</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <!-- Foto & Identitas Utama Dosen -->
+                <div class="text-center mb-4">
+                    <div class="mb-3 position-relative d-inline-block mx-auto">
+                        <?php if ($foto_dosen_src): ?>
+                            <img src="<?= $foto_dosen_src; ?>" 
+                                 alt="Foto Profil Dosen" 
+                                 class="rounded-circle img-thumbnail shadow object-fit-cover" 
+                                 style="width: 125px; height: 125px;">
+                        <?php else: ?>
+                            <div class="avatar-circle avatar-primary shadow mx-auto d-flex align-items-center justify-content-center text-primary rounded-circle" 
+                                 style="width: 125px; height: 125px; font-size: 3.2rem;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        <?php endif; ?>
+                        <span class="position-absolute bottom-0 end-0 p-2 bg-success border border-3 border-white rounded-circle shadow-sm" title="Status Pembimbing Aktif"></span>
+                    </div>
+
+                    <h5 class="fw-bold mb-1 text-dark"><?= htmlspecialchars($mhs['nama_dosen'] ?? 'Dosen Pembimbing'); ?></h5>
+                    <p class="text-muted small mb-2">NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></p>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1.5 rounded-pill">
+                        <i class="bi bi-award-fill me-1"></i>Dosen Pembimbing Utama Skripsi
+                    </span>
+                </div>
+
+                <!-- Detail Biodata Profil Dosen (Sesuai profil dosen itu sendiri) -->
+                <div class="list-group list-group-flush text-start small border rounded-3 p-3 bg-light mb-3">
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
+                        <span class="text-muted"><i class="bi bi-person-badge me-2 text-primary"></i>ID Login / Akun:</span>
+                        <strong class="text-primary">@<?= htmlspecialchars($mhs['username_dosen'] ?? 'dosen'); ?></strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
+                        <span class="text-muted"><i class="bi bi-envelope me-2 text-primary"></i>Email Resmi:</span>
+                        <a href="mailto:<?= htmlspecialchars($mhs['email_dosen'] ?? ''); ?>" class="text-decoration-none fw-semibold text-secondary">
+                            <?= htmlspecialchars($mhs['email_dosen'] ?? '-'); ?>
+                        </a>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
+                        <span class="text-muted"><i class="bi bi-whatsapp me-2 text-success"></i>Nomor WhatsApp:</span>
+                        <?php if (!empty($mhs['no_whatsapp'])): 
+                            $clean_wa = preg_replace('/[^0-9]/', '', $mhs['no_whatsapp']);
+                            if (str_starts_with($clean_wa, '0')) {
+                                $clean_wa = '62' . substr($clean_wa, 1);
+                            }
+                        ?>
+                            <a href="https://wa.me/<?= $clean_wa; ?>" target="_blank" class="text-decoration-none fw-semibold text-success">
+                                <?= htmlspecialchars($mhs['no_whatsapp']); ?> <i class="bi bi-box-arrow-up-right small"></i>
+                            </a>
+                        <?php else: ?>
+                            <span class="text-muted">-</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent">
+                        <span class="text-muted"><i class="bi bi-people me-2 text-primary"></i>Kapasitas Bimbingan:</span>
+                        <strong><?= htmlspecialchars($mhs['kuota_bimbingan'] ?? '5'); ?> Mahasiswa</strong>
+                    </div>
+                </div>
+
+                <!-- Jadwal Ketersediaan Bimbingan Dosen -->
+                <div class="p-3 border rounded-3 bg-white">
+                    <h6 class="fw-bold text-dark mb-2 small d-flex align-items-center">
+                        <i class="bi bi-calendar-check text-primary me-2"></i>Jadwal Konsultasi Dosen
+                    </h6>
+                    <?php if (!empty($jadwal_dosen_list)): ?>
+                        <div class="d-flex flex-wrap gap-2">
+                            <?php foreach ($jadwal_dosen_list as $jd): ?>
+                                <span class="badge bg-light text-dark border px-2.5 py-1.5 small">
+                                    <i class="bi bi-clock-fill text-primary me-1"></i>
+                                    <strong><?= htmlspecialchars($jd['hari']); ?>:</strong> <?= date('H:i', strtotime($jd['jam_mulai'])); ?> - <?= date('H:i', strtotime($jd['jam_selesai'])); ?> WIB
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>Jadwal konsultasi tatap muka / daring dapat disepakati secara fleksibel melalui fitur Chat atau WhatsApp.
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light border-top d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                <div class="d-flex gap-2">
+                    <a href="jadwal_bimbingan.php" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-calendar-week me-1"></i>Jadwal Bimbingan
+                    </a>
+                    <?php if (!empty($mhs['no_whatsapp'])): ?>
+                        <a href="https://wa.me/<?= $clean_wa; ?>" target="_blank" class="btn btn-success btn-sm">
+                            <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var modalTrigger = document.querySelectorAll('[data-bs-target="#modalLihatFotoDosen"]');
+    modalTrigger.forEach(function(el) {
+        el.setAttribute('data-bs-target', '#modalProfilDosen');
+    });
+});
+</script>
 
 <?php
 require_once '../templates/footer.php';

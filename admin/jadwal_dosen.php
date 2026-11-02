@@ -1,5 +1,5 @@
 <?php
-// admin/jadwal_dosen.php - Konfigurasi Jadwal & Kesibukan Harian Dosen
+// admin/jadwal_dosen.php - Konfigurasi Jadwal Bimbingan & Kesibukan Dosen
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -15,6 +15,19 @@ require_once '../config/database.php';
 $success_msg = '';
 $error_msg   = '';
 
+// Pemetaan nama hari dari format Bahasa Inggris ke Bahasa Indonesia
+$map_hari = [
+    'Sunday'    => 'Minggu',
+    'Monday'    => 'Senin',
+    'Tuesday'   => 'Selasa',
+    'Wednesday' => 'Rabu',
+    'Thursday'  => 'Kamis',
+    'Friday'    => 'Jumat',
+    'Saturday'  => 'Sabtu',
+];
+
+$valid_days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+
 // =========================================================================
 // PROSES AKSI FORM (POST): TAMBAH, EDIT, TOGGLE STATUS, HAPUS
 // =========================================================================
@@ -24,12 +37,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     // 1. TAMBAH JADWAL BARU
     if ($action === 'create') {
         $dosen_id     = (int)($_POST['dosen_id'] ?? 0);
-        $hari         = $_POST['hari'] ?? '';
+        $tanggal_raw  = trim($_POST['tanggal'] ?? '');
+        $tanggal      = !empty($tanggal_raw) ? $tanggal_raw : null;
+        $hari         = trim($_POST['hari'] ?? '');
         $jam_mulai    = trim($_POST['jam_mulai'] ?? '');
         $jam_selesai  = trim($_POST['jam_selesai'] ?? '');
         $status_aktif = $_POST['status_aktif'] ?? 'aktif';
 
-        $valid_days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        // Jika tanggal diisi, sinkronkan nama hari secara otomatis
+        if (!empty($tanggal)) {
+            $day_en = date('l', strtotime($tanggal));
+            if (isset($map_hari[$day_en])) {
+                $hari = $map_hari[$day_en];
+            }
+        }
 
         if ($dosen_id <= 0 || !in_array($hari, $valid_days) || empty($jam_mulai) || empty($jam_selesai)) {
             $error_msg = 'Semua field wajib diisi dengan benar!';
@@ -37,38 +58,58 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             $error_msg = 'Jam selesai bimbingan harus lebih besar dari jam mulai!';
         } else {
             try {
-                // Cek kemungkinan bentrok dengan jadwal dosen yang sama di hari yang sama
-                $stmtCek = $pdo->prepare("
-                    SELECT id FROM jadwal_dosen 
-                    WHERE dosen_id = :did AND hari = :hari 
-                    AND (
-                        (jam_mulai < :js AND jam_selesai > :jm)
-                    ) LIMIT 1
-                ");
-                $stmtCek->execute([
-                    ':did'  => $dosen_id,
-                    ':hari' => $hari,
-                    ':jm'   => $jam_mulai,
-                    ':js'   => $jam_selesai
-                ]);
+                // Cek kemungkinan bentrok dengan jadwal dosen yang sama
+                if (!empty($tanggal)) {
+                    $stmtCek = $pdo->prepare("
+                        SELECT id FROM jadwal_dosen 
+                        WHERE dosen_id = :did 
+                          AND (tanggal = :tgl OR (tanggal IS NULL AND hari = :hari))
+                          AND (jam_mulai < :js AND jam_selesai > :jm)
+                        LIMIT 1
+                    ");
+                    $stmtCek->execute([
+                        ':did'  => $dosen_id,
+                        ':tgl'  => $tanggal,
+                        ':hari' => $hari,
+                        ':jm'   => $jam_mulai,
+                        ':js'   => $jam_selesai
+                    ]);
+                } else {
+                    $stmtCek = $pdo->prepare("
+                        SELECT id FROM jadwal_dosen 
+                        WHERE dosen_id = :did 
+                          AND hari = :hari 
+                          AND (jam_mulai < :js AND jam_selesai > :jm)
+                        LIMIT 1
+                    ");
+                    $stmtCek->execute([
+                        ':did'  => $dosen_id,
+                        ':hari' => $hari,
+                        ':jm'   => $jam_mulai,
+                        ':js'   => $jam_selesai
+                    ]);
+                }
 
                 if ($stmtCek->fetch()) {
-                    throw new Exception("Terdapat jadwal yang bertabrakan waktu pada hari {$hari} untuk dosen ini.");
+                    $bentrok_ket = !empty($tanggal) ? date('d/m/Y', strtotime($tanggal)) . " ({$hari})" : "hari {$hari}";
+                    throw new Exception("Terdapat jadwal yang bertabrakan waktu pada {$bentrok_ket} untuk dosen ini.");
                 }
 
                 $stmtIns = $pdo->prepare("
-                    INSERT INTO jadwal_dosen (dosen_id, hari, jam_mulai, jam_selesai, status_aktif) 
-                    VALUES (:did, :hari, :jm, :js, :st)
+                    INSERT INTO jadwal_dosen (dosen_id, tanggal, hari, jam_mulai, jam_selesai, status_aktif) 
+                    VALUES (:did, :tgl, :hari, :jm, :js, :st)
                 ");
                 $stmtIns->execute([
                     ':did'  => $dosen_id,
+                    ':tgl'  => $tanggal,
                     ':hari' => $hari,
                     ':jm'   => $jam_mulai,
                     ':js'   => $jam_selesai,
                     ':st'   => $status_aktif
                 ]);
 
-                $success_msg = "Jadwal bimbingan hari {$hari} ({$jam_mulai} - {$jam_selesai}) berhasil ditambahkan!";
+                $info_tgl = !empty($tanggal) ? date('d/m/Y', strtotime($tanggal)) . " ({$hari})" : "hari {$hari}";
+                $success_msg = "Jadwal bimbingan {$info_tgl} ({$jam_mulai} - {$jam_selesai}) berhasil ditambahkan!";
             } catch (Exception $e) {
                 $error_msg = "Gagal menambahkan jadwal: " . $e->getMessage();
             }
@@ -79,12 +120,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     elseif ($action === 'update') {
         $jadwal_id    = (int)($_POST['jadwal_id'] ?? 0);
         $dosen_id     = (int)($_POST['dosen_id'] ?? 0);
-        $hari         = $_POST['hari'] ?? '';
+        $tanggal_raw  = trim($_POST['tanggal'] ?? '');
+        $tanggal      = !empty($tanggal_raw) ? $tanggal_raw : null;
+        $hari         = trim($_POST['hari'] ?? '');
         $jam_mulai    = trim($_POST['jam_mulai'] ?? '');
         $jam_selesai  = trim($_POST['jam_selesai'] ?? '');
         $status_aktif = $_POST['status_aktif'] ?? 'aktif';
 
-        $valid_days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        if (!empty($tanggal)) {
+            $day_en = date('l', strtotime($tanggal));
+            if (isset($map_hari[$day_en])) {
+                $hari = $map_hari[$day_en];
+            }
+        }
 
         if ($jadwal_id <= 0 || $dosen_id <= 0 || !in_array($hari, $valid_days) || empty($jam_mulai) || empty($jam_selesai)) {
             $error_msg = 'Data edit tidak valid atau field kosong.';
@@ -93,20 +141,37 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         } else {
             try {
                 // Cek bentrok kecuali jadwal ini sendiri
-                $stmtCek = $pdo->prepare("
-                    SELECT id FROM jadwal_dosen 
-                    WHERE dosen_id = :did AND hari = :hari AND id != :jid
-                    AND (
-                        (jam_mulai < :js AND jam_selesai > :jm)
-                    ) LIMIT 1
-                ");
-                $stmtCek->execute([
-                    ':did'  => $dosen_id,
-                    ':hari' => $hari,
-                    ':jid'  => $jadwal_id,
-                    ':jm'   => $jam_mulai,
-                    ':js'   => $jam_selesai
-                ]);
+                if (!empty($tanggal)) {
+                    $stmtCek = $pdo->prepare("
+                        SELECT id FROM jadwal_dosen 
+                        WHERE dosen_id = :did AND id != :jid
+                          AND (tanggal = :tgl OR (tanggal IS NULL AND hari = :hari))
+                          AND (jam_mulai < :js AND jam_selesai > :jm)
+                        LIMIT 1
+                    ");
+                    $stmtCek->execute([
+                        ':did'  => $dosen_id,
+                        ':jid'  => $jadwal_id,
+                        ':tgl'  => $tanggal,
+                        ':hari' => $hari,
+                        ':jm'   => $jam_mulai,
+                        ':js'   => $jam_selesai
+                    ]);
+                } else {
+                    $stmtCek = $pdo->prepare("
+                        SELECT id FROM jadwal_dosen 
+                        WHERE dosen_id = :did AND hari = :hari AND id != :jid
+                          AND (jam_mulai < :js AND jam_selesai > :jm)
+                        LIMIT 1
+                    ");
+                    $stmtCek->execute([
+                        ':did'  => $dosen_id,
+                        ':hari' => $hari,
+                        ':jid'  => $jadwal_id,
+                        ':jm'   => $jam_mulai,
+                        ':js'   => $jam_selesai
+                    ]);
+                }
 
                 if ($stmtCek->fetch()) {
                     throw new Exception("Terdapat bentrok waktu dengan slot jadwal lain untuk dosen ini.");
@@ -114,11 +179,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                 $stmtUp = $pdo->prepare("
                     UPDATE jadwal_dosen 
-                    SET dosen_id = :did, hari = :hari, jam_mulai = :jm, jam_selesai = :js, status_aktif = :st 
+                    SET dosen_id = :did, tanggal = :tgl, hari = :hari, jam_mulai = :jm, jam_selesai = :js, status_aktif = :st 
                     WHERE id = :jid
                 ");
                 $stmtUp->execute([
                     ':did'  => $dosen_id,
+                    ':tgl'  => $tanggal,
                     ':hari' => $hari,
                     ':jm'   => $jam_mulai,
                     ':js'   => $jam_selesai,
@@ -182,7 +248,7 @@ if ($filter_dosen_id > 0) {
 
 $where_sql = implode(" AND ", $where);
 
-// Ambil jadwal dosen
+// Ambil jadwal dosen terurut tanggal & jam
 $queryJadwal = "
     SELECT 
         j.*,
@@ -192,14 +258,16 @@ $queryJadwal = "
     INNER JOIN dosen d ON j.dosen_id = d.id
     WHERE {$where_sql}
     ORDER BY 
-        FIELD(j.hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'),
+        (j.tanggal IS NULL),
+        j.tanggal ASC,
+        FIELD(j.hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'),
         j.jam_mulai ASC
 ";
 $stmtJ = $pdo->prepare($queryJadwal);
 $stmtJ->execute($params);
 $jadwal_list = $stmtJ->fetchAll();
 
-$page_title   = "Konfigurasi Jadwal Harian Dosen";
+$page_title   = "Jadwal Bimbingan Dosen";
 $current_page = "jadwal_dosen";
 
 require_once '../templates/header.php';
@@ -211,10 +279,10 @@ require_once '../templates/sidebar_admin.php';
     <div>
         <div class="hero-tag">
             <i class="bi bi-calendar2-week-fill text-warning"></i>
-            <span>Manajemen Ketersediaan Waktu</span>
+            <span>Manajemen Ketersediaan Waktu Dosen</span>
         </div>
-        <h2 class="fw-bold text-white mb-1">Konfigurasi Jadwal Harian Dosen</h2>
-        <p class="text-white-50 small mb-0">Atur ketersediaan hari, jam, serta status aktif/libur bimbingan skripsi dosen pembimbing.</p>
+        <h2 class="fw-bold text-white mb-1">Jadwal Bimbingan Dosen</h2>
+        <p class="text-white-50 small mb-0">Tentukan tanggal bimbingan, hari, jam ketersediaan, serta status aktif/libur bimbingan skripsi dosen pembimbing.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
         <button type="button" class="btn btn-light shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#modalTambahJadwal">
@@ -275,7 +343,7 @@ require_once '../templates/sidebar_admin.php';
                 <i class="bi bi-clock-history"></i>
             </span>
             <div>
-                <h6 class="fw-bold mb-0 text-dark">Daftar Slot Waktu & Kesibukan Bimbingan</h6>
+                <h6 class="fw-bold mb-0 text-dark">Daftar Slot Waktu & Jadwal Bimbingan Dosen</h6>
                 <small class="text-muted">Total <?= count($jadwal_list); ?> slot jadwal terdaftar</small>
             </div>
         </div>
@@ -287,8 +355,8 @@ require_once '../templates/sidebar_admin.php';
                     <tr>
                         <th class="ps-3" style="width: 50px;">No</th>
                         <th>Dosen Pembimbing</th>
-                        <th>Hari Bimbingan</th>
-                        <th>Jam Mulai - Selesai</th>
+                        <th>Tanggal & Hari Bimbingan</th>
+                        <th>Jam Bimbingan</th>
                         <th class="text-center">Status Slot</th>
                         <th class="text-center" style="width: 180px;">Aksi</th>
                     </tr>
@@ -307,6 +375,7 @@ require_once '../templates/sidebar_admin.php';
                         foreach ($jadwal_list as $row): 
                             $is_aktif = ($row['status_aktif'] === 'aktif');
                             $initial  = strtoupper(substr($row['nama_dosen'], 0, 1));
+                            $has_tgl  = !empty($row['tanggal']);
                         ?>
                             <tr>
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
@@ -322,9 +391,20 @@ require_once '../templates/sidebar_admin.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-light text-dark border px-3 py-1 fs-6">
-                                        <i class="bi bi-calendar-event me-1 text-primary"></i><?= htmlspecialchars($row['hari']); ?>
-                                    </span>
+                                    <?php if ($has_tgl): ?>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge bg-primary text-white px-2.5 py-1.5 fs-6 shadow-sm">
+                                                <i class="bi bi-calendar-check me-1"></i><?= date('d M Y', strtotime($row['tanggal'])); ?>
+                                            </span>
+                                            <span class="badge bg-light text-dark border px-2 py-1">
+                                                <?= htmlspecialchars($row['hari']); ?>
+                                            </span>
+                                        </div>
+                                    <?php else: ?>
+                                        <span class="badge bg-light text-dark border px-3 py-1.5 fs-6">
+                                            <i class="bi bi-repeat me-1 text-primary"></i>Rutin Tiap <?= htmlspecialchars($row['hari']); ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <span class="font-monospace fw-semibold text-dark">
@@ -358,6 +438,7 @@ require_once '../templates/sidebar_admin.php';
                                                 data-bs-target="#modalEditJadwal"
                                                 data-id="<?= $row['id']; ?>"
                                                 data-dosenid="<?= $row['dosen_id']; ?>"
+                                                data-tanggal="<?= htmlspecialchars($row['tanggal'] ?? ''); ?>"
                                                 data-hari="<?= $row['hari']; ?>"
                                                 data-jammulai="<?= substr($row['jam_mulai'], 0, 5); ?>"
                                                 data-jamselesai="<?= substr($row['jam_selesai'], 0, 5); ?>"
@@ -398,7 +479,7 @@ require_once '../templates/sidebar_admin.php';
             </div>
             <div class="modal-body p-4">
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Pilih Dosen <span class="text-danger">*</span></label>
+                    <label class="form-label small fw-semibold">Pilih Dosen Pembimbing <span class="text-danger">*</span></label>
                     <select name="dosen_id" class="form-select" required>
                         <option value="">-- Pilih Dosen Pembimbing --</option>
                         <?php foreach ($dosen_list as $d): ?>
@@ -408,17 +489,30 @@ require_once '../templates/sidebar_admin.php';
                         <?php endforeach; ?>
                     </select>
                 </div>
+
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Hari Bimbingan <span class="text-danger">*</span></label>
-                    <select name="hari" class="form-select" required>
+                    <label for="tambah_tanggal" class="form-label small fw-semibold">
+                        <i class="bi bi-calendar-date text-primary me-1"></i>Tanggal Bimbingan <span class="text-muted">(Pilih Tanggal)</span>
+                    </label>
+                    <input type="date" class="form-control" name="tanggal" id="tambah_tanggal" min="<?= date('Y-m-d'); ?>">
+                    <div class="form-text small text-muted">
+                        Pilih tanggal untuk bimbingan di tanggal spesifik (hari akan otomatis terpilih). Kosongkan jika jadwal rutin mingguan.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="tambah_hari" class="form-label small fw-semibold">Hari Bimbingan <span class="text-danger">*</span></label>
+                    <select name="hari" id="tambah_hari" class="form-select" required>
                         <option value="Senin">Senin</option>
                         <option value="Selasa">Selasa</option>
                         <option value="Rabu">Rabu</option>
                         <option value="Kamis">Kamis</option>
                         <option value="Jumat">Jumat</option>
                         <option value="Sabtu">Sabtu</option>
+                        <option value="Minggu">Minggu</option>
                     </select>
                 </div>
+
                 <div class="row g-2 mb-3">
                     <div class="col-6">
                         <label class="form-label small fw-semibold">Jam Mulai <span class="text-danger">*</span></label>
@@ -429,6 +523,7 @@ require_once '../templates/sidebar_admin.php';
                         <input type="time" class="form-control" name="jam_selesai" required value="12:00">
                     </div>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Status Slot Bimbingan <span class="text-danger">*</span></label>
                     <select name="status_aktif" class="form-select" required>
@@ -466,8 +561,19 @@ require_once '../templates/sidebar_admin.php';
                         <?php endforeach; ?>
                     </select>
                 </div>
+
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Hari Bimbingan <span class="text-danger">*</span></label>
+                    <label for="edit_jadwal_tanggal" class="form-label small fw-semibold">
+                        <i class="bi bi-calendar-date text-primary me-1"></i>Tanggal Bimbingan <span class="text-muted">(Pilih Tanggal)</span>
+                    </label>
+                    <input type="date" class="form-control" name="tanggal" id="edit_jadwal_tanggal">
+                    <div class="form-text small text-muted">
+                        Pilih tanggal untuk bimbingan di tanggal spesifik, atau kosongkan jika jadwal rutin mingguan.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="edit_jadwal_hari" class="form-label small fw-semibold">Hari Bimbingan <span class="text-danger">*</span></label>
                     <select name="hari" id="edit_jadwal_hari" class="form-select" required>
                         <option value="Senin">Senin</option>
                         <option value="Selasa">Selasa</option>
@@ -475,8 +581,10 @@ require_once '../templates/sidebar_admin.php';
                         <option value="Kamis">Kamis</option>
                         <option value="Jumat">Jumat</option>
                         <option value="Sabtu">Sabtu</option>
+                        <option value="Minggu">Minggu</option>
                     </select>
                 </div>
+
                 <div class="row g-2 mb-3">
                     <div class="col-6">
                         <label class="form-label small fw-semibold">Jam Mulai <span class="text-danger">*</span></label>
@@ -487,6 +595,7 @@ require_once '../templates/sidebar_admin.php';
                         <input type="time" class="form-control" name="jam_selesai" id="edit_jadwal_jam_selesai" required>
                     </div>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Status Slot Bimbingan <span class="text-danger">*</span></label>
                     <select name="status_aktif" id="edit_jadwal_status" class="form-select" required>
@@ -505,11 +614,43 @@ require_once '../templates/sidebar_admin.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+    // Auto-sync hari saat tanggal dipilih di Form Tambah
+    const tambahTgl = document.getElementById('tambah_tanggal');
+    const tambahHari = document.getElementById('tambah_hari');
+    if (tambahTgl && tambahHari) {
+        tambahTgl.addEventListener('change', function () {
+            if (this.value) {
+                const d = new Date(this.value + 'T00:00:00');
+                if (!isNaN(d.getTime())) {
+                    tambahHari.value = dayNames[d.getDay()];
+                }
+            }
+        });
+    }
+
+    // Auto-sync hari saat tanggal dipilih di Form Edit
+    const editTgl = document.getElementById('edit_jadwal_tanggal');
+    const editHari = document.getElementById('edit_jadwal_hari');
+    if (editTgl && editHari) {
+        editTgl.addEventListener('change', function () {
+            if (this.value) {
+                const d = new Date(this.value + 'T00:00:00');
+                if (!isNaN(d.getTime())) {
+                    editHari.value = dayNames[d.getDay()];
+                }
+            }
+        });
+    }
+
+    // Modal Edit Populate
     const editBtns = document.querySelectorAll('.btn-edit-jadwal');
     editBtns.forEach(btn => {
         btn.addEventListener('click', function () {
             document.getElementById('edit_jadwal_id').value         = this.dataset.id;
             document.getElementById('edit_jadwal_dosen_id').value   = this.dataset.dosenid;
+            document.getElementById('edit_jadwal_tanggal').value    = this.dataset.tanggal || '';
             document.getElementById('edit_jadwal_hari').value       = this.dataset.hari;
             document.getElementById('edit_jadwal_jam_mulai').value   = this.dataset.jammulai;
             document.getElementById('edit_jadwal_jam_selesai').value = this.dataset.jamselesai;

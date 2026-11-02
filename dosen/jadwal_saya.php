@@ -1,6 +1,6 @@
 <?php
-// dosen/jadwal_saya.php - Manajemen Ketersediaan Waktu Bimbingan Dosen (Salsa)
-// Fitur: Mengatur jadwal bimbingan mingguan (hari, jam mulai, jam selesai, status aktif/libur) agar mahasiswa dapat melihat slot waktu yang tersedia saat mengajukan bimbingan.
+// dosen/jadwal_saya.php - Manajemen Ketersediaan Waktu Bimbingan Dosen
+// Fitur: Mengatur jadwal bimbingan dosen (tanggal, hari, jam mulai, jam selesai, status aktif/libur) agar mahasiswa dapat melihat slot waktu yang tersedia saat mengajukan bimbingan.
 $page_title   = "Atur Ketersediaan Waktu";
 $current_page = "jadwal";
 
@@ -23,6 +23,18 @@ $dosen_id = $dosen['id'] ?? 0;
 $success_msg = '';
 $error_msg   = '';
 
+$map_hari = [
+    'Sunday'    => 'Minggu',
+    'Monday'    => 'Senin',
+    'Tuesday'   => 'Selasa',
+    'Wednesday' => 'Rabu',
+    'Thursday'  => 'Kamis',
+    'Friday'    => 'Jumat',
+    'Saturday'  => 'Sabtu',
+];
+
+$daftar_hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+
 // 1. PROSES HAPUS SLOT JADWAL
 if (isset($_GET['aksi']) && $_GET['aksi'] === 'hapus' && !empty($_GET['id'])) {
     $id_hapus = (int)$_GET['id'];
@@ -43,14 +55,15 @@ if (isset($_GET['aksi']) && $_GET['aksi'] === 'hapus' && !empty($_GET['id'])) {
 if (isset($_GET['aksi']) && $_GET['aksi'] === 'toggle' && !empty($_GET['id'])) {
     $id_toggle = (int)$_GET['id'];
     try {
-        $stmt_cur = $pdo->prepare("SELECT status_aktif, hari FROM jadwal_dosen WHERE id = :id AND dosen_id = :did");
+        $stmt_cur = $pdo->prepare("SELECT status_aktif, hari, tanggal FROM jadwal_dosen WHERE id = :id AND dosen_id = :did");
         $stmt_cur->execute([':id' => $id_toggle, ':did' => $dosen_id]);
         $curr = $stmt_cur->fetch();
         if ($curr) {
             $new_status = ($curr['status_aktif'] === 'aktif') ? 'libur' : 'aktif';
             $stmt_up = $pdo->prepare("UPDATE jadwal_dosen SET status_aktif = :st WHERE id = :id AND dosen_id = :did");
             $stmt_up->execute([':st' => $new_status, ':id' => $id_toggle, ':did' => $dosen_id]);
-            $success_msg = "Status slot hari " . htmlspecialchars($curr['hari']) . " diubah menjadi: <strong>" . strtoupper($new_status) . "</strong>.";
+            $lbl = !empty($curr['tanggal']) ? date('d/m/Y', strtotime($curr['tanggal'])) . " (" . $curr['hari'] . ")" : "hari " . $curr['hari'];
+            $success_msg = "Status slot {$lbl} diubah menjadi: <strong>" . strtoupper($new_status) . "</strong>.";
         }
     } catch (PDOException $e) {
         $error_msg = "Terjadi kesalahan saat mengubah status: " . $e->getMessage();
@@ -59,12 +72,20 @@ if (isset($_GET['aksi']) && $_GET['aksi'] === 'toggle' && !empty($_GET['id'])) {
 
 // 3. PROSES TAMBAH SLOT JADWAL BARU
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tambah_jadwal'])) {
+    $tanggal_raw  = trim($_POST['tanggal'] ?? '');
+    $tanggal      = !empty($tanggal_raw) ? $tanggal_raw : null;
     $hari         = trim($_POST['hari'] ?? '');
     $jam_mulai    = trim($_POST['jam_mulai'] ?? '');
     $jam_selesai  = trim($_POST['jam_selesai'] ?? '');
     $status_aktif = trim($_POST['status_aktif'] ?? 'aktif');
 
-    $daftar_hari = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    // Jika tanggal diisi, sinkronkan hari secara otomatis
+    if (!empty($tanggal)) {
+        $day_en = date('l', strtotime($tanggal));
+        if (isset($map_hari[$day_en])) {
+            $hari = $map_hari[$day_en];
+        }
+    }
 
     if (!in_array($hari, $daftar_hari)) {
         $error_msg = "Pilihan hari tidak valid.";
@@ -74,34 +95,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tambah_jadwal'])) {
         $error_msg = "Jam mulai harus lebih awal dari jam selesai.";
     } else {
         try {
-            // Cek apakah slot hari dan jam bentrok dengan jadwal yang sudah ada
-            $stmt_check = $pdo->prepare("
-                SELECT COUNT(*) FROM jadwal_dosen 
-                WHERE dosen_id = :did AND hari = :hari 
-                  AND (jam_mulai < :js AND jam_selesai > :jm)
-            ");
-            $stmt_check->execute([
-                ':did'  => $dosen_id,
-                ':hari' => $hari,
-                ':js'   => $jam_selesai,
-                ':jm'   => $jam_mulai
-            ]);
+            // Cek apakah slot bentrok
+            if (!empty($tanggal)) {
+                $stmt_check = $pdo->prepare("
+                    SELECT COUNT(*) FROM jadwal_dosen 
+                    WHERE dosen_id = :did 
+                      AND (tanggal = :tgl OR (tanggal IS NULL AND hari = :hari))
+                      AND (jam_mulai < :js AND jam_selesai > :jm)
+                ");
+                $stmt_check->execute([
+                    ':did'  => $dosen_id,
+                    ':tgl'  => $tanggal,
+                    ':hari' => $hari,
+                    ':js'   => $jam_selesai,
+                    ':jm'   => $jam_mulai
+                ]);
+            } else {
+                $stmt_check = $pdo->prepare("
+                    SELECT COUNT(*) FROM jadwal_dosen 
+                    WHERE dosen_id = :did AND hari = :hari 
+                      AND (jam_mulai < :js AND jam_selesai > :jm)
+                ");
+                $stmt_check->execute([
+                    ':did'  => $dosen_id,
+                    ':hari' => $hari,
+                    ':js'   => $jam_selesai,
+                    ':jm'   => $jam_mulai
+                ]);
+            }
             
             if ($stmt_check->fetchColumn() > 0) {
-                $error_msg = "Slot waktu pada hari {$hari} tersebut bertabrakan (bentrok) dengan jadwal yang sudah ada.";
+                $bentrok_ket = !empty($tanggal) ? date('d/m/Y', strtotime($tanggal)) . " ({$hari})" : "hari {$hari}";
+                $error_msg = "Slot waktu pada {$bentrok_ket} tersebut bertabrakan (bentrok) dengan jadwal yang sudah ada.";
             } else {
                 $stmt_insert = $pdo->prepare("
-                    INSERT INTO jadwal_dosen (dosen_id, hari, jam_mulai, jam_selesai, status_aktif) 
-                    VALUES (:did, :hari, :jam_mulai, :jam_selesai, :status_aktif)
+                    INSERT INTO jadwal_dosen (dosen_id, tanggal, hari, jam_mulai, jam_selesai, status_aktif) 
+                    VALUES (:did, :tgl, :hari, :jam_mulai, :jam_selesai, :status_aktif)
                 ");
                 $stmt_insert->execute([
                     ':did'          => $dosen_id,
+                    ':tgl'          => $tanggal,
                     ':hari'         => $hari,
                     ':jam_mulai'    => $jam_mulai,
                     ':jam_selesai'  => $jam_selesai,
                     ':status_aktif' => $status_aktif
                 ]);
-                $success_msg = "Slot ketersediaan baru hari <strong>{$hari} ({$jam_mulai} - {$jam_selesai} WIB)</strong> berhasil ditambahkan dan dapat dilihat oleh mahasiswa!";
+                $lbl_sukses = !empty($tanggal) ? date('d/m/Y', strtotime($tanggal)) . " ({$hari})" : "hari {$hari}";
+                $success_msg = "Slot bimbingan baru <strong>{$lbl_sukses} ({$jam_mulai} - {$jam_selesai} WIB)</strong> berhasil ditambahkan dan dapat dilihat oleh mahasiswa!";
             }
         } catch (PDOException $e) {
             $error_msg = "Gagal menyimpan jadwal: " . $e->getMessage();
@@ -113,7 +153,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tambah_jadwal'])) {
 $stmt_list = $pdo->prepare("
     SELECT * FROM jadwal_dosen 
     WHERE dosen_id = :did 
-    ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'), jam_mulai ASC
+    ORDER BY 
+        (tanggal IS NULL),
+        tanggal ASC,
+        FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'),
+        jam_mulai ASC
 ");
 $stmt_list->execute([':did' => $dosen_id]);
 $jadwal_list = $stmt_list->fetchAll();
@@ -122,7 +166,7 @@ $jadwal_list = $stmt_list->fetchAll();
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
     <div>
         <h1 class="h3 fw-bold mb-1">Atur Ketersediaan Waktu Bimbingan</h1>
-        <p class="text-muted small mb-0">Tentukan hari dan jam operasional bimbingan Anda. Slot aktif akan otomatis tampil pada pilihan mahasiswa saat mengajukan jadwal.</p>
+        <p class="text-muted small mb-0">Tentukan tanggal atau hari serta jam bimbingan Anda. Mahasiswa bimbingan dapat memilih slot aktif ini saat mengajukan jadwal.</p>
     </div>
 </div>
 
@@ -153,6 +197,16 @@ $jadwal_list = $stmt_list->fetchAll();
                     <input type="hidden" name="tambah_jadwal" value="1">
                     
                     <div class="mb-3">
+                        <label for="input_tanggal" class="form-label fw-semibold">
+                            <i class="bi bi-calendar-date text-primary me-1"></i>Tanggal Bimbingan <span class="text-muted small">(Pilih Tanggal)</span>
+                        </label>
+                        <input type="date" name="tanggal" id="input_tanggal" class="form-control" min="<?= date('Y-m-d'); ?>">
+                        <div class="form-text small text-muted">
+                            Pilih tanggal spesifik bimbingan (hari otomatis terisi). Kosongkan jika merupakan jadwal rutin mingguan.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="hari" class="form-label fw-semibold">Pilih Hari Bimbingan <span class="text-danger">*</span></label>
                         <select name="hari" id="hari" class="form-select" required>
                             <option value="">-- Pilih Hari --</option>
@@ -162,17 +216,18 @@ $jadwal_list = $stmt_list->fetchAll();
                             <option value="Kamis">Kamis</option>
                             <option value="Jumat">Jumat</option>
                             <option value="Sabtu">Sabtu</option>
+                            <option value="Minggu">Minggu</option>
                         </select>
                     </div>
 
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label for="jam_mulai" class="form-label fw-semibold">Jam Mulai <span class="text-danger">*</span></label>
-                            <input type="time" name="jam_mulai" id="jam_mulai" class="form-control" required>
+                            <input type="time" name="jam_mulai" id="jam_mulai" class="form-control" required value="09:00">
                         </div>
                         <div class="col-6">
                             <label for="jam_selesai" class="form-label fw-semibold">Jam Selesai <span class="text-danger">*</span></label>
-                            <input type="time" name="jam_selesai" id="jam_selesai" class="form-control" required>
+                            <input type="time" name="jam_selesai" id="jam_selesai" class="form-control" required value="12:00">
                         </div>
                     </div>
 
@@ -194,7 +249,7 @@ $jadwal_list = $stmt_list->fetchAll();
         <!-- Kartu Edukasi Alur Mahasiswa -->
         <div class="card shadow-sm border-0 bg-primary-subtle text-primary-emphasis p-3">
             <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb-fill me-1 text-warning"></i> Info Integrasi Mahasiswa</h6>
-            <p class="small mb-0">Saat mahasiswa bimbingan Anda membuka menu <strong>Ajukan Jadwal</strong>, mereka hanya dapat memilih slot operasional yang bertanda status <strong>Aktif</strong>.</p>
+            <p class="small mb-0">Saat mahasiswa bimbingan Anda membuka menu <strong>Ajukan Jadwal</strong>, mereka dapat melihat tanggal dan jam ketersediaan Anda dan memilih slot yang bertanda <strong>Aktif</strong>.</p>
         </div>
     </div>
 
@@ -213,7 +268,7 @@ $jadwal_list = $stmt_list->fetchAll();
                     <thead>
                         <tr>
                             <th style="width: 50px;" class="text-center">No</th>
-                            <th>Hari</th>
+                            <th>Tanggal & Hari</th>
                             <th>Rentang Waktu Operasional</th>
                             <th>Status Akses</th>
                             <th style="width: 180px;" class="text-center">Aksi / Tindakan</th>
@@ -228,16 +283,29 @@ $jadwal_list = $stmt_list->fetchAll();
                                 </td>
                             </tr>
                         <?php else: ?>
-                            <?php foreach ($jadwal_list as $index => $row): ?>
+                            <?php foreach ($jadwal_list as $index => $row): 
+                                $has_tgl = !empty($row['tanggal']);
+                            ?>
                                 <tr>
                                     <td class="text-center fw-semibold text-muted"><?= $index + 1; ?></td>
                                     <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="avatar-circle avatar-sm avatar-primary">
-                                                <i class="bi bi-calendar-day"></i>
+                                        <?php if ($has_tgl): ?>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-primary text-white px-2.5 py-1.5 shadow-sm">
+                                                    <i class="bi bi-calendar-check me-1"></i><?= date('d M Y', strtotime($row['tanggal'])); ?>
+                                                </span>
+                                                <span class="badge bg-light text-dark border">
+                                                    Hari <?= htmlspecialchars($row['hari']); ?>
+                                                </span>
                                             </div>
-                                            <span class="fw-bold text-dark"><?= htmlspecialchars($row['hari']); ?></span>
-                                        </div>
+                                        <?php else: ?>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="avatar-circle avatar-sm avatar-primary">
+                                                    <i class="bi bi-repeat"></i>
+                                                </div>
+                                                <span class="fw-bold text-dark">Rutin Tiap <?= htmlspecialchars($row['hari']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <div class="fw-semibold text-primary">
@@ -265,7 +333,7 @@ $jadwal_list = $stmt_list->fetchAll();
                                             </a>
                                             <a href="jadwal_saya.php?aksi=hapus&id=<?= $row['id']; ?>" 
                                                class="btn btn-outline-danger" 
-                                               onclick="return confirm('Apakah Anda yakin ingin menghapus slot hari <?= htmlspecialchars($row['hari']); ?> ini?');"
+                                               onclick="return confirm('Apakah Anda yakin ingin menghapus slot ini?');"
                                                title="Hapus Slot">
                                                 <i class="bi bi-trash"></i>
                                             </a>
@@ -280,6 +348,25 @@ $jadwal_list = $stmt_list->fetchAll();
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const inputTgl = document.getElementById('input_tanggal');
+    const selectHari = document.getElementById('hari');
+
+    if (inputTgl && selectHari) {
+        inputTgl.addEventListener('change', function () {
+            if (this.value) {
+                const d = new Date(this.value + 'T00:00:00');
+                if (!isNaN(d.getTime())) {
+                    selectHari.value = dayNames[d.getDay()];
+                }
+            }
+        });
+    }
+});
+</script>
 
 <?php
 require_once '../templates/footer.php';

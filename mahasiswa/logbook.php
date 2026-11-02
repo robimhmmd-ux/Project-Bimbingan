@@ -84,8 +84,8 @@ foreach ($logbook_list as $item) {
             </p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-wrap">
-            <a href="ajukan_jadwal.php" class="btn btn-hero-action btn-hero-blue">
-                <i class="bi bi-calendar-plus"></i>Ajukan Sesi Baru
+            <a href="jadwal_bimbingan.php" class="btn btn-hero-action btn-hero-blue">
+                <i class="bi bi-calendar-week"></i>Jadwal Bimbingan
             </a>
             <a href="cetak_laporan.php" target="_blank" class="btn btn-hero-action btn-hero-white">
                 <i class="bi bi-printer-fill"></i>Cetak Kartu Bimbingan
@@ -165,110 +165,110 @@ foreach ($logbook_list as $item) {
 
 <!-- Tabel Logbook Lengkap -->
 <div class="card shadow-sm mb-4 border-0">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-        <h6 class="m-0 fw-bold text-dark">
+    <div class="card-header bg-white py-2.5 px-3 d-flex justify-content-between align-items-center border-bottom">
+        <h6 class="m-0 fw-bold text-dark" style="font-size: 0.92rem;">
             <i class="bi bi-journal-bookmark-fill text-primary me-2"></i>Catatan Kartu Kendali Bimbingan
         </h6>
-        <span class="badge bg-secondary small"><?= count($logbook_list); ?> Catatan</span>
+        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="font-size: 0.75rem;"><?= count($logbook_list); ?> Catatan</span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-logbook table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 50px;">No</th>
-                        <th style="width: 140px;">Tanggal & Waktu</th>
-                        <th>Materi / Bab</th>
-                        <th>Uraian Konsultasi & Masukan Dosen</th>
-                        <th style="width: 100px;">Nilai</th>
-                        <th style="width: 120px;">Status ACC</th>
-                        <th style="width: 130px;" class="text-center">Berkas Draf</th>
+                        <th style="width: 45px;" class="text-center">No</th>
+                        <th style="width: 125px; min-width: 110px;">Tanggal & Waktu</th>
+                        <th style="width: 32%; min-width: 250px;">Materi / Bab</th>
+                        <th style="min-width: 220px;">Uraian Konsultasi & Masukan Dosen</th>
+                        <th style="width: 75px;" class="text-center">Nilai</th>
+                        <th style="width: 115px;" class="text-center">Status ACC</th>
+                        <th style="width: 100px;" class="text-center">Berkas Draf</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($logbook_list)): ?>
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
-                                <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-journal-x fs-2 d-block mb-2"></i>
                                 Belum ada catatan logbook bimbingan pada filter ini.
                             </td>
                         </tr>
                     <?php else: ?>
                         <?php $no = 1; foreach ($logbook_list as $row): ?>
                             <tr>
-                                <td><?= $no++; ?></td>
+                                <td class="text-center fw-medium text-muted"><?= $no++; ?></td>
                                 <td>
-                                    <strong><?= date('d/m/Y', strtotime($row['tanggal_bimbingan'])); ?></strong><br>
-                                    <small class="text-muted"><?= substr($row['jam_bimbingan'], 0, 5); ?> WIB</small>
+                                    <div class="fw-bold text-dark" style="font-size: 0.84rem;"><?= date('d/m/Y', strtotime($row['tanggal_bimbingan'])); ?></div>
+                                    <div class="text-muted" style="font-size: 0.74rem;"><?= substr($row['jam_bimbingan'], 0, 5); ?> WIB</div>
                                 </td>
                                 <td>
-                                    <span class="fw-bold text-dark"><?= htmlspecialchars($row['bab_pembahasan']); ?></span>
+                                    <div class="fw-bold text-dark" style="font-size: 0.85rem; line-height: 1.35;"><?= htmlspecialchars($row['bab_pembahasan']); ?></div>
                                     <?php if (!empty($row['catatan_mahasiswa'])): ?>
-                                        <p class="text-muted small mb-0 mt-1">
-                                            <em>Mahasiswa:</em> <?= htmlspecialchars($row['catatan_mahasiswa']); ?>
-                                        </p>
+                                        <div class="text-muted mt-1" style="font-size: 0.77rem; line-height: 1.35;">
+                                            <span class="text-secondary fw-semibold">Mahasiswa:</span> <?= htmlspecialchars($row['catatan_mahasiswa']); ?>
+                                        </div>
                                     <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if (!empty($row['catatan_hasil'])): ?>
-                                        <div class="small text-dark fw-semibold mb-1">
+                                        <div class="text-dark fw-semibold" style="font-size: 0.82rem; line-height: 1.35;">
                                             <?= nl2br(htmlspecialchars($row['catatan_hasil'])); ?>
                                         </div>
                                     <?php elseif (!empty($row['catatan_dosen'])): ?>
-                                        <div class="small text-dark mb-1">
+                                        <div class="text-dark" style="font-size: 0.82rem; line-height: 1.35;">
                                             <?= nl2br(htmlspecialchars($row['catatan_dosen'])); ?>
                                         </div>
                                     <?php else: ?>
-                                        <span class="text-muted small"><em>Belum ada catatan masukan dari pembimbing.</em></span>
+                                        <span class="text-muted fst-italic" style="font-size: 0.78rem;">Belum ada catatan masukan dari pembimbing.</span>
                                     <?php endif; ?>
 
                                     <?php if (!empty($row['tanggal_acc'])): ?>
-                                        <div class="text-success small" style="font-size: 0.75rem;">
-                                            <i class="bi bi-check2-circle me-1"></i>Di-ACC pada: <?= date('d M Y', strtotime($row['tanggal_acc'])); ?>
+                                        <div class="text-success mt-1" style="font-size: 0.72rem;">
+                                            <i class="bi bi-check2-circle me-1"></i>Di-ACC: <?= date('d M Y', strtotime($row['tanggal_acc'])); ?>
                                         </div>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <?php if ($row['nilai_progres'] > 0): ?>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle fs-6">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5" style="font-size: 0.78rem;">
                                             <?= $row['nilai_progres']; ?>
                                         </span>
                                     <?php else: ?>
-                                        <span class="text-muted small">-</span>
+                                        <span class="text-muted" style="font-size: 0.8rem;">-</span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <?php
                                     $st_bab = $row['status_bab'] ?? '';
                                     if ($st_bab === 'acc_sidang') {
-                                        echo '<span class="badge bg-success"><i class="bi bi-mortarboard-fill me-1"></i>ACC Sidang</span>';
+                                        echo '<span class="badge bg-success px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-mortarboard-fill me-1"></i>ACC Sidang</span>';
                                     } elseif ($st_bab === 'acc_judul') {
-                                        echo '<span class="badge bg-primary"><i class="bi bi-check-circle me-1"></i>ACC Judul</span>';
+                                        echo '<span class="badge bg-primary px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-check-circle me-1"></i>ACC Judul</span>';
                                     } elseif ($st_bab === 'acc_bab' || in_array($row['status'], ['disetujui', 'selesai'])) {
-                                        echo '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>ACC Bab</span>';
+                                        echo '<span class="badge bg-success-subtle text-success border border-success px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-check-circle me-1"></i>ACC Bab</span>';
                                     } elseif ($st_bab === 'revisi' || $row['status'] === 'revisi') {
-                                        echo '<span class="badge bg-warning text-dark"><i class="bi bi-arrow-repeat me-1"></i>Revisi</span>';
+                                        echo '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-arrow-repeat me-1"></i>Revisi</span>';
                                     } elseif ($row['status'] === 'menunggu') {
-                                        echo '<span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Menunggu</span>';
+                                        echo '<span class="badge bg-secondary-subtle text-secondary border px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-clock me-1"></i>Menunggu</span>';
                                     } else {
-                                        echo '<span class="badge bg-light text-dark border">Belum Selesai</span>';
+                                        echo '<span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 0.75rem;">Belum Selesai</span>';
                                     }
                                     ?>
                                 </td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-1 flex-wrap">
                                         <?php if (!empty($row['file_draft'])): ?>
-                                            <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="badge-pdf" title="Lihat PDF">
-                                                <i class="bi bi-file-earmark-pdf"></i>PDF
+                                            <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="badge-pdf px-2 py-0.5" style="font-size: 0.72rem;" title="Lihat PDF">
+                                                <i class="bi bi-file-earmark-pdf me-0.5"></i>PDF
                                             </a>
                                         <?php endif; ?>
                                         <?php if (!empty($row['link_drive'])): ?>
-                                            <a href="<?= htmlspecialchars($row['link_drive']); ?>" target="_blank" class="badge-drive" title="Buka Google Drive">
-                                                <i class="bi bi-google"></i>Drive
+                                            <a href="<?= htmlspecialchars($row['link_drive']); ?>" target="_blank" class="badge-drive px-2 py-0.5" style="font-size: 0.72rem;" title="Buka Google Drive">
+                                                <i class="bi bi-google me-0.5"></i>Drive
                                             </a>
                                         <?php endif; ?>
                                         <?php if (empty($row['file_draft']) && empty($row['link_drive'])): ?>
-                                            <span class="text-muted small">-</span>
+                                            <span class="text-muted" style="font-size: 0.8rem;">-</span>
                                         <?php endif; ?>
                                     </div>
                                 </td>

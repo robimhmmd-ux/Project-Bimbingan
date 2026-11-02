@@ -1,5 +1,5 @@
 <!-- templates/sidebar_admin.php -->
-<nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 min-vh-100 border-end">
+<nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky d-flex flex-column h-100">
         <!-- Section: Dashboard -->
         <div class="sidebar-category mb-2">
@@ -27,7 +27,7 @@
                 <li class="nav-item mb-1">
                     <a class="nav-link <?= ($current_page == 'jadwal_dosen') ? 'active' : ''; ?>" href="jadwal_dosen.php">
                         <i class="bi bi-calendar2-week-fill me-2 text-warning"></i>
-                        <span>Jadwal Harian Dosen</span>
+                        <span>Jadwal Bimbingan Dosen</span>
                     </a>
                 </li>
                 <li class="nav-item mb-1">
@@ -47,6 +47,12 @@
                     <a class="nav-link <?= ($current_page == 'plotting') ? 'active' : ''; ?>" href="plot_pembimbing.php">
                         <i class="bi bi-diagram-3-fill me-2 text-primary"></i>
                         <span>Atur Pembimbing</span>
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link <?= ($current_page == 'jadwal_bimbingan') ? 'active' : ''; ?>" href="jadwal_bimbingan.php">
+                        <i class="bi bi-calendar2-range-fill me-2 text-info"></i>
+                        <span>Jadwal Bimbingan</span>
                     </a>
                 </li>
                 <li class="nav-item mb-1">
@@ -98,4 +104,4 @@
         </div>
     </div>
 </nav>
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 main-content-wrapper">
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 main-content-wrapper" id="mainContent">

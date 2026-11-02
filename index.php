@@ -187,56 +187,69 @@ if (file_exists('config/database.php')) {
             color: #0f172a;
         }
 
-        /* 4. Tiga Pilar Solusi Cards */
-        .card-pilar-gojek {
-            background: #ffffff;
-            border-radius: 28px;
-            border: 1px solid #e2e8f0;
-            padding: 2.2rem 2rem;
-            transition: all 0.25s ease;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
-            height: 100%;
+        /* 4. Gojek Authentic 3D Solusi Cards */
+        .card-gojek-solusi {
+            border-radius: 36px;
+            padding: 2.5rem 2rem 2.5rem 2rem;
+            min-height: 460px;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+            position: relative;
+            overflow: hidden;
+            border: none;
+            text-align: left;
         }
-
-        .card-pilar-gojek:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 22px 35px -10px rgba(0, 0, 0, 0.09);
-            border-color: #cbd5e1;
+        .card-gojek-solusi:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 45px -10px rgba(0, 0, 0, 0.18);
         }
-
-        .pilar-icon-gojek {
-            width: 60px;
-            height: 60px;
-            border-radius: 20px;
-            display: inline-flex;
+        .card-gojek-solusi.bg-gojek-green-card {
+            background-color: #74CE5E;
+        }
+        .card-gojek-solusi.bg-gojek-purple-card {
+            background-color: #D094F7;
+        }
+        .card-gojek-solusi.bg-gojek-orange-card {
+            background-color: #FFA244;
+        }
+        .card-gojek-illustration {
+            width: 100%;
+            height: 210px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.75rem;
-            margin-bottom: 1.4rem;
+            margin-bottom: 1.5rem;
         }
-
-        /* 5. Tiga Peran Bertumbuh Bersama */
-        .card-peran-gojek {
-            background: #ffffff;
-            border-radius: 28px;
-            border: 1px solid #e2e8f0;
-            overflow: hidden;
-            transition: all 0.25s ease;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+        .card-gojek-solusi .card-title-gojek {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #000000;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            margin-bottom: 0.65rem;
         }
-
-        .card-peran-gojek:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.08);
-            border-color: var(--gojek-green);
+        .card-gojek-solusi .card-desc-gojek {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #111827;
+            line-height: 1.45;
+            margin-bottom: 0;
+            opacity: 0.95;
         }
-
-        .card-peran-header {
-            padding: 2rem 2rem 1.25rem 2rem;
+        @media (max-width: 768px) {
+            .card-gojek-solusi {
+                min-height: 380px;
+                padding: 2rem 1.5rem;
+                border-radius: 28px;
+            }
+            .card-gojek-illustration {
+                height: 170px;
+            }
+            .card-gojek-solusi .card-title-gojek {
+                font-size: 1.55rem;
+            }
         }
 
         /* 6. CTA Card Gojek */
@@ -382,60 +395,188 @@ if (file_exists('config/database.php')) {
     </div>
 </section>
 
-<!-- 3. SECTION SOLUSI KAMI (Inspirasi Section 1 Gojek: Menghadirkan Solusi Tantangan Sehari-hari) -->
+<!-- 3. SECTION SOLUSI KAMI (Inspirasi Bahasa Desain Kartu 3D Gojek) -->
 <section id="solusi" class="py-5 bg-white border-bottom">
     <div class="container py-4">
         <div class="text-center max-w-700 mx-auto mb-5">
             <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill mb-2">SOLUSI TANTANGAN SKRIPSI</span>
-            <h2 class="fw-extrabold text-dark display-6">Menghadirkan Solusi untuk Menghadapi Hambatan Bimbingan</h2>
-            <p class="text-muted">Skripsi sering terhambat karena jadwal dosen sulit dicocokkan, revisi hilang di chat, atau logbook fisik tercecer? Kami menyelesaikannya secara sistematis.</p>
+            <h2 class="fw-extrabold text-dark display-6 mb-2">Menghadirkan Solusi untuk Menghadapi Hambatan Bimbingan</h2>
+            <p class="text-muted mb-0">Skripsi sering terhambat karena jadwal dosen sulit dicocokkan atau revisi tercecer? Kami selesaikan secara sistematis.</p>
         </div>
 
         <div class="row g-4">
-            <!-- Pilar 1: Jadwal Pasti -->
+            <!-- Kartu 1: Hijau Gojek (Pasti Tanpa Drama) -->
             <div class="col-md-4">
-                <div class="card-pilar-gojek">
-                    <div class="pilar-icon-gojek bg-success-subtle text-success" style="background-color: var(--gojek-green-subtle) !important; color: var(--gojek-green) !important;">
-                        <i class="bi bi-calendar2-check-fill"></i>
+                <div class="card-gojek-solusi bg-gojek-green-card">
+                    <div class="card-gojek-illustration">
+                        <svg viewBox="0 0 320 210" width="100%" height="190" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <filter id="shadowGojek1" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.25"/>
+                                </filter>
+                                <linearGradient id="phoneScreenGojek1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#60A5FA"/>
+                                    <stop offset="100%" stop-color="#2563EB"/>
+                                </linearGradient>
+                                <linearGradient id="calGradGojek" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#FFFFFF"/>
+                                    <stop offset="100%" stop-color="#F1F5F9"/>
+                                </linearGradient>
+                            </defs>
+                            <!-- Floating Sparkles / Pluses -->
+                            <path d="M 45 55 L 50 60 L 45 65 L 40 60 Z" fill="#9333EA"/>
+                            <path d="M 270 45 L 274 50 L 270 55 L 266 50 Z" fill="#FACC15"/>
+                            <circle cx="285" cy="80" r="4" fill="#9333EA"/>
+                            <circle cx="35" cy="95" r="3" fill="#FFFFFF"/>
+
+                            <!-- Phone 3D Base -->
+                            <g filter="url(#shadowGojek1)">
+                                <path d="M 45 125 L 160 178 L 275 125 L 275 142 L 160 195 L 45 142 Z" fill="#E11D48"/>
+                                <path d="M 160 178 L 275 125 L 275 142 L 160 195 Z" fill="#9F1239"/>
+                                <path d="M 45 125 L 160 72 L 275 125 L 160 178 Z" fill="#FB7185"/>
+                                <path d="M 52 125 L 160 76 L 268 125 L 160 174 Z" fill="url(#phoneScreenGojek1)"/>
+                            </g>
+
+                            <!-- Shadow on Screen -->
+                            <ellipse cx="160" cy="132" rx="55" ry="18" fill="#0F172A" opacity="0.32"/>
+
+                            <!-- 3D Calendar Object -->
+                            <g transform="translate(110, 28)">
+                                <rect x="0" y="8" width="100" height="92" rx="20" fill="#0F172A" opacity="0.2"/>
+                                <rect x="5" y="10" width="95" height="86" rx="18" fill="#CBD5E1"/>
+                                <rect x="0" y="5" width="95" height="86" rx="18" fill="url(#calGradGojek)"/>
+                                <path d="M 0 22 C 0 12.6 7.6 5 17 5 L 78 5 C 87.4 5 95 12.6 95 22 L 95 32 L 0 32 Z" fill="#15803D"/>
+                                <rect x="20" y="0" width="6" height="10" rx="3" fill="#334155"/>
+                                <rect x="45" y="0" width="6" height="10" rx="3" fill="#334155"/>
+                                <rect x="70" y="0" width="6" height="10" rx="3" fill="#334155"/>
+                                <circle cx="47" cy="60" r="20" fill="#DCFCE7"/>
+                                <path d="M 39 60 L 45 66 L 56 54" stroke="#16A34A" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <g transform="translate(58, 64)">
+                                    <circle cx="16" cy="16" r="14" fill="#FACC15"/>
+                                    <path d="M 12 16 L 15 19 L 21 13" stroke="#854D0E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </g>
+                            </g>
+                        </svg>
                     </div>
-                    <h4 class="fw-bold text-dark mb-2">Jadwal Pasti Tanpa Drama</h4>
-                    <p class="text-muted small mb-4" style="line-height: 1.8;">
-                        Nggak ada lagi nungguin dosen seharian di lorong kampus tanpa kepastian. Mahasiswa cukup melihat ketersediaan slot mingguan dosen dan langsung mereservasi jadwal dalam 1 kali klik.
-                    </p>
-                    <div class="mt-auto pt-3 border-top d-flex align-items-center text-success small fw-bold">
-                        <i class="bi bi-check-circle-fill me-2"></i>Slot Otomatis & Bebas Bentrok
+                    <div>
+                        <h3 class="card-title-gojek">Pasti Tanpa Drama</h3>
+                        <p class="card-desc-gojek">Jadwal bimbingan pasti & bebas bentrok langsung dari slot dosen.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Pilar 2: Revisi Terpusat -->
+            <!-- Kartu 2: Ungu Gojek (Riwayat Revisi Rapi) -->
             <div class="col-md-4">
-                <div class="card-pilar-gojek">
-                    <div class="pilar-icon-gojek bg-primary-subtle text-primary">
-                        <i class="bi bi-file-earmark-diff-fill"></i>
+                <div class="card-gojek-solusi bg-gojek-purple-card">
+                    <div class="card-gojek-illustration">
+                        <svg viewBox="0 0 320 210" width="100%" height="190" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <filter id="shadowGojek2" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.25"/>
+                                </filter>
+                                <linearGradient id="phoneScreenGojek2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#38BDF8"/>
+                                    <stop offset="100%" stop-color="#0284C7"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M 50 50 L 54 55 L 50 60 L 46 55 Z" fill="#FACC15"/>
+                            <path d="M 265 65 L 270 70 L 265 75 L 260 70 Z" fill="#22C55E"/>
+                            <circle cx="280" cy="45" r="4" fill="#FFFFFF"/>
+                            <circle cx="40" cy="85" r="3" fill="#6366F1"/>
+
+                            <!-- Phone 3D Base -->
+                            <g filter="url(#shadowGojek2)">
+                                <path d="M 45 125 L 160 178 L 275 125 L 275 142 L 160 195 L 45 142 Z" fill="#6366F1"/>
+                                <path d="M 160 178 L 275 125 L 275 142 L 160 195 Z" fill="#4338CA"/>
+                                <path d="M 45 125 L 160 72 L 275 125 L 160 178 Z" fill="#818CF8"/>
+                                <path d="M 52 125 L 160 76 L 268 125 L 160 174 Z" fill="url(#phoneScreenGojek2)"/>
+                            </g>
+
+                            <ellipse cx="160" cy="132" rx="55" ry="18" fill="#0F172A" opacity="0.32"/>
+
+                            <!-- 3D Document Stack -->
+                            <g transform="translate(105, 23)">
+                                <rect x="18" y="16" width="75" height="92" rx="10" fill="#94A3B8" opacity="0.45"/>
+                                <rect x="10" y="8" width="75" height="92" rx="10" fill="#E2E8F0"/>
+                                <rect x="0" y="0" width="78" height="92" rx="10" fill="#FFFFFF"/>
+                                <path d="M 58 0 L 78 20 L 58 20 Z" fill="#CBD5E1"/>
+                                <rect x="10" y="14" width="38" height="6" rx="3" fill="#3B82F6"/>
+                                <rect x="10" y="28" width="58" height="4" rx="2" fill="#E2E8F0"/>
+                                <rect x="10" y="38" width="48" height="4" rx="2" fill="#E2E8F0"/>
+                                <rect x="10" y="48" width="54" height="4" rx="2" fill="#E2E8F0"/>
+                                <rect x="10" y="58" width="40" height="4" rx="2" fill="#E2E8F0"/>
+                                <g transform="translate(42, 54)">
+                                    <rect x="0" y="0" width="42" height="26" rx="8" fill="#EF4444"/>
+                                    <text x="7" y="17" fill="#FFFFFF" font-size="11" font-weight="bold" font-family="sans-serif">PDF</text>
+                                </g>
+                                <g transform="translate(-10, 52)">
+                                    <circle cx="16" cy="16" r="14" fill="#22C55E"/>
+                                    <path d="M 10 16 L 14 20 L 22 12" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                                </g>
+                            </g>
+                        </svg>
                     </div>
-                    <h4 class="fw-bold text-dark mb-2">Riwayat Revisi Rapi</h4>
-                    <p class="text-muted small mb-4" style="line-height: 1.8;">
-                        Nggak ada lagi draf naskah tercecer atau coretan masukan dosen tenggelam di riwayat pesan instan. Semua naskah PDF dan catatan perbaikan tersimpan runut bab demi bab.
-                    </p>
-                    <div class="mt-auto pt-3 border-top d-flex align-items-center text-primary small fw-bold">
-                        <i class="bi bi-check-circle-fill me-2"></i>Arsip PDF & Nilai Capaian Progres
+                    <div>
+                        <h3 class="card-title-gojek">Riwayat Revisi Rapi</h3>
+                        <p class="card-desc-gojek">Semua arsip naskah bab PDF tersimpan runut bab demi bab.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Pilar 3: Kartu Kendali Otomatis -->
+            <!-- Kartu 3: Oranye Gojek (Kartu Kendali Cetak Sah) -->
             <div class="col-md-4">
-                <div class="card-pilar-gojek">
-                    <div class="pilar-icon-gojek bg-warning-subtle text-warning">
-                        <i class="bi bi-printer-fill"></i>
+                <div class="card-gojek-solusi bg-gojek-orange-card">
+                    <div class="card-gojek-illustration">
+                        <svg viewBox="0 0 320 210" width="100%" height="190" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <filter id="shadowGojek3" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.25"/>
+                                </filter>
+                                <linearGradient id="phoneScreenGojek3" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#4ADE80"/>
+                                    <stop offset="100%" stop-color="#16A34A"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M 45 55 L 50 60 L 45 65 L 40 60 Z" fill="#EF4444"/>
+                            <path d="M 270 50 L 275 55 L 270 60 L 265 55 Z" fill="#FACC15"/>
+                            <circle cx="280" cy="85" r="4" fill="#FFFFFF"/>
+                            <circle cx="35" cy="80" r="3" fill="#F59E0B"/>
+
+                            <!-- Phone 3D Base -->
+                            <g filter="url(#shadowGojek3)">
+                                <path d="M 45 125 L 160 178 L 275 125 L 275 142 L 160 195 L 45 142 Z" fill="#D97706"/>
+                                <path d="M 160 178 L 275 125 L 275 142 L 160 195 Z" fill="#B45309"/>
+                                <path d="M 45 125 L 160 72 L 275 125 L 160 178 Z" fill="#FBBF24"/>
+                                <path d="M 52 125 L 160 76 L 268 125 L 160 174 Z" fill="url(#phoneScreenGojek3)"/>
+                            </g>
+
+                            <ellipse cx="160" cy="132" rx="55" ry="18" fill="#0F172A" opacity="0.32"/>
+
+                            <!-- 3D Graduation Cap & Diploma -->
+                            <g transform="translate(100, 18)">
+                                <rect x="15" y="45" width="88" height="52" rx="10" fill="#FFFFFF"/>
+                                <rect x="25" y="55" width="40" height="5" rx="2.5" fill="#F59E0B"/>
+                                <rect x="25" y="65" width="55" height="3" rx="1.5" fill="#CBD5E1"/>
+                                <rect x="25" y="73" width="45" height="3" rx="1.5" fill="#CBD5E1"/>
+                                <circle cx="85" cy="72" r="10" fill="#F59E0B"/>
+                                <path d="M 81 72 L 84 75 L 89 70" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+
+                                <!-- 3D Cap -->
+                                <g transform="translate(5, 0)">
+                                    <path d="M 32 35 C 32 45 74 45 74 35 L 74 25 C 74 35 32 35 32 25 Z" fill="#1E293B"/>
+                                    <path d="M 32 35 C 32 44 74 44 74 35" stroke="#334155" stroke-width="2"/>
+                                    <path d="M 53 5 L 98 22 L 53 38 L 8 22 Z" fill="#0F172A"/>
+                                    <path d="M 53 5 L 98 22 L 53 25 L 8 22 Z" fill="#1E293B"/>
+                                    <circle cx="53" cy="22" r="4" fill="#F59E0B"/>
+                                    <path d="M 53 22 Q 22 28 18 42" stroke="#FBBF24" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                    <circle cx="18" cy="44" r="4.5" fill="#F59E0B"/>
+                                </g>
+                            </g>
+                        </svg>
                     </div>
-                    <h4 class="fw-bold text-dark mb-2">Kartu Kendali Cetak Sah</h4>
-                    <p class="text-muted small mb-4" style="line-height: 1.8;">
-                        Setiap sesi bimbingan yang disetujui otomatis masuk ke logbook akademik. Saat siap mendaftar sidang, kartu kendali langsung dapat dicetak bergaris rapi siap tanda tangan fisik.
-                    </p>
-                    <div class="mt-auto pt-3 border-top d-flex align-items-center text-warning small fw-bold">
-                        <i class="bi bi-check-circle-fill me-2"></i>Format Dokumen Resmi Standar
+                    <div>
+                        <h3 class="card-title-gojek">Kartu Kendali Cetak Sah</h3>
+                        <p class="card-desc-gojek">Logbook otomatis rapi dan sah untuk syarat daftar sidang.</p>
                     </div>
                 </div>
             </div>

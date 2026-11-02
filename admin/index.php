@@ -37,11 +37,7 @@ $mhs_terbaru = $pdo->query("
 <!-- Hero Banner Header -->
 <div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
-        <div class="hero-tag">
-            <i class="bi bi-stars text-warning"></i>
-            <span>Executive Command Center</span>
-        </div>
-        <h2 class="fw-bold text-white mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Administrator'); ?>! 👋</h2>
+        <h2 class="fw-bold text-white mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Administrator'); ?>!</h2>
         <p class="text-white-50 small mb-0">Kelola master data akademik, jadwal dosen, plotting bimbingan, dan evaluasi kelulusan skripsi.</p>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -53,6 +49,9 @@ $mhs_terbaru = $pdo->query("
         </a>
         <a href="jadwal_sidang.php" class="btn btn-warning text-dark fw-bold">
             <i class="bi bi-calendar2-check-fill me-1"></i> Jadwal Sidang (3 Penguji)
+        </a>
+        <a href="monitoring_kelulusan.php" class="btn btn-danger text-white fw-bold shadow-sm">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Progress
         </a>
         <a href="laporan_plotting.php" class="btn btn-outline-light">
             <i class="bi bi-printer me-1"></i> Cetak Laporan
@@ -305,6 +304,20 @@ $mhs_terbaru = $pdo->query("
                         <div>
                             <div class="fw-bold text-dark">Plotting Pembimbing</div>
                             <small class="text-muted">Petakan mahasiswa ke dosen pembimbing</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+
+                <!-- Action: Jadwal Bimbingan -->
+                <a href="jadwal_bimbingan.php" class="btn btn-outline-info d-flex align-items-center justify-content-between p-3 text-start border bg-light bg-opacity-50">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 rounded-3 bg-info-subtle text-info">
+                            <i class="bi bi-calendar2-range fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">Jadwal Sesi Bimbingan</div>
+                            <small class="text-muted">Atur pertemuan mhs & dosen + notif otomatis</small>
                         </div>
                     </div>
                     <i class="bi bi-chevron-right text-muted"></i>

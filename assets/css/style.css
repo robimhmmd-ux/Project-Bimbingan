@@ -189,11 +189,43 @@ h6 {
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
-/* --- SIDEBAR NAVIGATION --- */
+/* --- SIDEBAR NAVIGATION (STATIONARY / TIDAK MENGIKUTI SCROLL & BISA DIBUKA-TUTUP) --- */
+:root {
+    --navbar-height: 58px;
+    --sidebar-width: 260px;
+}
+
 .sidebar {
+    position: sticky !important;
+    top: var(--navbar-height, 58px) !important;
+    height: calc(100vh - var(--navbar-height, 58px)) !important;
+    max-height: calc(100vh - var(--navbar-height, 58px)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    align-self: flex-start !important;
     background: #ffffff !important;
-    border-right: 1px solid var(--border-color);
-    transition: all 0.2s ease;
+    border-right: 1px solid var(--border-color) !important;
+    z-index: 1020 !important;
+    transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease, width 0.25s ease !important;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .sidebar-heading {
@@ -208,7 +240,7 @@ h6 {
 .sidebar .nav-link {
     font-weight: 600;
     font-size: 0.885rem;
-    color: #475569 !important;
+    color: #334155 !important;
     padding: 0.65rem 0.95rem;
     border-radius: var(--radius-md);
     margin-bottom: 0.2rem;
@@ -223,8 +255,8 @@ h6 {
 }
 
 .sidebar .nav-link:hover {
-    background-color: #f1f5f9;
-    color: var(--primary) !important;
+    background-color: #f1f5f9 !important;
+    color: #1e3a8a !important;
     transform: translateX(3px);
 }
 
@@ -233,9 +265,12 @@ h6 {
 }
 
 .sidebar .nav-link.active {
-    background: var(--primary-gradient) !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%) !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(30, 58, 138, 0.35) !important;
 }
 
 .sidebar .nav-link.active i {
@@ -245,6 +280,144 @@ h6 {
 .sidebar-system-card {
     background-color: #f8fafc;
     border-color: #e2e8f0 !important;
+}
+
+/* Area Konten Utama */
+.main-content-wrapper,
+main {
+    min-height: calc(100vh - var(--navbar-height, 58px));
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- STATE SIDEBAR DITUTUP PADA DESKTOP (COLLAPSED / MINI ICON MODE) --- */
+@media (min-width: 768px) {
+    html.sidebar-collapsed .sidebar,
+    body.sidebar-collapsed .sidebar,
+    html.sidebar-collapsed #sidebarMenu,
+    body.sidebar-collapsed #sidebarMenu {
+        width: 72px !important;
+        max-width: 72px !important;
+        padding: 1.25rem 0.35rem !important;
+        margin-left: 0 !important;
+        transform: none !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        overflow-x: hidden !important;
+        display: block !important;
+    }
+
+    html.sidebar-collapsed .sidebar .sidebar-heading,
+    body.sidebar-collapsed .sidebar .sidebar-heading,
+    html.sidebar-collapsed .sidebar .menu-text,
+    body.sidebar-collapsed .sidebar .menu-text,
+    html.sidebar-collapsed .sidebar .badge,
+    body.sidebar-collapsed .sidebar .badge,
+    html.sidebar-collapsed .sidebar .sidebar-category > span,
+    body.sidebar-collapsed .sidebar .sidebar-category > span,
+    html.sidebar-collapsed .sidebar .sidebar-system-card,
+    body.sidebar-collapsed .sidebar .sidebar-system-card,
+    html.sidebar-collapsed .sidebar .lock-icon,
+    body.sidebar-collapsed .sidebar .lock-icon {
+        display: none !important;
+    }
+
+    html.sidebar-collapsed .sidebar .nav-link,
+    body.sidebar-collapsed .sidebar .nav-link {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 0.75rem 0 !important;
+        width: 48px !important;
+        height: 48px !important;
+        margin: 0 auto 6px auto !important;
+        text-align: center !important;
+        border-radius: 10px !important;
+    }
+
+    html.sidebar-collapsed .sidebar .nav-link i,
+    body.sidebar-collapsed .sidebar .nav-link i {
+        margin-right: 0 !important;
+        font-size: 1.35rem !important;
+    }
+
+    html.sidebar-collapsed .sidebar .nav-link > div {
+        justify-content: center !important;
+        width: 100% !important;
+    }
+
+    html.sidebar-collapsed .main-content-wrapper,
+    html.sidebar-collapsed main,
+    html.sidebar-collapsed #mainContent,
+    body.sidebar-collapsed .main-content-wrapper,
+    body.sidebar-collapsed main,
+    body.sidebar-collapsed #mainContent {
+        margin-left: 72px !important;
+        width: calc(100% - 72px) !important;
+        max-width: calc(100% - 72px) !important;
+        flex: 0 0 calc(100% - 72px) !important;
+    }
+}
+
+/* --- STATE SIDEBAR MOBILE & TABLET (< 768px): OFF-CANVAS SLIDE-IN --- */
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: fixed !important;
+        top: var(--navbar-height, 58px) !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: var(--sidebar-width, 260px) !important;
+        max-width: 85vw !important;
+        height: calc(100vh - var(--navbar-height, 58px)) !important;
+        transform: translateX(-100%) !important;
+        z-index: 1045 !important;
+        box-shadow: none !important;
+    }
+
+    body.sidebar-open-mobile .sidebar {
+        transform: translateX(0) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    .sidebar-mobile-backdrop {
+        display: none;
+        position: fixed;
+        top: var(--navbar-height, 58px);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(2px);
+        z-index: 1040;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+    }
+
+    body.sidebar-open-mobile .sidebar-mobile-backdrop {
+        display: block;
+        opacity: 1;
+    }
+
+    .main-content-wrapper,
+    main {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+        margin-left: 0 !important;
+    }
+}
+
+/* Tombol Toggle Sidebar Navbar */
+.btn-sidebar-toggle {
+    transition: background-color 0.2s ease, transform 0.15s ease;
+    cursor: pointer;
+}
+.btn-sidebar-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+    transform: scale(1.05);
+}
+.btn-sidebar-toggle:active {
+    transform: scale(0.95);
 }
 
 /* --- HERO BANNER (PAGE HEADER) --- */
@@ -831,10 +1004,178 @@ h6 {
     border-color: #06b6d4 !important;
 }
 
-/* Sidebar clean active */
+:root {
+    --navbar-height: 60px;
+    --topbar-height: 60px;
+    --sidebar-width: 250px;
+}
+
+#topNavbar.navbar,
+.navbar.fixed-top {
+    min-height: var(--navbar-height, 60px) !important;
+    height: var(--navbar-height, 60px) !important;
+    max-height: var(--navbar-height, 60px) !important;
+    z-index: 1060 !important;
+}
+
+/* Sidebar Clean, Stuck (Fixed Non-Scroll), and Mini Icon Mode */
+@media (min-width: 768px) {
+    .sidebar {
+        position: fixed !important;
+        top: var(--navbar-height, 60px) !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: var(--sidebar-width, 250px) !important;
+        height: calc(100vh - var(--navbar-height, 60px)) !important;
+        max-height: calc(100vh - var(--navbar-height, 60px)) !important;
+        z-index: 1020 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        background-color: #ffffff !important;
+        border-right: 1px solid #e2e8f0 !important;
+        border-top: none !important;
+        transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), padding 0.22s ease !important;
+        padding: 1.25rem 0.85rem !important;
+        margin: 0 !important;
+    }
+
+    .sidebar .sidebar-heading {
+        margin-top: 0.25rem !important;
+        margin-bottom: 0.85rem !important;
+        font-size: 0.72rem !important;
+        letter-spacing: 0.08em !important;
+    }
+
+    /* Main content wrapper shifted to right of fixed sidebar */
+    main.main-content-wrapper,
+    main,
+    #mainContent {
+        margin-left: var(--sidebar-width, 250px) !important;
+        width: calc(100% - var(--sidebar-width, 250px)) !important;
+        max-width: calc(100% - var(--sidebar-width, 250px)) !important;
+        flex: 0 0 calc(100% - var(--sidebar-width, 250px)) !important;
+        min-height: calc(100vh - var(--navbar-height, 60px)) !important;
+        transition: margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1), width 0.22s ease, max-width 0.22s ease, flex 0.22s ease !important;
+    }
+
+    /* Mode Mini-Sidebar (Collapsed: Hanya Ikon yang tampil, teks disembunyikan) */
+    body.sidebar-collapsed .sidebar {
+        width: 72px !important;
+        padding: 1.25rem 0.4rem !important;
+    }
+
+    body.sidebar-collapsed main.main-content-wrapper,
+    body.sidebar-collapsed main,
+    body.sidebar-collapsed #mainContent {
+        margin-left: 72px !important;
+        width: calc(100% - 72px) !important;
+        max-width: calc(100% - 72px) !important;
+        flex: 0 0 calc(100% - 72px) !important;
+    }
+
+    /* Sembunyikan teks label dan heading pada mode collapsed */
+    body.sidebar-collapsed .sidebar .sidebar-heading,
+    body.sidebar-collapsed .sidebar .menu-text,
+    body.sidebar-collapsed .sidebar .sidebar-category > span,
+    body.sidebar-collapsed .sidebar .sidebar-system-card,
+    body.sidebar-collapsed .sidebar .nav-link > span {
+        display: none !important;
+    }
+
+    /* Tampilkan dan pusatkan ikon di tengah tombol pill */
+    body.sidebar-collapsed .sidebar .nav-link {
+        justify-content: center !important;
+        padding: 0.75rem 0.25rem !important;
+        width: 48px !important;
+        height: 48px !important;
+        margin: 0 auto 6px auto !important;
+        border-radius: 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        position: relative !important;
+        font-size: 0 !important;
+    }
+
+    .sidebar .nav-link.active,
+    .sidebar .nav-pills .nav-link.active {
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+    }
+    .sidebar .nav-link.active i,
+    .sidebar .nav-link.active span,
+    .sidebar .nav-link.active .menu-text {
+        color: #ffffff !important;
+    }
+
+    body.sidebar-collapsed .sidebar .nav-link i {
+        margin-right: 0 !important;
+        font-size: 1.3rem !important;
+    }
+
+    body.sidebar-collapsed .sidebar .nav-link .badge {
+        position: absolute !important;
+        top: 2px !important;
+        right: 2px !important;
+        font-size: 0.6rem !important;
+        padding: 0.25em 0.4em !important;
+    }
+
+    body.sidebar-collapsed .sidebar .nav-link .lock-icon {
+        position: absolute !important;
+        bottom: 2px !important;
+        right: 4px !important;
+        font-size: 0.65rem !important;
+    }
+}
+
+/* Tampilan Mobile (< 768px) */
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: fixed !important;
+        top: var(--topbar-height, 64px) !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 250px !important;
+        height: calc(100vh - var(--topbar-height, 64px)) !important;
+        z-index: 1040 !important;
+        background-color: #ffffff !important;
+        border-right: 1px solid #e2e8f0 !important;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease-in-out !important;
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2) !important;
+        padding: 1.25rem 1rem !important;
+    }
+
+    body.sidebar-mobile-open .sidebar {
+        transform: translateX(0) !important;
+    }
+
+    main.main-content-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+    }
+}
+
 .sidebar {
     background-color: #ffffff !important;
     border-right: 1px solid #e2e8f0 !important;
+}
+
+/* Custom sleek scrollbar for sidebar */
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sidebar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .sidebar .nav-link {
@@ -940,9 +1281,9 @@ h6 {
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    font-size: 0.84rem;
+    font-size: 0.82rem;
     font-weight: 600;
-    padding: 0.55rem 1.15rem;
+    padding: 0.48rem 0.92rem;
     border-radius: var(--radius-md);
     white-space: nowrap;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1051,14 +1392,53 @@ h6 {
     color: #ffffff !important;
     font-weight: 700 !important;
     font-size: 0.78rem !important;
-    padding: 0.4rem 0.85rem !important;
+    padding: 0.42rem 0.85rem !important;
     border-radius: 9999px !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35) !important;
-    letter-spacing: 0.03em;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3) !important;
+    letter-spacing: 0.02em;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
+    line-height: 1.2 !important;
+}
+
+/* Badge Status Akademik Mahasiswa (Matching Pill) */
+.badge-status-mhs {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    font-weight: 600 !important;
+    font-size: 0.78rem !important;
+    padding: 0.42rem 0.95rem !important;
+    border-radius: 9999px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    line-height: 1.2 !important;
+    text-transform: capitalize;
+}
+
+.badge-status-mhs.badge-status-proses_bimbingan {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fde68a !important;
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15) !important;
+}
+
+.badge-status-mhs.badge-status-siap_sidang {
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+    border: 1px solid #bae6fd !important;
+    box-shadow: 0 2px 6px rgba(14, 165, 233, 0.15) !important;
+}
+
+.badge-status-mhs.badge-status-lulus {
+    background: #dcfce7 !important;
+    color: #15803d !important;
+    border: 1px solid #bbf7d0 !important;
+    box-shadow: 0 2px 6px rgba(34, 197, 94, 0.15) !important;
 }
 
 /* 3. Colorful Metric Stat Cards */
@@ -1194,7 +1574,14 @@ h6 {
     box-shadow: 0 8px 22px rgba(217, 119, 6, 0.5) !important;
 }
 
-/* 5. Vibrant Milestone Bab 1 - 5 Progress Cards */
+/* 5. Vibrant Milestone Progress Cards (7 Stages: Judul -> Bab 1 s.d. 5 -> Sidang) */
+@media (min-width: 1200px) {
+    .row-cols-xl-7 > * {
+        flex: 0 0 auto;
+        width: 14.285714%;
+    }
+}
+
 .bab-step-card {
     border-radius: var(--radius-lg);
     padding: 1.25rem 0.9rem;
@@ -1443,37 +1830,145 @@ h6 {
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* 10. Profil Card Mahasiswa */
+/* 10. Profil Card Mahasiswa & Avatar Customizer */
 .student-avatar-frame {
+    width: 135px;
+    height: 135px;
     position: relative;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 50%;
     padding: 4px;
     background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 50%, #ec4899 100%);
-    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.28);
 }
 
-.student-avatar-frame img,
-.student-avatar-frame .avatar-placeholder {
+.student-avatar-inner {
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
-    display: block;
+    overflow: hidden;
+    position: relative;
+    background: #ffffff;
     border: 3px solid #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.student-avatar-inner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.student-avatar-inner .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.8rem;
+    user-select: none;
+}
+
+/* Modal Photo Crop Viewport */
+.crop-viewport-wrapper {
+    width: 280px;
+    height: 280px;
+    overflow: hidden;
+    position: relative;
+    border-radius: 16px;
+    background: #0f172a;
+    box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.7);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.crop-viewport-wrapper.is-dragging {
+    cursor: grabbing !important;
+}
+
+.crop-viewport-wrapper img#cropImage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center center;
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+    will-change: transform;
+}
+
+.crop-circle-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 240px;
+    height: 240px;
+    margin-top: -120px;
+    margin-left: -120px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.68), 0 0 20px rgba(37, 99, 235, 0.6);
+    pointer-events: none;
+}
+
+/* Custom Photo Adjust Range Sliders & Tools */
+.custom-slider {
+    cursor: pointer;
+    height: 5px;
+}
+.custom-slider::-webkit-slider-thumb {
+    background: #2563eb;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+    width: 15px;
+    height: 15px;
+}
+.custom-slider::-moz-range-thumb {
+    background: #2563eb;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+    width: 15px;
+    height: 15px;
+}
+.shadow-xs {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.btn-white {
+    background: #ffffff;
+    color: #334155;
+}
+.btn-white:hover {
+    background: #f8fafc;
+    color: #1e293b;
+}
+.btn-xs {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.72rem;
+    line-height: 1.2;
 }
 
 /* 11. Logbook & Schedule Table Refinements */
 .table-logbook thead th {
-    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-    color: #334155;
+    background: #f8fafc;
+    color: #475569;
     font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.76rem;
-    letter-spacing: 0.04em;
-    padding: 0.95rem 1rem;
-    border-bottom: 2px solid #cbd5e1;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
 }
 
 .table-logbook tbody tr {
-    transition: background-color 0.15s ease, transform 0.1s ease;
+    transition: background-color 0.15s ease;
 }
 
 .table-logbook tbody tr:hover {
@@ -1481,8 +1976,16 @@ h6 {
 }
 
 .table-logbook td {
-    padding: 0.95rem 1rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.835rem;
     vertical-align: middle;
+}
+
+.table-logbook .badge-pdf,
+.table-logbook .badge-drive {
+    padding: 0.22rem 0.55rem !important;
+    font-size: 0.72rem !important;
+    border-radius: 6px !important;
 }
 /* ==========================================================================
    STANDARISASI INDIKATOR STATUS AKADEMIK & MEDIA PRINT (YOGA - LEAD FRONTEND)

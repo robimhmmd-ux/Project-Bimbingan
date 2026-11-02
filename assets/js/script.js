@@ -16,5 +16,45 @@ document.addEventListener('DOMContentLoaded', function () {
             bsAlert.close();
         });
     }, 4000);
-});
 
+    // =========================================================================
+    // FITUR TOGGLE SIDEBAR (SINKRONISASI EVENT PENDUKUNG)
+    // =========================================================================
+    const backdrop = document.getElementById('sidebarBackdrop');
+
+    // Klik backdrop mobile untuk menutup sidebar
+    if (backdrop) {
+        backdrop.addEventListener('click', function () {
+            if (typeof window.toggleSidebarMenu === 'function') {
+                window.toggleSidebarMenu();
+            } else {
+                document.body.classList.remove('sidebar-open-mobile');
+            }
+        });
+    }
+
+    // Auto tutup sidebar mobile saat salah satu link navigasi diklik
+    document.querySelectorAll('.sidebar .nav-link').forEach(function (link) {
+        link.addEventListener('click', function () {
+            if (window.innerWidth < 768) {
+                document.body.classList.remove('sidebar-open-mobile');
+                const icon = document.getElementById('sidebarToggleIcon');
+                if (icon) icon.className = 'bi bi-list fs-3 text-white';
+            }
+        });
+    });
+
+    // Responsif resize handler
+    window.addEventListener('resize', function () {
+        if (window.innerWidth >= 768) {
+            document.body.classList.remove('sidebar-open-mobile');
+            if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                document.body.classList.add('sidebar-collapsed');
+                document.documentElement.classList.add('sidebar-collapsed');
+            } else {
+                document.body.classList.remove('sidebar-collapsed');
+                document.documentElement.classList.remove('sidebar-collapsed');
+            }
+        }
+    });
+});

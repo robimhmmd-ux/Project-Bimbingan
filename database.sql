@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS admin_profil (
     no_whatsapp VARCHAR(20) DEFAULT '081234567890',
     jabatan VARCHAR(100) DEFAULT 'Staf Administrasi Akademik & Skripsi',
     foto_profil VARCHAR(255) DEFAULT 'default.png',
+    foto_zoom DECIMAL(3,2) DEFAULT 1.00,
+    foto_width INT DEFAULT 135,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
@@ -35,6 +37,8 @@ CREATE TABLE IF NOT EXISTS dosen (
     email VARCHAR(100) NOT NULL,
     no_whatsapp VARCHAR(20),
     foto_profil VARCHAR(255) DEFAULT 'default.png',
+    foto_zoom DECIMAL(3,2) DEFAULT 1.00,
+    foto_width INT DEFAULT 135,
     kuota_bimbingan INT DEFAULT 5,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -51,6 +55,8 @@ CREATE TABLE IF NOT EXISTS mahasiswa (
     dosen_pembimbing_id INT NULL,
     status_pembimbing ENUM('belum_diplot', 'menunggu_konfirmasi', 'aktif') DEFAULT 'belum_diplot',
     foto_profil VARCHAR(255) DEFAULT 'default.png',
+    foto_zoom DECIMAL(3,2) DEFAULT 1.00,
+    foto_width INT DEFAULT 135,
     status_kelulusan ENUM('proses_bimbingan', 'siap_sidang', 'lulus') DEFAULT 'proses_bimbingan',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -61,7 +67,8 @@ CREATE TABLE IF NOT EXISTS mahasiswa (
 CREATE TABLE IF NOT EXISTS jadwal_dosen (
     id INT AUTO_INCREMENT PRIMARY KEY,
     dosen_id INT NOT NULL,
-    hari ENUM('Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu') NOT NULL,
+    tanggal DATE NULL,
+    hari VARCHAR(20) NOT NULL,
     jam_mulai TIME NOT NULL,
     jam_selesai TIME NOT NULL,
     status_aktif ENUM('aktif', 'libur') DEFAULT 'aktif',
