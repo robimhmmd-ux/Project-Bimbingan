@@ -144,11 +144,152 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Custom CSS with Cache Buster -->
     <link href="../assets/css/style.css?v=<?= $css_ver; ?>" rel="stylesheet">
+    <style>
+        /* =========================================================================
+           JAMINAN MUTLAK: SIDEBAR TIDAK IKUT SCROLL & BISA DIBUKA-TUTUP (COLLAPSIBLE)
+           ========================================================================= */
+        :root {
+            --topbar-h: 58px;
+            --sidebar-w: 260px;
+        }
+
+        /* 1. Sidebar Diam di Tempat (Sticky di bawah navbar, scroll independen) */
+        .sidebar {
+            position: sticky !important;
+            top: var(--topbar-h, 58px) !important;
+            height: calc(100vh - var(--topbar-h, 58px)) !important;
+            max-height: calc(100vh - var(--topbar-h, 58px)) !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            align-self: flex-start !important;
+            background-color: #ffffff !important;
+            border-right: 1px solid #e2e8f0 !important;
+            z-index: 1020 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        /* 2. Desktop: Saat Sidebar Ditutup (Collapsed) */
+        @media (min-width: 768px) {
+            html.sidebar-collapsed .sidebar,
+            body.sidebar-collapsed .sidebar {
+                display: none !important;
+            }
+
+            html.sidebar-collapsed main,
+            html.sidebar-collapsed .main-content-wrapper,
+            body.sidebar-collapsed main,
+            body.sidebar-collapsed .main-content-wrapper {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                margin-left: 0 !important;
+            }
+        }
+
+        /* 3. Mobile (< 768px): Drawer Menu */
+        @media (max-width: 767.98px) {
+            .sidebar {
+                display: none !important;
+                position: fixed !important;
+                top: var(--topbar-h, 58px) !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                width: var(--sidebar-w, 260px) !important;
+                max-width: 85vw !important;
+                height: calc(100vh - var(--topbar-h, 58px)) !important;
+                z-index: 1045 !important;
+            }
+
+            body.sidebar-open-mobile .sidebar {
+                display: block !important;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+            }
+
+            .sidebar-mobile-backdrop {
+                display: none;
+                position: fixed;
+                top: var(--topbar-h, 58px);
+                left: 0; right: 0; bottom: 0;
+                background: rgba(15, 23, 42, 0.55);
+                backdrop-filter: blur(2px);
+                z-index: 1040;
+            }
+
+            body.sidebar-open-mobile .sidebar-mobile-backdrop {
+                display: block !important;
+            }
+
+            main, .main-content-wrapper {
+                flex: 0 0 100% !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                margin-left: 0 !important;
+            }
+        }
+
+        /* Tombol Toggle Sidebar */
+        .btn-sidebar-toggle {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-sidebar-toggle:hover {
+            background: rgba(255, 255, 255, 0.25) !important;
+            transform: scale(1.06);
+        }
+    </style>
     <script>
-        // Terapkan preferensi sidebar langsung sebelum render untuk mencegah layout flicker
+        // Terapkan preferensi sidebar instan sebelum render untuk mencegah layout flicker
         if (window.innerWidth >= 768 && localStorage.getItem('sidebar_collapsed') === 'true') {
             document.documentElement.classList.add('sidebar-collapsed');
         }
+
+        // FUNGSI GLOBAL TOGGLE SIDEBAR (Pasti Jalan Langsung)
+        function toggleSidebarMenu() {
+            const isMobile = window.innerWidth < 768;
+            const html = document.documentElement;
+            const body = document.body;
+            const icon = document.getElementById('sidebarToggleIcon');
+
+            if (isMobile) {
+                body.classList.toggle('sidebar-open-mobile');
+                const isOpen = body.classList.contains('sidebar-open-mobile');
+                if (icon) {
+                    icon.className = isOpen ? 'bi bi-x-lg fs-5' : 'bi bi-layout-sidebar fs-5';
+                }
+            } else {
+                const isNowCollapsed = !body.classList.contains('sidebar-collapsed');
+                if (isNowCollapsed) {
+                    body.classList.add('sidebar-collapsed');
+                    html.classList.add('sidebar-collapsed');
+                    localStorage.setItem('sidebar_collapsed', 'true');
+                } else {
+                    body.classList.remove('sidebar-collapsed');
+                    html.classList.remove('sidebar-collapsed');
+                    localStorage.setItem('sidebar_collapsed', 'false');
+                }
+
+                if (icon) {
+                    icon.className = isNowCollapsed ? 'bi bi-layout-sidebar-inset fs-5' : 'bi bi-layout-sidebar fs-5';
+                }
+            }
+        }
+
+        // Sinkronkan icon setelah load
+        document.addEventListener('DOMContentLoaded', function() {
+            const isCollapsed = document.body.classList.contains('sidebar-collapsed') || document.documentElement.classList.contains('sidebar-collapsed');
+            const icon = document.getElementById('sidebarToggleIcon');
+            if (icon && !window.matchMedia('(max-width: 767.98px)').matches) {
+                icon.className = isCollapsed ? 'bi bi-layout-sidebar-inset fs-5' : 'bi bi-layout-sidebar fs-5';
+            }
+        });
     </script>
 </head>
 <body class="bg-light">
@@ -161,9 +302,10 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             <button class="btn btn-outline-light border-0 p-1 px-2 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none" 
                     id="sidebarToggleBtn" 
                     type="button" 
+                    onclick="toggleSidebarMenu()" 
                     aria-label="Toggle Sidebar" 
-                    title="Buka / Tutup Sidebar"
-                    style="background: rgba(255, 255, 255, 0.12); border-radius: 8px;">
+                    title="Buka / Tutup Sidebar (Klik untuk mengecilkan atau membuka)"
+                    style="background: rgba(255, 255, 255, 0.18); border-radius: 8px; cursor: pointer; min-width: 38px; min-height: 38px;">
                 <i class="bi bi-layout-sidebar fs-5" id="sidebarToggleIcon"></i>
             </button>
             <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none m-0" href="#">
@@ -403,7 +545,7 @@ document.querySelectorAll(".toggle-navbar-pw").forEach(function(btn) {
 </script>
 
 <!-- Backdrop untuk mobile saat sidebar dibuka -->
-<div class="sidebar-mobile-backdrop" id="sidebarBackdrop"></div>
+<div class="sidebar-mobile-backdrop" id="sidebarBackdrop" onclick="toggleSidebarMenu()"></div>
 
 <div class="container-fluid">
     <div class="row">
