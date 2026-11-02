@@ -233,6 +233,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_catatan_sesi']
     }
 }
 
+// 2. PROSES RESET / LEPAS BIMBINGAN MAHASISWA OLEH DOSEN
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi_dosen_reset_mhs'])) {
+    $mahasiswa_id = (int)($_POST['mahasiswa_id'] ?? 0);
+    $tipe_reset   = trim($_POST['tipe_reset'] ?? 'lepas_dan_reset'); // 'lepas_dan_reset' atau 'reset_progres_saja'
+
+    if ($mahasiswa_id > 0) {
+        try {
+            $pdo->beginTransaction();
+
+            // Verifikasi mahasiswa ini benar dibimbing oleh dosen aktif
+            $stmtCek = $pdo->prepare("SELECT id, user_id, nama_lengkap, nim FROM mahasiswa WHERE id = :mid AND dosen_pembimbing_id = :did LIMIT 1");
+            $stmtCek->execute([':mid' => $mahasiswa_id, ':did' => $dosen_id]);
+            $mhsBim = $stmtCek->fetch();
+
+            if (!$mhsBim) {
+                throw new Exception("Mahasiswa tidak ditemukan atau bukan mahasiswa bimbingan Anda.");
+            }
+
+            // Hapus logbook & pengajuan bimbingan dosen ini
+            $stDelLog = $pdo->prepare("DELETE FROM logbook_bimbingan WHERE mahasiswa_id = :mid");
+            $stDelLog->execute([':mid' => $mahasiswa_id]);
+
+            $stDelBim = $pdo->prepare("DELETE FROM pengajuan_bimbingan WHERE mahasiswa_id = :mid AND dosen_id = :did");
+            $stDelBim->execute([':mid' => $mahasiswa_id, ':did' => $dosen_id]);
+
+            $stDelSid = $pdo->prepare("DELETE FROM sidang_skripsi WHERE mahasiswa_id = :mid");
+            $stDelSid->execute([':mid' => $mahasiswa_id]);
+
+            if ($tipe_reset === 'lepas_dan_reset') {
+                // Lepaskan dari dosen pembimbing & kosongkan judul
+                $stUpMhs = $pdo->prepare("
+                    UPDATE mahasiswa 
+                    SET dosen_pembimbing_id = NULL, 
+                        status_pembimbing = 'belum_diplot', 
+                        judul_skripsi = 'Belum Ditentukan', 
+                        status_kelulusan = 'proses_bimbingan' 
+                    WHERE id = :mid
+                ");
+                $stUpMhs->execute([':mid' => $mahasiswa_id]);
+                $msg_aksi = "Mahasiswa {$mhsBim['nama_lengkap']} ({$mhsBim['nim']}) berhasil di-reset total dan dilepas dari daftar bimbingan Anda.";
+            } else {
+                // Reset progres saja (tetap dibimbing)
+                $stUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan', judul_skripsi = 'Belum Ditentukan' WHERE id = :mid");
+                $stUpMhs->execute([':mid' => $mahasiswa_id]);
+                $msg_aksi = "Capaian progres bimbingan {$mhsBim['nama_lengkap']} berhasil di-reset ke 0%.";
+            }
+
+            // Notifikasi ke mahasiswa
+            if (!empty($mhsBim['user_id'])) {
+                $pesan_n = ($tipe_reset === 'lepas_dan_reset')
+                    ? "Dosen pembimbing telah me-reset dan melepas alokasi bimbingan Anda. Silakan hubungi koordinator skripsi / admin jurusan untuk penjadwalan pembimbing baru."
+                    : "Dosen pembimbing telah me-reset capaian progres bimbingan Anda kembali ke awal (0%).";
+                
+                $stNotif = $pdo->prepare("
+                    INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
+                    VALUES (:uid, 'Reset Bimbingan Skripsi', :pesan, 'info', 'index.php')
+                ");
+                $stNotif->execute([':uid' => $mhsBim['user_id'], ':pesan' => $pesan_n]);
+            }
+
+            $pdo->commit();
+            $success_msg = $msg_aksi;
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            $error_msg = "Gagal me-reset mahasiswa: " . $e->getMessage();
+        }
+    }
+}
+
 // Filter & Pencarian
 $search = trim($_GET['search'] ?? '');
 $filter_status = trim($_GET['status'] ?? 'semua');
@@ -548,6 +619,15 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                            title="Cetak Lembar Rekapan Mahasiswa Ini">
                                             <i class="bi bi-printer"></i>
                                         </a>
+
+                                        <!-- Tombol 5: Reset & Lepas Mahasiswa -->
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalResetDosen<?= $mhs['id']; ?>" 
+                                                title="Reset & Lepas Mahasiswa dari Bimbingan">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                        </button>
                                     </div>
 
                                     <!-- MODAL 1: ATUR CATATAN PROGRES MAHASISWA OLEH DOSEN (ALUR BERURUTAN OTOMATIS) -->
@@ -868,6 +948,56 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                                     <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- MODAL RESET MAHASISWA OLEH DOSEN -->
+                                    <div class="modal fade" id="modalResetDosen<?= $mhs['id']; ?>" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered text-start">
+                                            <form method="POST" action="mahasiswa_bimbingan.php" class="modal-content border-0 shadow">
+                                                <input type="hidden" name="aksi_dosen_reset_mhs" value="1">
+                                                <input type="hidden" name="mahasiswa_id" value="<?= $mhs['id']; ?>">
+
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title fw-bold">
+                                                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Reset Bimbingan Mahasiswa
+                                                    </h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+
+                                                <div class="modal-body p-4">
+                                                    <div class="p-3 bg-light rounded-3 border mb-3">
+                                                        <div class="small text-muted">Mahasiswa Bimbingan:</div>
+                                                        <div class="fw-bold text-dark fs-6"><?= htmlspecialchars($mhs['nama_lengkap']); ?></div>
+                                                        <div class="small text-muted">NIM: <?= htmlspecialchars($mhs['nim']); ?> • Kelas: <?= htmlspecialchars($mhs['kelas'] ?? '-'); ?></div>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold text-dark mb-2">Pilih Aksi Reset:</label>
+                                                        <div class="form-check mb-2">
+                                                            <input class="form-check-input" type="radio" name="tipe_reset" id="reset_lepas_<?= $mhs['id']; ?>" value="lepas_dan_reset" checked>
+                                                            <label class="form-check-label" for="reset_lepas_<?= $mhs['id']; ?>">
+                                                                <strong class="text-danger">Reset Total & Lepaskan Mahasiswa</strong>
+                                                                <small class="d-block text-muted">Mahasiswa akan <strong>terhapus dari daftar bimbingan Anda</strong> dan kembali ke status belum diplot.</small>
+                                                            </label>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" name="tipe_reset" id="reset_progres_<?= $mhs['id']; ?>" value="reset_progres_saja">
+                                                            <label class="form-check-label" for="reset_progres_<?= $mhs['id']; ?>">
+                                                                <strong class="text-primary">Reset Capaian Progres Saja (0%)</strong>
+                                                                <small class="d-block text-muted">Mahasiswa tetap dibimbing oleh Anda, tetapi seluruh catatan progres dibersihkan ke 0%.</small>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="modal-footer bg-light">
+                                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                                                    <button type="submit" class="btn btn-danger fw-bold">
+                                                        <i class="bi bi-arrow-counterclockwise me-1"></i> Konfirmasi Reset
+                                                    </button>
+                                                </div>
+                                            </form>
                                         </div>
                                     </div>
                                 </td>

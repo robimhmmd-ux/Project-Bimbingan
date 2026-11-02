@@ -62,10 +62,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         // =====================================================================
         // PROSES RESET PROGRESS KESELURUHAN (GLOBAL / PER KELAS / SIAP SIDANG)
         // =====================================================================
-        $confirm_text = strtoupper(trim($_POST['confirm_text'] ?? ''));
-        $target_scope = $_POST['target_scope'] ?? 'all';
-        $reset_mode   = $_POST['reset_mode'] ?? 'soft';
-        $notify_mhs   = isset($_POST['notify_mhs']) && $_POST['notify_mhs'] == '1';
+        $confirm_text   = strtoupper(trim($_POST['confirm_text'] ?? ''));
+        $target_scope   = $_POST['target_scope'] ?? 'all';
+        $reset_mode     = $_POST['reset_mode'] ?? 'soft';
+        $reset_plotting = isset($_POST['reset_plotting']) && $_POST['reset_plotting'] == '1';
+        $notify_mhs     = isset($_POST['notify_mhs']) && $_POST['notify_mhs'] == '1';
+
+        // Jika reset_mode === 'hard', otomatis lepaskan plotting pembimbing dan bersihkan judul skripsi
+        if ($reset_mode === 'hard') {
+            $reset_plotting = true;
+        }
 
         // Jika dipicu khusus dari modal Reset Mahasiswa Siap Sidang
         if ($action === 'reset_siap_sidang') {
@@ -100,21 +106,25 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                     if ($target_scope === 'all') {
                         if ($reset_mode === 'hard') {
-                            // Hard Reset Global: Bersihkan seluruh riwayat bimbingan & sidang semua mahasiswa
+                            // Hard Reset Global: Bersihkan seluruh riwayat bimbingan, logbook, sidang, dan lepaskan seluruh plotting pembimbing
                             $pdo->exec("DELETE FROM logbook_bimbingan");
                             $pdo->exec("DELETE FROM sidang_skripsi");
                             $pdo->exec("DELETE FROM pengajuan_bimbingan");
-                            $pdo->exec("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan'");
+                            $pdo->exec("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan', dosen_pembimbing_id = NULL, status_pembimbing = 'belum_diplot', judul_skripsi = 'Belum Ditentukan'");
 
-                            $mode_label = "Reset Total Keseluruhan (Seluruh riwayat bimbingan, logbook, dan sidang dibersihkan total ke 0%)";
+                            $mode_label = "Reset Total Keseluruhan (Riwayat bimbingan, sidang, judul dikosongkan, dan plotting dosen pembimbing dilepas/terhapus dari bagian dosen)";
                         } else {
                             // Soft Reset Global: Set seluruh status bimbingan ke revisi & nilai ke 0%
-                            $pdo->exec("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan'");
+                            if ($reset_plotting) {
+                                $pdo->exec("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan', dosen_pembimbing_id = NULL, status_pembimbing = 'belum_diplot', judul_skripsi = 'Belum Ditentukan'");
+                            } else {
+                                $pdo->exec("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan'");
+                            }
                             $pdo->exec("UPDATE pengajuan_bimbingan SET status = 'revisi', nilai_progres = 0");
                             $pdo->exec("UPDATE logbook_bimbingan SET status_bab = 'revisi'");
                             $pdo->exec("UPDATE sidang_skripsi SET status_sidang = 'pengajuan', nilai_penguji_1 = NULL, nilai_penguji_2 = NULL, nilai_penguji_3 = NULL, nilai_akhir = NULL, tanggal_sidang = NULL, jam_sidang = NULL, ruangan = NULL");
 
-                            $mode_label = "Soft Reset Keseluruhan (Status kelulusan kembali ke 'proses_bimbingan' dan capaian bab dinolkan)";
+                            $mode_label = "Soft Reset Keseluruhan (Status kelulusan kembali ke 'proses_bimbingan' dan capaian bab dinolkan" . ($reset_plotting ? ", plotting pembimbing dilepas" : "") . ")";
                         }
                     } else {
                         // Lingkup Siap Sidang atau per Kelas
@@ -128,14 +138,22 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                             $stmtDelBim = $pdo->prepare("DELETE FROM pengajuan_bimbingan WHERE mahasiswa_id IN ($placeholders)");
                             $stmtDelBim->execute($mhs_ids);
 
-                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
+                            if ($reset_plotting) {
+                                $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan', dosen_pembimbing_id = NULL, status_pembimbing = 'belum_diplot', judul_skripsi = 'Belum Ditentukan' WHERE id IN ($placeholders)");
+                            } else {
+                                $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
+                            }
                             $stmtUpMhs->execute($mhs_ids);
 
                             $mode_label = ($target_scope === 'siap_sidang') 
-                                ? "Reset Total Mahasiswa Siap Sidang (Data bimbingan & sidang dibersihkan)"
-                                : "Reset Total Kelas";
+                                ? "Reset Total Mahasiswa Siap Sidang (Data bimbingan dibersihkan" . ($reset_plotting ? " & plotting dosen dilepas" : "") . ")"
+                                : "Reset Total Kelas" . ($reset_plotting ? " (Plotting pembimbing dilepas)" : "");
                         } else {
-                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
+                            if ($reset_plotting) {
+                                $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan', dosen_pembimbing_id = NULL, status_pembimbing = 'belum_diplot', judul_skripsi = 'Belum Ditentukan' WHERE id IN ($placeholders)");
+                            } else {
+                                $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
+                            }
                             $stmtUpMhs->execute($mhs_ids);
 
                             $stmtUpBim = $pdo->prepare("UPDATE pengajuan_bimbingan SET status = 'revisi', nilai_progres = 0 WHERE mahasiswa_id IN ($placeholders)");
@@ -189,9 +207,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         // =====================================================================
         // PROSES RESET PROGRESS MAHASISWA TUNGGAL
         // =====================================================================
-        $mahasiswa_id = (int)($_POST['mahasiswa_id'] ?? 0);
-        $reset_mode   = $_POST['reset_mode'] ?? 'soft';
-        $notify_mhs   = isset($_POST['notify_mhs']) && $_POST['notify_mhs'] == '1';
+        $mahasiswa_id   = (int)($_POST['mahasiswa_id'] ?? 0);
+        $reset_mode     = $_POST['reset_mode'] ?? 'soft';
+        $reset_plotting = isset($_POST['reset_plotting']) && $_POST['reset_plotting'] == '1';
+        $notify_mhs     = isset($_POST['notify_mhs']) && $_POST['notify_mhs'] == '1';
+
+        // Jika reset_mode === 'hard', otomatis lepaskan plotting pembimbing dan bersihkan judul skripsi
+        if ($reset_mode === 'hard') {
+            $reset_plotting = true;
+        }
 
         if ($mahasiswa_id <= 0) {
             $error_msg = "ID Mahasiswa tidak valid.";
@@ -216,12 +240,20 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         $stmtDelBim = $pdo->prepare("DELETE FROM pengajuan_bimbingan WHERE mahasiswa_id = :mid");
                         $stmtDelBim->execute([':mid' => $mahasiswa_id]);
 
-                        $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id = :mid");
+                        if ($reset_plotting) {
+                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan', dosen_pembimbing_id = NULL, status_pembimbing = 'belum_diplot', judul_skripsi = 'Belum Ditentukan' WHERE id = :mid");
+                        } else {
+                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id = :mid");
+                        }
                         $stmtUpMhs->execute([':mid' => $mahasiswa_id]);
 
-                        $mode_label = "Reset Total (0% dan data pengajuan dibersihkan)";
+                        $mode_label = "Reset Total Keseluruhan (0% data pengajuan, judul dikosongkan" . ($reset_plotting ? ", dan dosen pembimbing dilepas/terhapus dari bagian dosen" : "") . ")";
                     } else {
-                        $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id = :mid");
+                        if ($reset_plotting) {
+                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan', dosen_pembimbing_id = NULL, status_pembimbing = 'belum_diplot', judul_skripsi = 'Belum Ditentukan' WHERE id = :mid");
+                        } else {
+                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id = :mid");
+                        }
                         $stmtUpMhs->execute([':mid' => $mahasiswa_id]);
 
                         $stmtUpBim = $pdo->prepare("UPDATE pengajuan_bimbingan SET status = 'revisi', nilai_progres = 0 WHERE mahasiswa_id = :mid");
@@ -233,7 +265,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         $stmtUpSid = $pdo->prepare("UPDATE sidang_skripsi SET status_sidang = 'pengajuan', nilai_penguji_1 = NULL, nilai_penguji_2 = NULL, nilai_penguji_3 = NULL, nilai_akhir = NULL, tanggal_sidang = NULL, jam_sidang = NULL, ruangan = NULL WHERE mahasiswa_id = :mid");
                         $stmtUpSid->execute([':mid' => $mahasiswa_id]);
 
-                        $mode_label = "Soft Reset (Nilai & Status di-set 0%)";
+                        $mode_label = "Soft Reset (Nilai & Status di-set 0%" . ($reset_plotting ? ", dosen pembimbing dilepas" : "") . ")";
                     }
 
                     if ($notify_mhs && !empty($mhsTarget['user_id'])) {
@@ -807,8 +839,16 @@ require_once '../templates/sidebar_admin.php';
                     </div>
                 </div>
 
-                <!-- Opsi Notifikasi Otomatis -->
+                <!-- Opsi Notifikasi & Plotting Pembimbing -->
                 <div class="mb-4 p-3 bg-light rounded-3 border">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch" name="reset_plotting" id="resetPlottingCheck" value="1" checked>
+                        <label class="form-check-label fw-bold text-danger" for="resetPlottingCheck">
+                            Lepaskan Plotting Dosen Pembimbing & Kosongkan Judul Skripsi
+                        </label>
+                        <small class="d-block text-muted">Mahasiswa kembali ke status "Belum Diplot" sehingga <strong>terhapus dari daftar bimbingan dosen</strong>.</small>
+                    </div>
+                    <hr class="my-2">
                     <div class="form-check form-switch mb-0">
                         <input class="form-check-input" type="checkbox" role="switch" name="notify_mhs" id="notifyMhsCheck" value="1" checked>
                         <label class="form-check-label fw-semibold text-dark" for="notifyMhsCheck">
@@ -914,6 +954,14 @@ require_once '../templates/sidebar_admin.php';
                 </div>
 
                 <div class="mb-4 p-3 bg-light rounded-3 border">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch" name="reset_plotting" id="resetSiapPlottingCheck" value="1" checked>
+                        <label class="form-check-label fw-bold text-danger" for="resetSiapPlottingCheck">
+                            Lepaskan Plotting Dosen Pembimbing & Kosongkan Judul Skripsi
+                        </label>
+                        <small class="d-block text-muted">Mahasiswa kembali ke status "Belum Diplot" sehingga <strong>terhapus dari daftar bimbingan dosen</strong>.</small>
+                    </div>
+                    <hr class="my-2">
                     <div class="form-check form-switch mb-0">
                         <input class="form-check-input" type="checkbox" role="switch" name="notify_mhs" id="notifySiapSidangCheck" value="1" checked>
                         <label class="form-check-label fw-semibold text-dark" for="notifySiapSidangCheck">
@@ -988,11 +1036,21 @@ require_once '../templates/sidebar_admin.php';
                     </div>
                 </div>
 
-                <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="checkbox" role="switch" name="notify_mhs" id="single_notify_mhs" value="1" checked>
-                    <label class="form-check-label small fw-semibold text-dark" for="single_notify_mhs">
-                        Kirim notifikasi otomatis ke mahasiswa ini
-                    </label>
+                <div class="p-3 bg-light rounded-3 border mb-3">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" role="switch" name="reset_plotting" id="single_reset_plotting" value="1" checked>
+                        <label class="form-check-label fw-bold text-danger" for="single_reset_plotting">
+                            Lepaskan Plotting Dosen Pembimbing (Hapus dari Daftar Dosen)
+                        </label>
+                        <small class="d-block text-muted">Mahasiswa kembali ke status "Belum Diplot" dan judul dikosongkan ke awal.</small>
+                    </div>
+                    <hr class="my-2">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" name="notify_mhs" id="single_notify_mhs" value="1" checked>
+                        <label class="form-check-label small fw-semibold text-dark" for="single_notify_mhs">
+                            Kirim notifikasi otomatis ke mahasiswa ini
+                        </label>
+                    </div>
                 </div>
             </div>
 
