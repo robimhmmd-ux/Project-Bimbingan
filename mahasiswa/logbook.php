@@ -56,7 +56,7 @@ $total_sesi = count($logbook_list);
 $total_acc  = 0;
 $total_revisi = 0;
 foreach ($logbook_list as $item) {
-    if (in_array($item['status'], ['selesai', 'disetujui']) || $item['status_bab'] === 'acc_bab' || $item['status_bab'] === 'acc_sidang') {
+    if (in_array($item['status'], ['selesai', 'disetujui']) || in_array($item['status_bab'], ['acc_judul', 'acc_bab', 'acc_sidang'])) {
         $total_acc++;
     } elseif ($item['status'] === 'revisi' || $item['status_bab'] === 'revisi') {
         $total_revisi++;
@@ -242,6 +242,8 @@ foreach ($logbook_list as $item) {
                                     $st_bab = $row['status_bab'] ?? '';
                                     if ($st_bab === 'acc_sidang') {
                                         echo '<span class="badge bg-success"><i class="bi bi-mortarboard-fill me-1"></i>ACC Sidang</span>';
+                                    } elseif ($st_bab === 'acc_judul') {
+                                        echo '<span class="badge bg-primary"><i class="bi bi-check-circle me-1"></i>ACC Judul</span>';
                                     } elseif ($st_bab === 'acc_bab' || in_array($row['status'], ['disetujui', 'selesai'])) {
                                         echo '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>ACC Bab</span>';
                                     } elseif ($st_bab === 'revisi' || $row['status'] === 'revisi') {

@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS logbook_bimbingan (
     mahasiswa_id INT NOT NULL,
     tanggal_acc DATE NOT NULL,
     catatan_hasil TEXT NOT NULL,
-    status_bab ENUM('revisi', 'acc_bab', 'acc_sidang') NOT NULL,
+    status_bab ENUM('revisi', 'acc_judul', 'acc_bab', 'acc_sidang') NOT NULL,
     FOREIGN KEY (bimbingan_id) REFERENCES pengajuan_bimbingan(id) ON DELETE CASCADE,
     FOREIGN KEY (mahasiswa_id) REFERENCES mahasiswa(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

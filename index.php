@@ -302,10 +302,14 @@ if (file_exists('config/database.php')) {
                 <li class="nav-item">
                     <a class="nav-link" href="#faq">FAQ</a>
                 </li>
-                <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
-                    <a href="#mulai-bimbingan" class="btn-gojek-green">
-                        <i class="bi bi-arrow-down-circle"></i>
-                        <span>Mulai Bimbingan</span>
+                <li class="nav-item ms-lg-2 mt-2 mt-lg-0 d-flex align-items-center gap-2">
+                    <a href="register.php" class="btn btn-sm btn-outline-light rounded-pill px-3 py-2 fw-bold d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-person-plus"></i>
+                        <span>Daftar</span>
+                    </a>
+                    <a href="login.php" class="btn-gojek-green">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        <span>Masuk Portal</span>
                     </a>
                 </li>
             </ul>
@@ -553,8 +557,12 @@ if (file_exists('config/database.php')) {
                         Gunakan akun akademik Anda untuk masuk ke sistem, jadwalkan sesi bimbingan pertama, dan wujudkan kelulusan tepat waktu bersama dosen pembimbing Anda.
                     </p>
                 </div>
-                <div class="col-lg-4 text-lg-end">
-                    <a href="login.php" class="btn btn-light text-dark fw-extrabold px-5 py-3 rounded-pill shadow-lg d-inline-flex align-items-center gap-2 fs-6">
+                <div class="col-lg-4 text-lg-end d-flex flex-column flex-sm-row justify-content-lg-end gap-2">
+                    <a href="register.php" class="btn btn-outline-light fw-extrabold px-4 py-3 rounded-pill shadow d-inline-flex align-items-center justify-content-center gap-2 fs-6">
+                        <i class="bi bi-person-plus fs-5"></i>
+                        <span>Daftar Akun</span>
+                    </a>
+                    <a href="login.php" class="btn btn-light text-dark fw-extrabold px-4 py-3 rounded-pill shadow-lg d-inline-flex align-items-center justify-content-center gap-2 fs-6">
                         <i class="bi bi-box-arrow-in-right text-success fs-5"></i>
                         <span>Masuk ke Portal</span>
                     </a>
@@ -648,6 +656,7 @@ if (file_exists('config/database.php')) {
                     <li><a href="#skala" class="text-white-50 text-decoration-none">Skala Kami</a></li>
                     <li><a href="#dosen" class="text-white-50 text-decoration-none">Daftar Dosen</a></li>
                     <li><a href="login.php" class="text-success text-decoration-none fw-bold">Portal Masuk</a></li>
+                    <li><a href="register.php" class="text-white-50 text-decoration-none">Daftar Akun Baru</a></li>
                 </ul>
             </div>
 

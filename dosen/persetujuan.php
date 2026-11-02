@@ -1,7 +1,7 @@
 <?php
-// dosen/persetujuan.php - Peninjauan & Persetujuan Permohonan Bimbingan (Salsa)
+// dosen/persetujuan.php - Lihat Jadwal & Persetujuan Bimbingan (Salsa)
 // Fitur: Notifikasi, Setujui (Terima), Tolak, Reschedule (Jadwal Ulang), Unduh Draft
-$page_title   = "Persetujuan Pengajuan Bimbingan";
+$page_title   = "Lihat Jadwal Bimbingan";
 $current_page = "persetujuan";
 
 require_once '../config/database.php';
@@ -165,8 +165,8 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
     <div>
-        <h1 class="h3 fw-bold mb-1">Persetujuan & Reschedule Permohonan Bimbingan</h1>
-        <p class="text-muted small mb-0">Tinjau permohonan bimbingan mahasiswa: Terima jadwal, atur ulang waktu pertemuan (reschedule), atau tolak dengan catatan revisi.</p>
+        <h1 class="h3 fw-bold mb-1"><i class="bi bi-calendar-event text-primary me-2"></i>Lihat Jadwal & Persetujuan Bimbingan</h1>
+        <p class="text-muted small mb-0">Tinjau jadwal dan permohonan bimbingan mahasiswa: Terima jadwal, atur ulang waktu pertemuan (reschedule), atau tolak dengan catatan revisi.</p>
     </div>
 </div>
 

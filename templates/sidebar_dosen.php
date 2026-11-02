@@ -54,13 +54,8 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link <?= ($current_page == 'jadwal') ? 'active' : 'text-dark'; ?>" href="jadwal_saya.php">
-                    <i class="bi bi-calendar3 me-2"></i>Atur Ketersediaan
-                </a>
-            </li>
-            <li class="nav-item mb-1">
                 <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'persetujuan') ? 'active' : 'text-dark'; ?>" href="persetujuan.php">
-                    <span><i class="bi bi-inbox me-2"></i>Pengajuan Bimbingan</span>
+                    <span><i class="bi bi-calendar-event me-2"></i>Lihat Jadwal</span>
                     <?php if ($badge_menunggu > 0): ?>
                         <span class="badge bg-danger rounded-pill"><?= $badge_menunggu; ?></span>
                     <?php endif; ?>
@@ -69,6 +64,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             <li class="nav-item mb-1">
                 <a class="nav-link <?= ($current_page == 'riwayat') ? 'active' : 'text-dark'; ?>" href="riwayat_bimbingan.php">
                     <i class="bi bi-journal-check me-2"></i>Riwayat & Nilai
+                </a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link <?= ($current_page == 'cek_judul') ? 'active' : 'text-dark'; ?>" href="cek_judul.php">
+                    <i class="bi bi-search me-2"></i>Cek Judul Skripsi
                 </a>
             </li>
             <li class="nav-item mb-1">

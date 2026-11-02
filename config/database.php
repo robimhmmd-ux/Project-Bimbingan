@@ -28,4 +28,7 @@ try {
 } catch (PDOException $e) {
     die("Koneksi Database TiDB Gagal: " . $e->getMessage());
 }
+
+// Muat fungsi pembantu progres dan deteksi judul
+require_once __DIR__ . '/progres_helper.php';
 ?>

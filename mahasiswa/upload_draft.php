@@ -217,6 +217,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                         <label for="bab_pembahasan" class="form-label small fw-semibold text-secondary">Bab yang Diajukan <span class="text-danger">*</span></label>
                         <select class="form-select" id="bab_pembahasan" name="bab_pembahasan" required <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
                             <option value="" selected disabled>-- Pilih Bagian Skripsi --</option>
+                            <option value="Pengajuan & ACC Judul Skripsi">Pengajuan & ACC Judul Skripsi</option>
                             <option value="Bab 1: Pendahuluan">Bab 1: Pendahuluan</option>
                             <option value="Bab 2: Tinjauan Pustaka">Bab 2: Tinjauan Pustaka</option>
                             <option value="Bab 3: Metodologi Penelitian">Bab 3: Metodologi Penelitian</option>

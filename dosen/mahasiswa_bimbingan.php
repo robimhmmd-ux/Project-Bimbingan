@@ -23,103 +23,167 @@ $dosen_id = $dosen['id'] ?? 0;
 $success_msg = '';
 $error_msg   = '';
 
-// 1. PROSES SIMPAN / ATUR CATATAN PROGRES MAHASISWA OLEH DOSEN
+// 1. PROSES SIMPAN / ATUR CATATAN PROGRES MAHASISWA OLEH DOSEN (ALUR BERURUTAN OTOMATIS)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_catatan_progres'])) {
     $mahasiswa_id      = (int)($_POST['mahasiswa_id'] ?? 0);
-    $bab_pembahasan    = trim($_POST['bab_pembahasan'] ?? '');
+    $keputusan_aksi    = trim($_POST['keputusan_aksi'] ?? ''); // 'acc' atau 'revisi'
     $tanggal_bimbingan = trim($_POST['tanggal_bimbingan'] ?? date('Y-m-d'));
     $jam_bimbingan     = trim($_POST['jam_bimbingan'] ?? date('H:i:s'));
-    $nilai_progres     = (int)($_POST['nilai_progres'] ?? 0);
-    $keputusan_progres = trim($_POST['keputusan_progres'] ?? 'acc_bab'); // acc_bab, revisi, acc_sidang, selesai
-    $status_kelulusan  = trim($_POST['status_kelulusan'] ?? 'proses_bimbingan');
     $catatan_dosen     = trim($_POST['catatan_dosen'] ?? '');
+    $judul_skripsi     = trim($_POST['judul_skripsi'] ?? '');
 
-    // Batasi nilai progres (0 - 100)
-    if ($nilai_progres < 0) $nilai_progres = 0;
-    if ($nilai_progres > 100) $nilai_progres = 100;
-
-    if ($mahasiswa_id <= 0) {
-        $error_msg = "Data mahasiswa tidak valid.";
-    } elseif (empty($bab_pembahasan)) {
-        $error_msg = "Bab pembahasan wajib ditentukan.";
+    if ($mahasiswa_id <= 0 || !in_array($keputusan_aksi, ['acc', 'revisi'])) {
+        $error_msg = "Data mahasiswa atau keputusan evaluasi tidak valid.";
     } elseif (empty($catatan_dosen)) {
-        $error_msg = "Catatan arahan / instruksi progres dari dosen wajib diisi.";
+        $error_msg = "Catatan arahan / instruksi progres dari dosen wajib diisi untuk setiap hasil evaluasi.";
     } else {
-        try {
-            $pdo->beginTransaction();
+        $info_progres = get_progres_mahasiswa($pdo, $mahasiswa_id);
+        if (!$info_progres) {
+            $error_msg = "Data mahasiswa tidak ditemukan.";
+        } else {
+            $current_level = $info_progres['current_level'];
+            $tahap_current = $info_progres['tahap_saat_ini'];
 
-            // Tentukan status sesi bimbingan
-            $status_sesi = ($keputusan_progres === 'revisi') ? 'revisi' : 'selesai';
+            if ($keputusan_aksi === 'acc' && $current_level === 1 && empty($judul_skripsi)) {
+                $error_msg = "Judul skripsi wajib diisi sebelum melakukan ACC Judul Skripsi!";
+            } else {
+                try {
+                    $pdo->beginTransaction();
 
-            // A. Simpan sesi bimbingan baru ke pengajuan_bimbingan
-            $stmt_ins = $pdo->prepare("
-                INSERT INTO pengajuan_bimbingan 
-                (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, status, catatan_dosen, nilai_progres)
-                VALUES 
-                (:mid, :did, :tgl, :jam, :bab, :cat_mhs, NULL, :st_sesi, :cat_dosen, :nilai)
-            ");
-            $stmt_ins->execute([
-                ':mid'       => $mahasiswa_id,
-                ':did'       => $dosen_id,
-                ':tgl'       => $tanggal_bimbingan,
-                ':jam'       => $jam_bimbingan,
-                ':bab'       => $bab_pembahasan,
-                ':cat_mhs'   => 'Sesi bimbingan & pencatatan progres langsung bersama Dosen Pembimbing',
-                ':st_sesi'   => $status_sesi,
-                ':cat_dosen' => $catatan_dosen,
-                ':nilai'     => $nilai_progres
-            ]);
-            $bimbingan_id = (int)$pdo->lastInsertId();
+                    if ($keputusan_aksi === 'acc') {
+                        if ($current_level === 1) {
+                            $progres_baru   = 15;
+                            $status_log     = 'acc_judul';
+                            $status_sesi    = 'selesai';
+                            $nama_bab_resmi = 'Pengajuan & ACC Judul Skripsi';
 
-            // B. Simpan ke logbook_bimbingan resmi mahasiswa
-            $status_bab_log = ($keputusan_progres === 'acc_sidang') ? 'acc_sidang' : (($keputusan_progres === 'acc_bab') ? 'acc_bab' : 'revisi');
-            $stmt_lb = $pdo->prepare("
-                INSERT INTO logbook_bimbingan (bimbingan_id, mahasiswa_id, tanggal_acc, catatan_hasil, status_bab)
-                VALUES (:bid, :mid, :tgl_acc, :cat_hasil, :sbab)
-            ");
-            $stmt_lb->execute([
-                ':bid'       => $bimbingan_id,
-                ':mid'       => $mahasiswa_id,
-                ':tgl_acc'   => $tanggal_bimbingan,
-                ':cat_hasil' => $catatan_dosen,
-                ':sbab'      => $status_bab_log
-            ]);
+                            $st_j = $pdo->prepare("UPDATE mahasiswa SET judul_skripsi = :j WHERE id = :mid AND dosen_pembimbing_id = :did");
+                            $st_j->execute([':j' => $judul_skripsi, ':mid' => $mahasiswa_id, ':did' => $dosen_id]);
 
-            // C. Perbarui status kelulusan di tabel mahasiswa
-            $final_status_kelulusan = ($keputusan_progres === 'acc_sidang') ? 'siap_sidang' : $status_kelulusan;
-            $stmt_up_mhs = $pdo->prepare("
-                UPDATE mahasiswa 
-                SET status_kelulusan = :stk 
-                WHERE id = :mid AND dosen_pembimbing_id = :did
-            ");
-            $stmt_up_mhs->execute([
-                ':stk' => $final_status_kelulusan,
-                ':mid' => $mahasiswa_id,
-                ':did' => $dosen_id
-            ]);
+                            $judul_n = "Selamat! Judul Skripsi Anda Telah Di-ACC";
+                            $pesan_n = "Dosen pembimbing telah mengesahkan judul skripsi: '{$judul_skripsi}'. Silakan lanjutkan menyusun Bab 1: Pendahuluan.";
+                            $tipe_n  = "pembimbing";
 
-            try {
-                $st_u_mhs = $pdo->prepare("SELECT user_id FROM mahasiswa WHERE id = :mid LIMIT 1");
-                $st_u_mhs->execute([':mid' => $mahasiswa_id]);
-                $m_uid = $st_u_mhs->fetchColumn();
-                if ($m_uid) {
-                    $judul_n = ($keputusan_progres === 'acc_sidang') ? 'Selamat! Anda Di-ACC Siap Sidang Skripsi' : 'Catatan Progres Baru dari Pembimbing';
-                    $tipe_n  = ($keputusan_progres === 'acc_sidang') ? 'sidang' : 'pembimbing';
-                    $pesan_n = "Dosen pembimbing telah menerbitkan catatan progres ({$bab_pembahasan}) dengan capaian {$nilai_progres}%. Silakan cek logbook Anda.";
-                    $st_not = $pdo->prepare("INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) VALUES (:uid, :jdl, :psn, :tp, 'logbook.php')");
-                    $st_not->execute([':uid' => $m_uid, ':jdl' => $judul_n, ':psn' => $pesan_n, ':tp' => $tipe_n]);
+                        } elseif ($current_level >= 2 && $current_level <= 6) {
+                            $progres_baru   = $info_progres['progres_jika_acc'];
+                            $status_log     = 'acc_bab';
+                            $status_sesi    = 'selesai';
+                            $nama_bab_resmi = $tahap_current['nama_bab'];
+
+                            $judul_n = "Selamat! {$tahap_current['label']} Telah Di-ACC";
+                            $pesan_n = "Dosen pembimbing telah mengesahkan {$tahap_current['label']}. Capaian progres Anda kini {$progres_baru}%.";
+                            $tipe_n  = "sukses";
+
+                        } else {
+                            $progres_baru   = 100;
+                            $status_log     = 'acc_sidang';
+                            $status_sesi    = 'selesai';
+                            $nama_bab_resmi = 'Naskah Lengkap / Pra-Sidang';
+
+                            $st_sid = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'siap_sidang' WHERE id = :mid AND dosen_pembimbing_id = :did");
+                            $st_sid->execute([':mid' => $mahasiswa_id, ':did' => $dosen_id]);
+
+                            $judul_n = "Selamat! Anda Di-ACC Siap Sidang Skripsi";
+                            $pesan_n = "Seluruh naskah skripsi tuntas dan disahkan (ACC Sidang, 100%). Anda siap mendaftar ujian sidang sarjana.";
+                            $tipe_n  = "sidang";
+                        }
+
+                        $stmt_ins = $pdo->prepare("
+                            INSERT INTO pengajuan_bimbingan 
+                            (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, status, catatan_dosen, nilai_progres)
+                            VALUES 
+                            (:mid, :did, :tgl, :jam, :bab, :cat_mhs, NULL, :st_sesi, :cat_dosen, :nilai)
+                        ");
+                        $stmt_ins->execute([
+                            ':mid'       => $mahasiswa_id,
+                            ':did'       => $dosen_id,
+                            ':tgl'       => $tanggal_bimbingan,
+                            ':jam'       => $jam_bimbingan,
+                            ':bab'       => $nama_bab_resmi,
+                            ':cat_mhs'   => 'Sesi evaluasi & pengesahan progres langsung bersama Dosen Pembimbing',
+                            ':st_sesi'   => $status_sesi,
+                            ':cat_dosen' => $catatan_dosen,
+                            ':nilai'     => $progres_baru
+                        ]);
+                        $bimbingan_id = (int)$pdo->lastInsertId();
+
+                        $stmt_lb = $pdo->prepare("
+                            INSERT INTO logbook_bimbingan (bimbingan_id, mahasiswa_id, tanggal_acc, catatan_hasil, status_bab)
+                            VALUES (:bid, :mid, :tgl_acc, :cat_hasil, :sbab)
+                        ");
+                        $stmt_lb->execute([
+                            ':bid'       => $bimbingan_id,
+                            ':mid'       => $mahasiswa_id,
+                            ':tgl_acc'   => $tanggal_bimbingan,
+                            ':cat_hasil' => $catatan_dosen,
+                            ':sbab'      => $status_log
+                        ]);
+
+                        $label_keputusan = "ACC " . ($tahap_current['singkat'] ?? '');
+
+                    } else {
+                        // KEPUTUSAN REVISI
+                        $progres_tetap  = $info_progres['progres_persen'];
+                        $nama_bab_sesi  = $tahap_current['nama_bab'] ?? 'Naskah Bimbingan';
+
+                        $stmt_ins = $pdo->prepare("
+                            INSERT INTO pengajuan_bimbingan 
+                            (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, status, catatan_dosen, nilai_progres)
+                            VALUES 
+                            (:mid, :did, :tgl, :jam, :bab, :cat_mhs, NULL, 'revisi', :cat_dosen, :nilai)
+                        ");
+                        $stmt_ins->execute([
+                            ':mid'       => $mahasiswa_id,
+                            ':did'       => $dosen_id,
+                            ':tgl'       => $tanggal_bimbingan,
+                            ':jam'       => $jam_bimbingan,
+                            ':bab'       => $nama_bab_sesi,
+                            ':cat_mhs'   => 'Sesi evaluasi bimbingan bersama Dosen Pembimbing',
+                            ':cat_dosen' => $catatan_dosen,
+                            ':nilai'     => $progres_tetap
+                        ]);
+                        $bimbingan_id = (int)$pdo->lastInsertId();
+
+                        $stmt_lb = $pdo->prepare("
+                            INSERT INTO logbook_bimbingan (bimbingan_id, mahasiswa_id, tanggal_acc, catatan_hasil, status_bab)
+                            VALUES (:bid, :mid, :tgl_acc, :cat_hasil, 'revisi')
+                        ");
+                        $stmt_lb->execute([
+                            ':bid'       => $bimbingan_id,
+                            ':mid'       => $mahasiswa_id,
+                            ':tgl_acc'   => $tanggal_bimbingan,
+                            ':cat_hasil' => "Catatan Revisi: " . $catatan_dosen,
+                        ]);
+
+                        $judul_n         = "Catatan Revisi dari Pembimbing";
+                        $pesan_n         = "Dosen pembimbing memberikan catatan revisi pada " . ($tahap_current['label'] ?? 'naskah') . ": '{$catatan_dosen}'. Silakan perbaiki naskah Anda.";
+                        $tipe_n          = "revisi";
+                        $label_keputusan = "PERLU REVISI";
+                        $progres_baru    = $progres_tetap;
+                    }
+
+                    $pdo->commit();
+
+                    try {
+                        $st_u_mhs = $pdo->prepare("SELECT user_id FROM mahasiswa WHERE id = :mid LIMIT 1");
+                        $st_u_mhs->execute([':mid' => $mahasiswa_id]);
+                        $m_uid = $st_u_mhs->fetchColumn();
+                        if ($m_uid) {
+                            $st_not = $pdo->prepare("INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) VALUES (:uid, :jdl, :psn, :tp, 'logbook.php')");
+                            $st_not->execute([':uid' => $m_uid, ':jdl' => $judul_n, ':psn' => $pesan_n, ':tp' => $tipe_n]);
+                        }
+                    } catch (Exception $ne) {}
+
+                    $success_msg = "Catatan bimbingan berhasil disimpan: Keputusan <strong>{$label_keputusan}</strong>. Progres mahasiswa kini <strong>{$progres_baru}%</strong>.";
+
+                } catch (PDOException $e) {
+                    $pdo->rollBack();
+                    $error_msg = "Gagal menyimpan catatan progres: " . $e->getMessage();
                 }
-            } catch (Exception $ne) {}
-
-            $pdo->commit();
-            $success_msg = "Catatan progres & arahan bimbingan berhasil disimpan! Progres <strong>{$nilai_progres}%</strong> untuk <strong>" . htmlspecialchars($bab_pembahasan) . "</strong> telah diterbitkan ke kartu kendali & dashboard mahasiswa.";
-        } catch (PDOException $e) {
-            $pdo->rollBack();
-            $error_msg = "Gagal menyimpan catatan progres: " . $e->getMessage();
+            }
         }
     }
 }
-
 // 2. PROSES UPDATE CATATAN SESI BIMBINGAN LAMA OLEH DOSEN
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_catatan_sesi'])) {
     $bimbingan_id   = (int)($_POST['bimbingan_id'] ?? 0);
@@ -368,8 +432,10 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                     <?php else: ?>
                         <?php foreach ($daftar_mahasiswa as $idx => $mhs): ?>
                             <?php
-                            $progres = (int)$mhs['progres_tertinggi'];
-                            $bar_color = ($progres >= 80) ? 'bg-success' : (($progres >= 50) ? 'bg-info' : 'bg-warning');
+                            $p_info = get_progres_mahasiswa($pdo, $mhs['id']);
+                            $progres = $p_info['progres_persen'];
+                            $tahap_current = $p_info['tahap_saat_ini'];
+                            $bar_color = ($progres >= 75) ? 'bg-success' : (($progres >= 30) ? 'bg-info' : 'bg-warning');
                             
                             // Query riwayat bimbingan lengkap untuk modal mahasiswa ini
                             $stmt_hist = $pdo->prepare("
@@ -484,129 +550,186 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                         </a>
                                     </div>
 
-                                    <!-- MODAL 1: ATUR CATATAN PROGRES MAHASISWA OLEH DOSEN -->
+                                    <!-- MODAL 1: ATUR CATATAN PROGRES MAHASISWA OLEH DOSEN (ALUR BERURUTAN OTOMATIS) -->
                                     <div class="modal fade" id="modalAturProgres<?= $mhs['id']; ?>" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog modal-lg text-start">
-                                            <div class="modal-content">
+                                            <div class="modal-content border-0 shadow rounded-4">
                                                 <form method="POST" action="mahasiswa_bimbingan.php">
                                                     <input type="hidden" name="simpan_catatan_progres" value="1">
                                                     <input type="hidden" name="mahasiswa_id" value="<?= $mhs['id']; ?>">
 
-                                                    <div class="modal-header bg-primary text-white">
+                                                    <div class="modal-header bg-primary text-white rounded-top-4">
                                                         <h5 class="modal-title fw-bold">
-                                                            <i class="bi bi-pencil-square me-2"></i>Atur Catatan Progres Skripsi
+                                                            <i class="bi bi-pencil-square me-2"></i>Atur Catatan & Progres Skripsi: <?= htmlspecialchars($mhs['nama_lengkap']); ?>
                                                         </h5>
                                                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
 
                                                     <div class="modal-body p-4">
-                                                        <!-- Ringkasan Mahasiswa -->
-                                                        <div class="p-3 bg-light rounded border mb-4">
+                                                        <!-- 1. Ringkasan Info Mahasiswa -->
+                                                        <div class="p-3 bg-light rounded border mb-3">
                                                             <div class="row g-2 small">
                                                                 <div class="col-md-6">
                                                                     <span class="text-muted d-block">Mahasiswa:</span>
                                                                     <strong class="text-dark fs-6"><?= htmlspecialchars($mhs['nama_lengkap']); ?></strong>
-                                                                    <span class="text-muted d-block">NIM: <?= htmlspecialchars($mhs['nim']); ?></span>
+                                                                    <span class="text-muted d-block">NIM: <?= htmlspecialchars($mhs['nim']); ?> (<?= htmlspecialchars($mhs['kelas'] ?? 'TI'); ?>)</span>
                                                                 </div>
                                                                 <div class="col-md-6">
                                                                     <span class="text-muted d-block">Capaian Progres Saat Ini:</span>
                                                                     <span class="badge bg-primary fs-6 px-3 py-1"><?= $progres; ?>% Selesai</span>
                                                                 </div>
-                                                                <div class="col-12 mt-2">
-                                                                    <span class="text-muted d-block">Judul Skripsi:</span>
-                                                                    <span class="fw-semibold text-dark"><?= htmlspecialchars($mhs['judul_skripsi']); ?></span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- 2. Pengesahan / Cek Judul Skripsi -->
+                                                        <div class="mb-3 p-3 bg-white rounded-3 border shadow-sm">
+                                                            <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-2">
+                                                                <label class="form-label fw-bold small text-dark mb-0">
+                                                                    <i class="bi bi-bookmark-star-fill text-warning me-1"></i>Judul Skripsi Mahasiswa:
+                                                                </label>
+                                                                <div class="d-flex gap-2 align-items-center">
+                                                                    <?php if ($p_info['has_judul']): ?>
+                                                                        <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-check-circle me-1"></i>Judul Resmi Terdaftar</span>
+                                                                    <?php else: ?>
+                                                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle"><i class="bi bi-exclamation-circle me-1"></i>Wajib ACC Judul Dahulu</span>
+                                                                    <?php endif; ?>
+
+                                                                    <a href="cek_judul.php?q=<?= urlencode(!empty($mhs['judul_skripsi']) && $mhs['judul_skripsi'] !== 'Belum Ditentukan' ? $mhs['judul_skripsi'] : ''); ?>" 
+                                                                       target="_blank" 
+                                                                       class="btn btn-xs btn-outline-primary btn-sm py-1 px-2" 
+                                                                       title="Buka Alat Deteksi Duplikasi Judul">
+                                                                        <i class="bi bi-shield-check me-1"></i>Cek Kemiripan Judul
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+
+                                                            <?php if ($p_info['current_level'] === 1): ?>
+                                                                <div class="mt-2">
+                                                                    <input type="text" 
+                                                                           name="judul_skripsi" 
+                                                                           class="form-control form-control-sm" 
+                                                                           value="<?= htmlspecialchars(($mhs['judul_skripsi'] !== 'Belum Ditentukan') ? $mhs['judul_skripsi'] : ''); ?>" 
+                                                                           placeholder="Masukkan judul skripsi resmi mahasiswa untuk disahkan (ACC)..."
+                                                                           required>
+                                                                    <small class="text-muted d-block mt-1">
+                                                                        <i class="bi bi-info-circle me-1 text-primary"></i>Mahasiswa belum memiliki judul resmi. Masukkan judul untuk memulai alur bimbingan.
+                                                                    </small>
+                                                                </div>
+                                                            <?php else: ?>
+                                                                <div class="p-2 bg-light rounded text-dark fw-semibold small mt-1">
+                                                                    <?= htmlspecialchars($mhs['judul_skripsi']); ?>
+                                                                </div>
+                                                                <input type="hidden" name="judul_skripsi" value="<?= htmlspecialchars($mhs['judul_skripsi']); ?>">
+                                                            <?php endif; ?>
+                                                        </div>
+
+                                                        <!-- 3. Alur Tahapan Progres Skripsi (Otomatis & Terkunci) -->
+                                                        <div class="mb-4">
+                                                            <label class="form-label fw-bold small text-dark mb-2">
+                                                                <i class="bi bi-signpost-split text-primary me-1"></i>Alur Tahapan Progres Skripsi (Otomatis & Terkunci):
+                                                            </label>
+                                                            <div class="p-3 bg-light rounded-3 border">
+                                                                <div class="row g-2 text-center">
+                                                                    <?php foreach ($p_info['tahapan_ui'] as $lvl => $t): ?>
+                                                                        <div class="col-6 col-md">
+                                                                            <div class="p-2 rounded border <?= ($t['status_ui'] === 'selesai') ? 'bg-success-subtle border-success text-success' : (($t['status_ui'] === 'aktif') ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-muted border-secondary-subtle'); ?> h-100 d-flex flex-column justify-content-between">
+                                                                                <div style="font-size: 0.72rem;" class="fw-bold mb-1">
+                                                                                    <?= $t['singkat']; ?>
+                                                                                </div>
+                                                                                <div>
+                                                                                    <?php if ($t['status_ui'] === 'selesai'): ?>
+                                                                                        <span class="badge bg-success" style="font-size: 0.65rem;"><i class="bi bi-check2"></i> ACC</span>
+                                                                                    <?php elseif ($t['status_ui'] === 'aktif'): ?>
+                                                                                        <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.65rem;">Tahap Ini</span>
+                                                                                    <?php else: ?>
+                                                                                        <span class="badge bg-secondary-subtle text-muted" style="font-size: 0.65rem;"><i class="bi bi-lock-fill"></i> Kunci</span>
+                                                                                    <?php endif; ?>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    <?php endforeach; ?>
+                                                                </div>
+                                                                <div class="mt-2 text-muted" style="font-size: 0.75rem;">
+                                                                    <i class="bi bi-shield-lock me-1"></i>Tahapan masa depan terkunci. Dosen tidak dapat melompati bab sebelum tahap saat ini di-ACC.
                                                                 </div>
                                                             </div>
                                                         </div>
 
-                                                        <!-- Form Input Progres oleh Dosen -->
-                                                        <div class="row g-3">
-                                                            <!-- Bab Pembahasan -->
-                                                            <div class="col-md-6">
-                                                                <label class="form-label fw-bold small text-dark">
-                                                                    <i class="bi bi-journal-bookmark text-primary me-1"></i>Bab Pembahasan *
-                                                                </label>
-                                                                <select name="bab_pembahasan" class="form-select" required>
-                                                                    <option value="Bab 1: Pendahuluan" <?= ($mhs['bab_terakhir'] === 'Bab 1: Pendahuluan') ? 'selected' : ''; ?>>Bab 1: Pendahuluan</option>
-                                                                    <option value="Bab 2: Tinjauan Pustaka" <?= ($mhs['bab_terakhir'] === 'Bab 2: Tinjauan Pustaka') ? 'selected' : ''; ?>>Bab 2: Tinjauan Pustaka</option>
-                                                                    <option value="Bab 3: Metodologi Penelitian" <?= ($mhs['bab_terakhir'] === 'Bab 3: Metodologi Penelitian') ? 'selected' : ''; ?>>Bab 3: Metodologi Penelitian</option>
-                                                                    <option value="Bab 4: Hasil & Pembahasan" <?= ($mhs['bab_terakhir'] === 'Bab 4: Hasil & Pembahasan') ? 'selected' : ''; ?>>Bab 4: Hasil & Pembahasan</option>
-                                                                    <option value="Bab 5: Kesimpulan & Saran" <?= ($mhs['bab_terakhir'] === 'Bab 5: Kesimpulan & Saran') ? 'selected' : ''; ?>>Bab 5: Kesimpulan & Saran</option>
-                                                                    <option value="Naskah Lengkap / Pra-Sidang" <?= ($mhs['bab_terakhir'] === 'Naskah Lengkap / Pra-Sidang') ? 'selected' : ''; ?>>Naskah Lengkap / Pra-Sidang</option>
-                                                                </select>
-                                                            </div>
+                                                        <!-- 4. Pilihan Keputusan Dosen (HANYA 2 PILIHAN: ACC ATAU REVISI) -->
+                                                        <div class="mb-4">
+                                                            <label class="form-label fw-bold small text-dark mb-2">
+                                                                <i class="bi bi-check2-circle text-primary me-1"></i>Keputusan Pengesahan Dosen: <span class="text-danger">*</span>
+                                                            </label>
+                                                            <div class="row g-3">
+                                                                <div class="col-md-6">
+                                                                    <label class="d-block w-100 h-100">
+                                                                        <input class="d-none form-check-input" 
+                                                                               type="radio" 
+                                                                               name="keputusan_aksi" 
+                                                                               value="acc" 
+                                                                               required 
+                                                                               checked>
+                                                                        <div class="decision-card h-100 p-3 rounded-3 border">
+                                                                            <div class="fw-bold text-success mb-1 fs-6">
+                                                                                <i class="bi bi-check-circle-fill me-1"></i> ACC <?= htmlspecialchars($tahap_current['singkat'] ?? 'Tahap Ini'); ?>
+                                                                            </div>
+                                                                            <small class="text-dark d-block mb-1">
+                                                                                Mengesahkan <strong><?= htmlspecialchars($tahap_current['label'] ?? ''); ?></strong>.
+                                                                            </small>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                                                Progres Naik: <?= $progres; ?>% &rarr; <?= $p_info['progres_jika_acc']; ?>%
+                                                                            </span>
+                                                                        </div>
+                                                                    </label>
+                                                                </div>
 
-                                                            <!-- Tanggal Bimbingan -->
-                                                            <div class="col-md-6">
-                                                                <label class="form-label fw-bold small text-dark">
-                                                                    <i class="bi bi-calendar-event text-primary me-1"></i>Tanggal Sesi / Pengesahan *
-                                                                </label>
-                                                                <input type="date" name="tanggal_bimbingan" class="form-control" value="<?= date('Y-m-d'); ?>" required>
-                                                            </div>
-
-                                                            <!-- Status Keputusan / ACC Bab -->
-                                                            <div class="col-md-6">
-                                                                <label class="form-label fw-bold small text-dark">
-                                                                    <i class="bi bi-check-circle text-primary me-1"></i>Keputusan Pengesahan Dosen *
-                                                                </label>
-                                                                <select name="keputusan_progres" class="form-select" required>
-                                                                    <option value="acc_bab">ACC Bab (Lanjut Bab Berikutnya)</option>
-                                                                    <option value="revisi">Perlu Revisi / Perbaikan Naskah</option>
-                                                                    <option value="acc_sidang">ACC Siap Sidang Skripsi (Selesai Tuntas)</option>
-                                                                    <option value="selesai">Selesai Konsultasi Rutin</option>
-                                                                </select>
-                                                            </div>
-
-                                                            <!-- Status Kelulusan Mahasiswa -->
-                                                            <div class="col-md-6">
-                                                                <label class="form-label fw-bold small text-dark">
-                                                                    <i class="bi bi-award text-primary me-1"></i>Status Kelulusan Akademik
-                                                                </label>
-                                                                <select name="status_kelulusan" class="form-select">
-                                                                    <option value="proses_bimbingan" <?= ($mhs['status_kelulusan'] === 'proses_bimbingan') ? 'selected' : ''; ?>>Proses Bimbingan Aktif</option>
-                                                                    <option value="siap_sidang" <?= ($mhs['status_kelulusan'] === 'siap_sidang') ? 'selected' : ''; ?>>Siap Sidang Skripsi</option>
-                                                                    <option value="lulus" <?= ($mhs['status_kelulusan'] === 'lulus') ? 'selected' : ''; ?>>Lulus</option>
-                                                                </select>
-                                                            </div>
-
-                                                            <!-- Nilai Capaian Progres (%) -->
-                                                            <div class="col-12">
-                                                                <label class="form-label fw-bold small text-dark d-flex justify-content-between align-items-center">
-                                                                    <span><i class="bi bi-speedometer text-primary me-1"></i>Nilai Capaian Progres Skripsi:</span>
-                                                                    <span class="badge bg-primary fs-6 px-3 py-1" id="valProgres<?= $mhs['id']; ?>"><?= max(20, $progres); ?>%</span>
-                                                                </label>
-                                                                <input type="range" class="form-range" min="0" max="100" step="5" 
-                                                                       name="nilai_progres" 
-                                                                       id="rangeProgres<?= $mhs['id']; ?>" 
-                                                                       value="<?= max(20, $progres); ?>" 
-                                                                       oninput="document.getElementById('valProgres<?= $mhs['id']; ?>').innerText = this.value + '%';">
-                                                                <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
-                                                                    <span>0% (Awal)</span>
-                                                                    <span>20% (Bab 1)</span>
-                                                                    <span>40% (Bab 2)</span>
-                                                                    <span>60% (Bab 3)</span>
-                                                                    <span>80% (Bab 4)</span>
-                                                                    <span>100% (Selesai/Sidang)</span>
+                                                                <div class="col-md-6">
+                                                                    <label class="d-block w-100 h-100">
+                                                                        <input class="d-none form-check-input" 
+                                                                               type="radio" 
+                                                                               name="keputusan_aksi" 
+                                                                               value="revisi">
+                                                                        <div class="decision-card h-100 p-3 rounded-3 border">
+                                                                            <div class="fw-bold text-warning-emphasis mb-1 fs-6">
+                                                                                <i class="bi bi-exclamation-triangle-fill me-1 text-warning"></i> Perlu Revisi Naskah
+                                                                            </div>
+                                                                            <small class="text-dark d-block mb-1">
+                                                                                Mahasiswa wajib memperbaiki naskah sesuai catatan dosen.
+                                                                            </small>
+                                                                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                                                                                Progres Tetap: <?= $progres; ?>%
+                                                                            </span>
+                                                                        </div>
+                                                                    </label>
                                                                 </div>
                                                             </div>
+                                                        </div>
 
-                                                            <!-- Catatan & Umpan Balik Resmi Dosen -->
-                                                            <div class="col-12">
-                                                                <label class="form-label fw-bold small text-dark">
-                                                                    <i class="bi bi-chat-left-text text-primary me-1"></i>Catatan Progres & Arahan Resmi Dosen *
-                                                                </label>
-                                                                <textarea name="catatan_dosen" class="form-control" rows="4" 
-                                                                          placeholder="Tuliskan catatan kemajuan naskah, koreksi yang harus diperbaiki mahasiswa, atau instruksi untuk pengerjaan bab selanjutnya..." required></textarea>
-                                                                <small class="text-muted">
-                                                                    <i class="bi bi-info-circle me-1"></i>Catatan ini akan langsung tampil di dashboard progres dan logbook mahasiswa bersangkutan.
-                                                                </small>
-                                                            </div>
+                                                        <!-- Tanggal Sesi -->
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold small text-dark">
+                                                                <i class="bi bi-calendar-event text-primary me-1"></i>Tanggal Sesi / Bimbingan
+                                                            </label>
+                                                            <input type="date" name="tanggal_bimbingan" class="form-control form-control-sm" value="<?= date('Y-m-d'); ?>" required>
+                                                        </div>
+
+                                                        <!-- 5. Catatan Dosen (WAJIB DIISI) -->
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold small text-dark d-flex justify-content-between align-items-center">
+                                                                <span><i class="bi bi-chat-left-text text-primary me-1"></i>Catatan Progres & Arahan Resmi Dosen: <span class="text-danger">* (Wajib Diisi)</span></span>
+                                                                <small class="text-muted fw-normal">Akan diterbitkan ke logbook & notifikasi mahasiswa</small>
+                                                            </label>
+                                                            <textarea name="catatan_dosen" 
+                                                                      class="form-control" 
+                                                                      rows="3" 
+                                                                      placeholder="Tuliskan catatan kemajuan naskah, koreksi yang harus diperbaiki mahasiswa, atau instruksi langkah selanjutnya..." 
+                                                                      required></textarea>
                                                         </div>
                                                     </div>
 
-                                                    <div class="modal-footer bg-light">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                                        <button type="submit" class="btn btn-primary fw-semibold">
+                                                    <div class="modal-footer bg-light rounded-bottom-4">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                                                        <button type="submit" class="btn btn-primary btn-sm fw-semibold px-4 shadow-sm">
                                                             <i class="bi bi-check2-circle me-1"></i> Simpan & Terbitkan Catatan
                                                         </button>
                                                     </div>

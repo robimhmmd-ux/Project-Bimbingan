@@ -43,7 +43,7 @@ $bimbingan_list = $stmt_log->fetchAll();
 $total_sesi = count($bimbingan_list);
 $total_acc  = 0;
 foreach ($bimbingan_list as $b) {
-    if (in_array($b['status'], ['selesai', 'disetujui']) || $b['status_bab'] === 'acc_bab' || $b['status_bab'] === 'acc_sidang') {
+    if (in_array($b['status'], ['selesai', 'disetujui']) || in_array($b['status_bab'], ['acc_judul', 'acc_bab', 'acc_sidang'])) {
         $total_acc++;
     }
 }
@@ -322,8 +322,8 @@ $info_sidang = $stmt_sidang->fetch();
                         <td class="text-center">
                             <?php
                             $st_bab = $item['status_bab'] ?? '';
-                            if ($st_bab === 'acc_sidang' || $st_bab === 'acc_bab' || in_array($item['status'], ['disetujui', 'selesai'])) {
-                                echo '<span class="text-success fw-bold">ACC</span>';
+                            if ($st_bab === 'acc_sidang' || $st_bab === 'acc_bab' || $st_bab === 'acc_judul' || in_array($item['status'], ['disetujui', 'selesai'])) {
+                                echo '<span class="text-success fw-bold">' . ($st_bab === 'acc_judul' ? 'ACC Judul' : 'ACC') . '</span>';
                             } elseif ($st_bab === 'revisi' || $item['status'] === 'revisi') {
                                 echo '<span class="text-warning fw-bold">Revisi</span>';
                             } else {
@@ -332,7 +332,7 @@ $info_sidang = $stmt_sidang->fetch();
                             ?>
                         </td>
                         <td class="text-center align-middle">
-                            <?php if (in_array($item['status'], ['selesai', 'disetujui']) || in_array($st_bab, ['acc_bab', 'acc_sidang'])): ?>
+                            <?php if (in_array($item['status'], ['selesai', 'disetujui']) || in_array($st_bab, ['acc_judul', 'acc_bab', 'acc_sidang'])): ?>
                                 <span class="badge bg-success py-1 px-2" style="font-size: 8pt;">Tervalidasi</span>
                             <?php else: ?>
                                 <span class="text-muted small">-</span>

@@ -1,74 +1,209 @@
 <?php
-// login.php - Autentikasi Pengguna Multi-Role
+// login.php - Autentikasi Pengguna & Pendaftaran Akun Multi-Role
 session_start();
 
 if (isset($_SESSION['role'])) {
-    if ($_SESSION['role'] === 'admin')     header("Location: admin/index.php");
-    elseif ($_SESSION['role'] === 'dosen') header("Location: dosen/index.php");
+    if ($_SESSION['role'] === 'admin')         header("Location: admin/index.php");
+    elseif ($_SESSION['role'] === 'dosen')     header("Location: dosen/index.php");
     elseif ($_SESSION['role'] === 'mahasiswa') header("Location: mahasiswa/index.php");
     exit;
 }
 
 $error_message = '';
+$success_message = '';
+$active_tab = (isset($_GET['tab']) && $_GET['tab'] === 'register') ? 'register' : 'login';
+$login_username = '';
+
+// Variabel form pendaftaran untuk preserve input jika terjadi error
+$reg_role = 'mahasiswa';
+$reg_nama = '';
+$reg_username = '';
+$reg_identifier = '';
+$reg_kelas = 'TI-1A-2025';
+$reg_email = '';
+$reg_wa = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once 'config/database.php';
-    $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
+    $action = $_POST['action'] ?? 'login';
 
-    if (!empty($username) && !empty($password)) {
-        try {
-            $stmt = $pdo->prepare("SELECT id, username, password, role FROM users WHERE username = :username LIMIT 1");
-            $stmt->execute([':username' => $username]);
-            $user = $stmt->fetch();
-            if ($user && password_verify($password, $user['password'])) {
-                $_SESSION['user_id']  = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['role']     = $user['role'];
+    if ($action === 'register') {
+        $active_tab = 'register';
+        $reg_role = trim($_POST['reg_role'] ?? 'mahasiswa');
+        $reg_nama = trim($_POST['reg_nama'] ?? '');
+        $reg_username = trim($_POST['reg_username'] ?? '');
+        $reg_identifier = trim($_POST['reg_identifier'] ?? '');
+        $reg_kelas = trim($_POST['reg_kelas'] ?? 'TI-1A-2025');
+        $reg_email = trim($_POST['reg_email'] ?? '');
+        $reg_wa = trim($_POST['reg_wa'] ?? '');
+        $reg_password = $_POST['reg_password'] ?? '';
+        $reg_password_confirm = $_POST['reg_password_confirm'] ?? '';
 
-                // Load nama lengkap & foto profil ke session
-                try {
-                    if ($user['role'] === 'admin') {
-                        $stmt_adm = $pdo->prepare("SELECT nama_lengkap, foto_profil FROM admin_profil WHERE user_id = :uid LIMIT 1");
-                        $stmt_adm->execute([':uid' => $user['id']]);
-                        $adm_data = $stmt_adm->fetch();
-                        if ($adm_data) {
-                            $_SESSION['nama_lengkap'] = $adm_data['nama_lengkap'];
-                            $_SESSION['foto_profil']  = $adm_data['foto_profil'];
+        // Validasi input pendaftaran
+        if (!in_array($reg_role, ['mahasiswa', 'dosen'])) {
+            $error_message = 'Pilihan peran pengguna tidak valid.';
+        } elseif (empty($reg_nama)) {
+            $error_message = 'Nama lengkap wajib diisi.';
+        } elseif (empty($reg_username) || strlen($reg_username) < 3) {
+            $error_message = 'Username minimal terdiri dari 3 karakter.';
+        } elseif (preg_match('/\s/', $reg_username)) {
+            $error_message = 'Username tidak boleh mengandung spasi.';
+        } elseif (empty($reg_identifier)) {
+            $error_message = ($reg_role === 'dosen' ? 'NIDN' : 'NIM') . ' wajib diisi.';
+        } elseif ($reg_role === 'dosen' && (empty($reg_email) || !filter_var($reg_email, FILTER_VALIDATE_EMAIL))) {
+            $error_message = 'Alamat email dosen tidak valid.';
+        } elseif (empty($reg_password) || strlen($reg_password) < 6) {
+            $error_message = 'Password minimal terdiri dari 6 karakter.';
+        } elseif ($reg_password !== $reg_password_confirm) {
+            $error_message = 'Konfirmasi password tidak cocok.';
+        } else {
+            try {
+                // 1. Cek duplikasi username
+                $stmtCheckUser = $pdo->prepare("SELECT id FROM users WHERE LOWER(username) = LOWER(:u) LIMIT 1");
+                $stmtCheckUser->execute([':u' => $reg_username]);
+                if ($stmtCheckUser->fetch()) {
+                    $error_message = 'Username "' . htmlspecialchars($reg_username) . '" sudah digunakan. Silakan pilih username lain.';
+                } else {
+                    if ($reg_role === 'mahasiswa') {
+                        // 2. Cek duplikasi NIM
+                        $stmtCheckNim = $pdo->prepare("SELECT id FROM mahasiswa WHERE nim = :nim LIMIT 1");
+                        $stmtCheckNim->execute([':nim' => $reg_identifier]);
+                        if ($stmtCheckNim->fetch()) {
+                            $error_message = 'NIM ' . htmlspecialchars($reg_identifier) . ' sudah terdaftar dalam sistem.';
                         }
-                    } elseif ($user['role'] === 'dosen') {
-                        $stmt_dsn = $pdo->prepare("SELECT nama_dosen, foto_profil FROM dosen WHERE user_id = :uid LIMIT 1");
-                        $stmt_dsn->execute([':uid' => $user['id']]);
-                        $dsn_data = $stmt_dsn->fetch();
-                        if ($dsn_data) {
-                            $_SESSION['nama_lengkap'] = $dsn_data['nama_dosen'];
-                            $_SESSION['foto_profil']  = $dsn_data['foto_profil'];
-                        }
-                    } elseif ($user['role'] === 'mahasiswa') {
-                        $stmt_mhs = $pdo->prepare("SELECT nama_lengkap, foto_profil FROM mahasiswa WHERE user_id = :uid LIMIT 1");
-                        $stmt_mhs->execute([':uid' => $user['id']]);
-                        $mhs_data = $stmt_mhs->fetch();
-                        if ($mhs_data) {
-                            $_SESSION['nama_lengkap'] = $mhs_data['nama_lengkap'];
-                            $_SESSION['foto_profil']  = $mhs_data['foto_profil'];
+                    } else {
+                        // 3. Cek duplikasi NIDN & Email Dosen
+                        $stmtCheckNidn = $pdo->prepare("SELECT id FROM dosen WHERE nidn = :nidn LIMIT 1");
+                        $stmtCheckNidn->execute([':nidn' => $reg_identifier]);
+                        if ($stmtCheckNidn->fetch()) {
+                            $error_message = 'NIDN ' . htmlspecialchars($reg_identifier) . ' sudah terdaftar dalam sistem.';
+                        } else {
+                            $stmtCheckEmail = $pdo->prepare("SELECT id FROM dosen WHERE LOWER(email) = LOWER(:email) LIMIT 1");
+                            $stmtCheckEmail->execute([':email' => $reg_email]);
+                            if ($stmtCheckEmail->fetch()) {
+                                $error_message = 'Email ' . htmlspecialchars($reg_email) . ' sudah digunakan oleh dosen lain.';
+                            }
                         }
                     }
-                } catch (Exception $e) {
-                    // Abaikan jika query profil gagal
-                }
 
-                if ($user['role'] === 'admin') header("Location: admin/index.php");
-                elseif ($user['role'] === 'dosen') header("Location: dosen/index.php");
-                elseif ($user['role'] === 'mahasiswa') header("Location: mahasiswa/index.php");
-                exit;
-            } else {
-                $error_message = 'Username atau password yang Anda masukkan salah.';
+                    // Jika tidak ada error, eksekusi transaksi pendaftaran
+                    if (empty($error_message)) {
+                        $pdo->beginTransaction();
+
+                        $hash = password_hash($reg_password, PASSWORD_BCRYPT);
+                        $stmtUser = $pdo->prepare("INSERT INTO users (username, password, password_plain, role) VALUES (:u, :p, :pp, :r)");
+                        $stmtUser->execute([
+                            ':u'  => $reg_username,
+                            ':p'  => $hash,
+                            ':pp' => $reg_password,
+                            ':r'  => $reg_role
+                        ]);
+                        $newUserId = (int)$pdo->lastInsertId();
+
+                        if ($reg_role === 'mahasiswa') {
+                            $stmtMhs = $pdo->prepare("INSERT INTO mahasiswa 
+                                (user_id, nim, nama_lengkap, kelas, judul_skripsi, status_pembimbing, status_kelulusan, foto_profil) 
+                                VALUES (:uid, :nim, :nama, :kelas, 'Belum Ditentukan', 'belum_diplot', 'proses_bimbingan', 'default.png')");
+                            $stmtMhs->execute([
+                                ':uid'   => $newUserId,
+                                ':nim'   => $reg_identifier,
+                                ':nama'  => $reg_nama,
+                                ':kelas' => $reg_kelas
+                            ]);
+                        } else {
+                            $stmtDsn = $pdo->prepare("INSERT INTO dosen 
+                                (user_id, nidn, nama_dosen, email, no_whatsapp, foto_profil, kuota_bimbingan) 
+                                VALUES (:uid, :nidn, :nama, :email, :wa, 'default.png', 10)");
+                            $stmtDsn->execute([
+                                ':uid'   => $newUserId,
+                                ':nidn'  => $reg_identifier,
+                                ':nama'  => $reg_nama,
+                                ':email' => $reg_email,
+                                ':wa'    => !empty($reg_wa) ? $reg_wa : null
+                            ]);
+                        }
+
+                        $pdo->commit();
+
+                        $success_message = 'Pendaftaran berhasil! Akun Anda telah siap. Silakan masuk.';
+                        $active_tab = 'login';
+                        $login_username = $reg_username;
+
+                        // Reset input form
+                        $reg_nama = '';
+                        $reg_username = '';
+                        $reg_identifier = '';
+                        $reg_email = '';
+                        $reg_wa = '';
+                    }
+                }
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $error_message = 'Terjadi kesalahan sistem saat mendaftar: ' . $e->getMessage();
             }
-        } catch (PDOException $e) {
-            $error_message = 'Terjadi kesalahan sistem. Silakan coba lagi.';
         }
     } else {
-        $error_message = 'Mohon isi username dan password.';
+        // Mode Login
+        $active_tab = 'login';
+        $login_username = trim($_POST['username'] ?? '');
+        $password = trim($_POST['password'] ?? '');
+
+        if (!empty($login_username) && !empty($password)) {
+            try {
+                $stmt = $pdo->prepare("SELECT id, username, password, role FROM users WHERE username = :username LIMIT 1");
+                $stmt->execute([':username' => $login_username]);
+                $user = $stmt->fetch();
+                if ($user && password_verify($password, $user['password'])) {
+                    $_SESSION['user_id']  = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+                    $_SESSION['role']     = $user['role'];
+
+                    // Load nama lengkap & foto profil ke session
+                    try {
+                        if ($user['role'] === 'admin') {
+                            $stmt_adm = $pdo->prepare("SELECT nama_lengkap, foto_profil FROM admin_profil WHERE user_id = :uid LIMIT 1");
+                            $stmt_adm->execute([':uid' => $user['id']]);
+                            $adm_data = $stmt_adm->fetch();
+                            if ($adm_data) {
+                                $_SESSION['nama_lengkap'] = $adm_data['nama_lengkap'];
+                                $_SESSION['foto_profil']  = $adm_data['foto_profil'];
+                            }
+                        } elseif ($user['role'] === 'dosen') {
+                            $stmt_dsn = $pdo->prepare("SELECT nama_dosen, foto_profil FROM dosen WHERE user_id = :uid LIMIT 1");
+                            $stmt_dsn->execute([':uid' => $user['id']]);
+                            $dsn_data = $stmt_dsn->fetch();
+                            if ($dsn_data) {
+                                $_SESSION['nama_lengkap'] = $dsn_data['nama_dosen'];
+                                $_SESSION['foto_profil']  = $dsn_data['foto_profil'];
+                            }
+                        } elseif ($user['role'] === 'mahasiswa') {
+                            $stmt_mhs = $pdo->prepare("SELECT nama_lengkap, foto_profil FROM mahasiswa WHERE user_id = :uid LIMIT 1");
+                            $stmt_mhs->execute([':uid' => $user['id']]);
+                            $mhs_data = $stmt_mhs->fetch();
+                            if ($mhs_data) {
+                                $_SESSION['nama_lengkap'] = $mhs_data['nama_lengkap'];
+                                $_SESSION['foto_profil']  = $mhs_data['foto_profil'];
+                            }
+                        }
+                    } catch (Exception $e) {
+                        // Abaikan jika query profil gagal
+                    }
+
+                    if ($user['role'] === 'admin')         header("Location: admin/index.php");
+                    elseif ($user['role'] === 'dosen')     header("Location: dosen/index.php");
+                    elseif ($user['role'] === 'mahasiswa') header("Location: mahasiswa/index.php");
+                    exit;
+                } else {
+                    $error_message = 'Username atau password yang Anda masukkan salah.';
+                }
+            } catch (PDOException $e) {
+                $error_message = 'Terjadi kesalahan sistem. Silakan coba lagi.';
+            }
+        } else {
+            $error_message = 'Mohon isi username dan password.';
+        }
     }
 }
 ?>
@@ -77,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Masuk — Bimbingan Skripsi</title>
+    <title id="pageTitle"><?= $active_tab === 'register' ? 'Daftar Akun' : 'Masuk' ?> — Bimbingan Skripsi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -122,8 +257,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .login-wrapper {
             display: flex;
             width: 100%;
-            max-width: 920px;
-            min-height: 560px;
+            max-width: 950px;
+            min-height: 580px;
             border-radius: var(--radius-lg);
             overflow: hidden;
             box-shadow:
@@ -258,7 +393,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 3rem 2.75rem;
+            padding: 2.25rem 2.25rem;
+            max-height: 94vh;
+            overflow-y: auto;
+        }
+
+        .login-form-panel::-webkit-scrollbar {
+            width: 5px;
+        }
+        .login-form-panel::-webkit-scrollbar-thumb {
+            background-color: #e2e8f0;
+            border-radius: 9999px;
+        }
+
+        /* Auth Switcher Tabs */
+        .auth-switcher {
+            display: flex;
+            background: #f1f5f9;
+            padding: 0.3rem;
+            border-radius: var(--radius-pill);
+            gap: 0.35rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
+        }
+        .auth-switch-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 0.58rem 1rem;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #64748b;
+            border-radius: var(--radius-pill);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+        }
+        .auth-switch-btn:hover {
+            color: var(--primary);
+        }
+        .auth-switch-btn.active {
+            background: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 3px 10px rgba(67, 56, 202, 0.14);
+        }
+
+        /* Role Selector Pill */
+        .role-selector-pill {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        .role-option {
+            cursor: pointer;
+            margin: 0;
+        }
+        .role-option input[type="radio"] {
+            display: none;
+        }
+        .role-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.55rem 0.75rem;
+            border-radius: var(--radius-pill);
+            border: 1.5px solid var(--border-color);
+            background: #ffffff;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #475569;
+            transition: all 0.2s ease;
+        }
+        .role-box i {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            transition: color 0.2s ease;
+        }
+        .role-option input[type="radio"]:checked + .role-box {
+            border-color: var(--primary);
+            background: #eef2ff;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15);
+        }
+        .role-option input[type="radio"]:checked + .role-box i {
+            color: var(--primary);
+        }
+
+        /* Form Select Pill */
+        .form-select-custom {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1.25rem center;
+            background-size: 14px 10px;
+            padding-right: 2.5rem !important;
+            cursor: pointer;
+        }
+
+        /* Alert Success Custom */
+        .alert-success-custom {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 0.75rem;
+            color: #166534;
+            font-size: 0.85rem;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 2px 6px rgba(34, 197, 94, 0.08);
         }
 
         .login-form-panel .brand-row {
@@ -287,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-bottom: 0.3rem;
         }
 
-        .subtitle { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 2rem; }
+        .subtitle { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem; }
 
         /* Input pill */
         .input-pill {
@@ -669,63 +918,244 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     <!-- ============================================================
-         PANEL KANAN — FORM LOGIN
+         PANEL KANAN — FORM LOGIN & PENDAFTARAN
     ============================================================ -->
     <div class="login-form-panel">
 
-        <h2>Selamat Datang</h2>
-        <p class="subtitle">Masuk untuk mengakses dashboard bimbingan Anda.</p>
+        <!-- Tab Switcher Masuk / Daftar -->
+        <div class="auth-switcher">
+            <button type="button" class="auth-switch-btn <?= $active_tab === 'login' ? 'active' : '' ?>" id="tabBtnLogin" onclick="switchTab('login')">
+                <i class="bi bi-box-arrow-in-right"></i> Masuk
+            </button>
+            <button type="button" class="auth-switch-btn <?= $active_tab === 'register' ? 'active' : '' ?>" id="tabBtnRegister" onclick="switchTab('register')">
+                <i class="bi bi-person-plus-fill"></i> Daftar Akun
+            </button>
+        </div>
 
-        <?php if (!empty($error_message)): ?>
-        <div class="alert-error">
-            <i class="bi bi-exclamation-circle-fill"></i>
-            <?= htmlspecialchars($error_message) ?>
+        <?php if (!empty($success_message)): ?>
+        <div class="alert-success-custom">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <div><?= htmlspecialchars($success_message) ?></div>
         </div>
         <?php endif; ?>
 
-        <form action="login.php" method="POST" novalidate>
+        <?php if (!empty($error_message)): ?>
+        <div class="alert-error">
+            <i class="bi bi-exclamation-circle-fill fs-5"></i>
+            <div><?= htmlspecialchars($error_message) ?></div>
+        </div>
+        <?php endif; ?>
 
-            <div class="mb-4">
-                <label for="username" class="form-label-custom">Username</label>
-                <div class="input-icon-wrap">
-                    <i class="bi bi-person field-icon"></i>
-                    <input type="text"
-                           class="input-pill <?= !empty($error_message) ? 'error' : '' ?>"
-                           id="username" name="username"
-                           placeholder="Masukkan NIM / ID"
-                           required autofocus autocomplete="username"
-                           value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
+        <!-- ================= PANE LOGIN ================= -->
+        <div id="paneLogin" style="<?= $active_tab === 'login' ? '' : 'display: none;' ?>">
+            <div class="mb-3">
+                <h2>Selamat Datang</h2>
+                <p class="subtitle">Masuk untuk mengakses dashboard bimbingan Anda.</p>
+            </div>
+
+            <form action="login.php" method="POST" novalidate>
+                <input type="hidden" name="action" value="login">
+
+                <div class="mb-3">
+                    <label for="username" class="form-label-custom">Username</label>
+                    <div class="input-icon-wrap">
+                        <i class="bi bi-person field-icon"></i>
+                        <input type="text"
+                               class="input-pill <?= (!empty($error_message) && $active_tab === 'login') ? 'error' : '' ?>"
+                               id="username" name="username"
+                               placeholder="Masukkan NIM / ID / Username"
+                               required autofocus autocomplete="username"
+                               value="<?= htmlspecialchars($login_username ?? '') ?>">
+                    </div>
                 </div>
-            </div>
 
-            <div class="mb-4">
-                <label for="password" class="form-label-custom">Password</label>
-                <div class="input-icon-wrap" style="position: relative;">
-                    <i class="bi bi-lock field-icon"></i>
-                    <input type="password"
-                           class="input-pill <?= !empty($error_message) ? 'error' : '' ?>"
-                           id="password" name="password"
-                           placeholder="Masukkan password"
-                           required autocomplete="current-password"
-                           style="padding-right: 2.8rem !important;">
-                    <button type="button" class="btn-toggle-eye" id="btnToggleLoginPass" title="Lihat/Sembunyikan Kata Sandi">
-                        <i class="bi bi-eye" id="loginEyeIcon"></i>
-                    </button>
+                <div class="mb-4">
+                    <label for="password" class="form-label-custom">Password</label>
+                    <div class="input-icon-wrap" style="position: relative;">
+                        <i class="bi bi-lock field-icon"></i>
+                        <input type="password"
+                               class="input-pill <?= (!empty($error_message) && $active_tab === 'login') ? 'error' : '' ?>"
+                               id="password" name="password"
+                               placeholder="Masukkan password Anda"
+                               required autocomplete="current-password"
+                               style="padding-right: 2.8rem !important;">
+                        <button type="button" class="btn-toggle-eye" id="btnToggleLoginPass" title="Lihat/Sembunyikan Kata Sandi">
+                            <i class="bi bi-eye" id="loginEyeIcon"></i>
+                        </button>
+                    </div>
                 </div>
+
+                <button type="submit" class="btn-login mb-3">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Masuk ke Portal
+                </button>
+
+                <div class="text-center text-muted small mb-2">
+                    Belum memiliki akun?
+                    <a href="javascript:void(0)" onclick="switchTab('register')" class="text-primary fw-bold text-decoration-none ms-1">
+                        Daftar Sekarang <i class="bi bi-arrow-right-short"></i>
+                    </a>
+                </div>
+
+                <div class="text-center pt-2 border-top">
+                    <a href="index.php" class="text-muted text-decoration-none small d-inline-flex align-items-center gap-1" style="font-weight: 600; font-size: 0.85rem;">
+                        <i class="bi bi-arrow-left"></i> Kembali ke Beranda Utama
+                    </a>
+                </div>
+            </form>
+        </div><!-- /paneLogin -->
+
+        <!-- ================= PANE REGISTER ================= -->
+        <div id="paneRegister" style="<?= $active_tab === 'register' ? '' : 'display: none;' ?>">
+            <div class="mb-3">
+                <h2>Pendaftaran Akun</h2>
+                <p class="subtitle">Pilih peran dan lengkapi data untuk membuat akun bimbingan.</p>
             </div>
 
-            <button type="submit" class="btn-login">
-                <i class="bi bi-box-arrow-in-right"></i>
-                Masuk ke Portal
-            </button>
+            <form action="login.php" method="POST" novalidate id="formRegister">
+                <input type="hidden" name="action" value="register">
 
-            <div class="text-center mt-3 pt-1">
-                <a href="index.php" class="text-muted text-decoration-none small d-inline-flex align-items-center gap-1" style="font-weight: 600; font-size: 0.85rem;">
-                    <i class="bi bi-arrow-left"></i> Kembali ke Beranda Utama
-                </a>
-            </div>
+                <!-- Pilihan Peran -->
+                <div class="mb-3">
+                    <label class="form-label-custom">Pilih Peran Akun <span class="text-danger">*</span></label>
+                    <div class="role-selector-pill">
+                        <label class="role-option">
+                            <input type="radio" name="reg_role" value="mahasiswa" <?= ($reg_role ?? 'mahasiswa') === 'mahasiswa' ? 'checked' : '' ?> onchange="handleRoleChange(this.value)">
+                            <span class="role-box">
+                                <i class="bi bi-mortarboard-fill"></i>
+                                <span>Mahasiswa</span>
+                            </span>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="reg_role" value="dosen" <?= ($reg_role ?? '') === 'dosen' ? 'checked' : '' ?> onchange="handleRoleChange(this.value)">
+                            <span class="role-box">
+                                <i class="bi bi-person-video3"></i>
+                                <span>Dosen Pembimbing</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
 
-        </form>
+                <!-- Nama Lengkap -->
+                <div class="mb-2">
+                    <label for="reg_nama" class="form-label-custom">Nama Lengkap & Gelar <span class="text-danger">*</span></label>
+                    <div class="input-icon-wrap">
+                        <i class="bi bi-person-vcard field-icon"></i>
+                        <input type="text" class="input-pill" id="reg_nama" name="reg_nama"
+                               placeholder="Contoh: Muhammad Fauzan / Dr. Hendra, M.Kom"
+                               value="<?= htmlspecialchars($reg_nama ?? '') ?>" required>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-2">
+                    <!-- NIM atau NIDN -->
+                    <div class="col-6">
+                        <label for="reg_identifier" class="form-label-custom" id="labelIdentifier">
+                            <?= ($reg_role ?? 'mahasiswa') === 'dosen' ? 'NIDN' : 'NIM' ?> <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-icon-wrap">
+                            <i class="bi bi-card-text field-icon"></i>
+                            <input type="text" class="input-pill" id="reg_identifier" name="reg_identifier"
+                                   placeholder="<?= ($reg_role ?? 'mahasiswa') === 'dosen' ? 'Nomor Induk Dosen' : 'Nomor Induk Mahasiswa' ?>"
+                                   value="<?= htmlspecialchars($reg_identifier ?? '') ?>" required>
+                        </div>
+                    </div>
+
+                    <!-- Username -->
+                    <div class="col-6">
+                        <label for="reg_username" class="form-label-custom">Username <span class="text-danger">*</span></label>
+                        <div class="input-icon-wrap">
+                            <i class="bi bi-at field-icon"></i>
+                            <input type="text" class="input-pill" id="reg_username" name="reg_username"
+                                   placeholder="Username login"
+                                   value="<?= htmlspecialchars($reg_username ?? '') ?>" required autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Khusus Mahasiswa: Kelas -->
+                <div id="mhsFields" style="<?= ($reg_role ?? 'mahasiswa') === 'mahasiswa' ? '' : 'display:none;' ?>" class="mb-2">
+                    <label for="reg_kelas" class="form-label-custom">Pilihan Kelas <span class="text-danger">*</span></label>
+                    <div class="input-icon-wrap">
+                        <i class="bi bi-building field-icon"></i>
+                        <select class="input-pill form-select-custom" id="reg_kelas" name="reg_kelas">
+                            <option value="TI-1A-2025" <?= ($reg_kelas ?? '') === 'TI-1A-2025' ? 'selected' : '' ?>>TI-1A-2025</option>
+                            <option value="TI-1B-2025" <?= ($reg_kelas ?? '') === 'TI-1B-2025' ? 'selected' : '' ?>>TI-1B-2025</option>
+                            <option value="TI-1C-2025" <?= ($reg_kelas ?? '') === 'TI-1C-2025' ? 'selected' : '' ?>>TI-1C-2025</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Khusus Dosen: Email & No. WhatsApp -->
+                <div id="dosenFields" style="<?= ($reg_role ?? 'mahasiswa') === 'dosen' ? '' : 'display:none;' ?>" class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label for="reg_email" class="form-label-custom">Email Dosen <span class="text-danger">*</span></label>
+                        <div class="input-icon-wrap">
+                            <i class="bi bi-envelope field-icon"></i>
+                            <input type="email" class="input-pill" id="reg_email" name="reg_email"
+                                   placeholder="dosen@univ.ac.id"
+                                   value="<?= htmlspecialchars($reg_email ?? '') ?>">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <label for="reg_wa" class="form-label-custom">No. WhatsApp</label>
+                        <div class="input-icon-wrap">
+                            <i class="bi bi-whatsapp field-icon"></i>
+                            <input type="text" class="input-pill" id="reg_wa" name="reg_wa"
+                                   placeholder="081234567890"
+                                   value="<?= htmlspecialchars($reg_wa ?? '') ?>">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <!-- Password -->
+                    <div class="col-6">
+                        <label for="reg_password" class="form-label-custom">Password <span class="text-danger">*</span></label>
+                        <div class="input-icon-wrap" style="position: relative;">
+                            <i class="bi bi-lock field-icon"></i>
+                            <input type="password" class="input-pill" id="reg_password" name="reg_password"
+                                   placeholder="Min. 6 karakter" required autocomplete="new-password"
+                                   style="padding-right: 2.8rem !important;">
+                            <button type="button" class="btn-toggle-eye" onclick="togglePassField('reg_password', this)" title="Lihat/Sembunyikan">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Konfirmasi Password -->
+                    <div class="col-6">
+                        <label for="reg_password_confirm" class="form-label-custom">Konfirmasi <span class="text-danger">*</span></label>
+                        <div class="input-icon-wrap" style="position: relative;">
+                            <i class="bi bi-shield-lock field-icon"></i>
+                            <input type="password" class="input-pill" id="reg_password_confirm" name="reg_password_confirm"
+                                   placeholder="Ulangi password" required autocomplete="new-password"
+                                   style="padding-right: 2.8rem !important;">
+                            <button type="button" class="btn-toggle-eye" onclick="togglePassField('reg_password_confirm', this)" title="Lihat/Sembunyikan">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login mb-3">
+                    <i class="bi bi-person-check-fill"></i>
+                    Daftar Sekarang
+                </button>
+
+                <div class="text-center text-muted small mb-2">
+                    Sudah memiliki akun?
+                    <a href="javascript:void(0)" onclick="switchTab('login')" class="text-primary fw-bold text-decoration-none ms-1">
+                        Masuk ke Portal <i class="bi bi-arrow-right-short"></i>
+                    </a>
+                </div>
+
+                <div class="text-center pt-2 border-top">
+                    <a href="index.php" class="text-muted text-decoration-none small d-inline-flex align-items-center gap-1" style="font-weight: 600; font-size: 0.85rem;">
+                        <i class="bi bi-arrow-left"></i> Kembali ke Beranda Utama
+                    </a>
+                </div>
+            </form>
+        </div><!-- /paneRegister -->
 
     </div><!-- /login-form-panel -->
 
@@ -733,19 +1163,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-document.getElementById("btnToggleLoginPass")?.addEventListener("click", function() {
-    const input = document.getElementById("password");
-    const icon = document.getElementById("loginEyeIcon");
-    if (input.type === "password") {
-        input.type = "text";
-        icon.classList.remove("bi-eye");
-        icon.classList.add("bi-eye-slash");
-    } else {
-        input.type = "password";
-        icon.classList.remove("bi-eye-slash");
-        icon.classList.add("bi-eye");
+    function switchTab(tab) {
+        const paneLogin = document.getElementById('paneLogin');
+        const paneRegister = document.getElementById('paneRegister');
+        const btnLogin = document.getElementById('tabBtnLogin');
+        const btnRegister = document.getElementById('tabBtnRegister');
+        const pageTitle = document.getElementById('pageTitle');
+
+        if (tab === 'register') {
+            paneLogin.style.display = 'none';
+            paneRegister.style.display = 'block';
+            btnLogin.classList.remove('active');
+            btnRegister.classList.add('active');
+            if (pageTitle) pageTitle.innerText = 'Daftar Akun — Bimbingan Skripsi';
+            try { history.replaceState(null, '', '?tab=register'); } catch (e) {}
+            const firstInput = document.getElementById('reg_nama');
+            if (firstInput) firstInput.focus();
+        } else {
+            paneRegister.style.display = 'none';
+            paneLogin.style.display = 'block';
+            btnRegister.classList.remove('active');
+            btnLogin.classList.add('active');
+            if (pageTitle) pageTitle.innerText = 'Masuk — Bimbingan Skripsi';
+            try { history.replaceState(null, '', 'login.php'); } catch (e) {}
+            const firstInput = document.getElementById('username');
+            if (firstInput) firstInput.focus();
+        }
     }
-});
+
+    function handleRoleChange(role) {
+        const mhsFields = document.getElementById('mhsFields');
+        const dosenFields = document.getElementById('dosenFields');
+        const labelIdentifier = document.getElementById('labelIdentifier');
+        const inputIdentifier = document.getElementById('reg_identifier');
+
+        if (role === 'dosen') {
+            if (mhsFields) mhsFields.style.display = 'none';
+            if (dosenFields) dosenFields.style.display = 'flex';
+            if (labelIdentifier) labelIdentifier.innerHTML = 'NIDN <span class="text-danger">*</span>';
+            if (inputIdentifier) inputIdentifier.placeholder = 'Nomor Induk Dosen';
+        } else {
+            if (mhsFields) mhsFields.style.display = 'block';
+            if (dosenFields) dosenFields.style.display = 'none';
+            if (labelIdentifier) labelIdentifier.innerHTML = 'NIM <span class="text-danger">*</span>';
+            if (inputIdentifier) inputIdentifier.placeholder = 'Nomor Induk Mahasiswa';
+        }
+    }
+
+    function togglePassField(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) {
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            }
+        } else {
+            input.type = 'password';
+            if (icon) {
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+    }
+
+    document.getElementById("btnToggleLoginPass")?.addEventListener("click", function() {
+        togglePassField("password", this);
+    });
+
+    // Auto-sync input NIM/NIDN ke Username jika username belum diisi manual
+    const identifierInput = document.getElementById('reg_identifier');
+    const usernameInput = document.getElementById('reg_username');
+    if (identifierInput && usernameInput) {
+        identifierInput.addEventListener('input', function() {
+            if (!usernameInput.dataset.manual) {
+                usernameInput.value = this.value.trim().toLowerCase().replace(/\s+/g, '');
+            }
+        });
+        usernameInput.addEventListener('input', function() {
+            if (this.value.trim().length > 0) {
+                this.dataset.manual = 'true';
+            } else {
+                delete this.dataset.manual;
+            }
+        });
+    }
 </script>
 </body>
 </html>

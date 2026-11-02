@@ -63,8 +63,8 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
         <a href="mahasiswa_bimbingan.php" class="btn btn-sm btn-outline-primary">
             <i class="bi bi-people me-1"></i> Mahasiswa Bimbingan
         </a>
-        <a href="jadwal_saya.php" class="btn btn-sm btn-primary">
-            <i class="bi bi-calendar-plus me-1"></i> Atur Ketersediaan
+        <a href="persetujuan.php" class="btn btn-sm btn-primary">
+            <i class="bi bi-calendar-event me-1"></i> Lihat Jadwal
         </a>
     </div>
 </div>
@@ -118,14 +118,14 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
         </div>
     </div>
 
-    <!-- Slot Waktu Aktif -->
+    <!-- Jadwal Masuk & Antrean -->
     <div class="col-sm-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-info border-4 h-100 bg-white">
-            <h6 class="text-muted small text-uppercase fw-semibold mb-1">Slot Waktu Aktif</h6>
-            <h3 class="fw-bold text-info mb-1"><?= $count_jadwal; ?> <span class="fs-6 text-muted fw-normal">Slot</span></h3>
-            <p class="text-muted small mb-2">Tampil pada jadwal mahasiswa</p>
-            <a href="jadwal_saya.php" class="small text-decoration-none fw-bold text-info">
-                Atur Slot Ketersediaan &rarr;
+            <h6 class="text-muted small text-uppercase fw-semibold mb-1">Jadwal Bimbingan</h6>
+            <h3 class="fw-bold text-info mb-1"><?= ($count_aktif + $count_menunggu); ?> <span class="fs-6 text-muted fw-normal">Sesi</span></h3>
+            <p class="text-muted small mb-2">Permohonan & sesi aktif</p>
+            <a href="persetujuan.php" class="small text-decoration-none fw-bold text-info">
+                Lihat Jadwal &rarr;
             </a>
         </div>
     </div>
@@ -223,17 +223,10 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
                         </div>
                         <i class="bi bi-chevron-right text-muted"></i>
                     </a>
-                    <a href="jadwal_saya.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
-                        <div>
-                            <div class="fw-bold"><i class="bi bi-calendar-plus text-primary me-2"></i>Atur Ketersediaan Waktu</div>
-                            <small class="text-muted">Tentukan hari dan jam konsultasi mahasiswa</small>
-                        </div>
-                        <i class="bi bi-chevron-right text-muted"></i>
-                    </a>
                     <a href="persetujuan.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
                         <div>
-                            <div class="fw-bold"><i class="bi bi-inbox text-warning me-2"></i>Persetujuan & Reschedule</div>
-                            <small class="text-muted">Terima, tolak, atau atur ulang jadwal bimbingan</small>
+                            <div class="fw-bold"><i class="bi bi-calendar-event text-primary me-2"></i>Lihat Jadwal & Persetujuan</div>
+                            <small class="text-muted">Tinjau permohonan bimbingan dan jadwal masuk</small>
                         </div>
                         <?php if ($count_menunggu > 0): ?>
                             <span class="badge bg-danger rounded-pill"><?= $count_menunggu; ?></span>
@@ -245,6 +238,13 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
                         <div>
                             <div class="fw-bold"><i class="bi bi-journal-check text-success me-2"></i>Evaluasi, Nilai & ACC</div>
                             <small class="text-muted">Unduh draft naskah & beri pengesahan bab</small>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </a>
+                    <a href="cek_judul.php" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <div class="fw-bold"><i class="bi bi-shield-check text-info me-2"></i>Cek Kemiripan Judul Skripsi</div>
+                            <small class="text-muted">Deteksi potensi duplikasi & uji orisinalitas topik</small>
                         </div>
                         <i class="bi bi-chevron-right text-muted"></i>
                     </a>

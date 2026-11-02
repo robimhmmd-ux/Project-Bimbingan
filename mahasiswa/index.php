@@ -149,8 +149,9 @@ if ($mhs_id) {
     $recent_bimbingan = [];
 }
 
-// Analisis progres bab 1 - 5
+// Analisis progres tahapan skripsi: ACC Judul, Bab 1 - 5
 $bab_list = [
+    'Judul' => ['label' => 'ACC Judul Skripsi', 'status' => 'belum'],
     'Bab 1' => ['label' => 'Bab 1: Pendahuluan', 'status' => 'belum'],
     'Bab 2' => ['label' => 'Bab 2: Tinjauan Pustaka', 'status' => 'belum'],
     'Bab 3' => ['label' => 'Bab 3: Metodologi Penelitian', 'status' => 'belum'],
@@ -158,13 +159,28 @@ $bab_list = [
     'Bab 5' => ['label' => 'Bab 5: Kesimpulan & Saran', 'status' => 'belum'],
 ];
 
+// Cek status judul skripsi mahasiswa
+if ($mhs && !empty($mhs['judul_skripsi']) && $mhs['judul_skripsi'] !== 'Belum Ditentukan') {
+    $bab_list['Judul']['status'] = 'acc';
+}
+
 $bab_acc_count = 0;
 foreach ($riwayat_semua as $row) {
+    if (stripos($row['bab_pembahasan'], 'Judul') !== false) {
+        if (in_array($row['status'], ['selesai', 'disetujui'])) {
+            $bab_list['Judul']['status'] = 'acc';
+        } elseif ($row['status'] === 'revisi' && $bab_list['Judul']['status'] !== 'acc') {
+            $bab_list['Judul']['status'] = 'revisi';
+        } elseif ($row['status'] === 'menunggu' && $bab_list['Judul']['status'] === 'belum') {
+            $bab_list['Judul']['status'] = 'proses';
+        }
+    }
+
     foreach ($bab_list as $key => $val) {
+        if ($key === 'Judul') continue;
         if (stripos($row['bab_pembahasan'], $key) !== false) {
             if (in_array($row['status'], ['selesai', 'disetujui']) && $val['status'] !== 'acc') {
                 $bab_list[$key]['status'] = 'acc';
-                $bab_acc_count++;
             } elseif ($row['status'] === 'revisi' && $val['status'] === 'belum') {
                 $bab_list[$key]['status'] = 'revisi';
             } elseif ($row['status'] === 'menunggu' && $val['status'] === 'belum') {
@@ -174,8 +190,46 @@ foreach ($riwayat_semua as $row) {
     }
 }
 
-// Hitung estimasi progres keseluruhan (berdasarkan 5 Bab @ 20%)
-$persen_progres = min(100, $bab_acc_count * 20);
+// Cek logbook_bimbingan untuk status resmi ACC
+if (!empty($mhs_id)) {
+    try {
+        $stmt_lb_check = $pdo->prepare("SELECT status_bab FROM logbook_bimbingan WHERE mahasiswa_id = :mid");
+        $stmt_lb_check->execute([':mid' => $mhs_id]);
+        $logs = $stmt_lb_check->fetchAll(PDO::FETCH_COLUMN);
+        if (in_array('acc_judul', $logs)) {
+            $bab_list['Judul']['status'] = 'acc';
+        }
+    } catch (Exception $e) {}
+}
+
+// Hitung total milestone ACC
+foreach ($bab_list as $val) {
+    if ($val['status'] === 'acc') {
+        $bab_acc_count++;
+    }
+}
+
+// Ambil nilai progres tertinggi dari pengajuan_bimbingan jika sudah dinilai dosen
+$db_max_p = 0;
+if (!empty($mhs_id)) {
+    try {
+        $stmt_max_p = $pdo->prepare("SELECT MAX(nilai_progres) FROM pengajuan_bimbingan WHERE mahasiswa_id = :mid");
+        $stmt_max_p->execute([':mid' => $mhs_id]);
+        $db_max_p = (int)$stmt_max_p->fetchColumn();
+    } catch (Exception $e) {}
+}
+
+if ($db_max_p > 0) {
+    $persen_progres = $db_max_p;
+} else {
+    // Estimasi progres: jika ACC Judul = 20%, lalu bertahap hingga Bab 5
+    if ($bab_list['Judul']['status'] === 'acc') {
+        $persen_progres = min(100, 20 + max(0, $bab_acc_count - 1) * 16);
+    } else {
+        $persen_progres = 0;
+    }
+}
+
 if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
     $persen_progres = 100;
 } elseif ($mhs && $mhs['status_kelulusan'] === 'siap_sidang' && $persen_progres < 90) {
