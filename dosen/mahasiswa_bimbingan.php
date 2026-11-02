@@ -722,7 +722,7 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                                                         <?php endif; ?>
                                                                         <div class="d-flex flex-wrap gap-2 mt-2">
                                                                             <?php if (!empty($p_info['pengajuan_judul']['file_draft'])): ?>
-                                                                                <a href="../assets/uploads/<?= htmlspecialchars($p_info['pengajuan_judul']['file_draft']); ?>" 
+                                                                                <a href="../unduh_berkas.php?id=<?= $p_info['pengajuan_judul']['id']; ?>" 
                                                                                    class="btn btn-sm btn-outline-danger shadow-sm" target="_blank" download>
                                                                                     <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Dokumen Judul
                                                                                 </a>

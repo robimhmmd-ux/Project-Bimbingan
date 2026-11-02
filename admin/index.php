@@ -1,10 +1,8 @@
 <?php
 // admin/index.php - Dashboard Administrator
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../config/database.php';
 
-// Proteksi akses role admin (dilakukan sebelum output HTML)
+// Proteksi akses role admin
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../login.php");
     exit;
@@ -13,7 +11,6 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role
 $page_title   = "Dashboard Admin";
 $current_page = "dashboard";
 
-require_once '../config/database.php';
 require_once '../templates/header.php';
 require_once '../templates/sidebar_admin.php';
 

@@ -31,4 +31,10 @@ try {
 
 // Muat fungsi pembantu progres dan deteksi judul
 require_once __DIR__ . '/progres_helper.php';
+
+// Inisialisasi sesi aplikasi terpusat (TiDB Cloud) secara otomatis
+if (file_exists(__DIR__ . '/session_helper.php')) {
+    require_once __DIR__ . '/session_helper.php';
+    init_app_session($pdo);
+}
 ?>

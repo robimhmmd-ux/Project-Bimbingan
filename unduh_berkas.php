@@ -1,8 +1,5 @@
 <?php
 // unduh_berkas.php - Streaming & Pengunduhan Berkas Draft Skripsi (TiDB Cloud / Local Storage)
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 require_once __DIR__ . '/config/database.php';
 
 // Verifikasi sesi login pengguna (Admin, Dosen, atau Mahasiswa)

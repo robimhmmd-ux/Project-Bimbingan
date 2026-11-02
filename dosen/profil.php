@@ -1,16 +1,12 @@
 <?php
 // dosen/profil.php - Edit Akun, Biodata Profil & Foto Profil Dosen (Salsa)
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../config/database.php';
 
 // Proteksi akses role dosen
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'dosen') {
     header("Location: ../login.php");
     exit;
 }
-
-require_once '../config/database.php';
 if (file_exists(__DIR__ . '/../config/avatar_helper.php')) {
     require_once __DIR__ . '/../config/avatar_helper.php';
 }

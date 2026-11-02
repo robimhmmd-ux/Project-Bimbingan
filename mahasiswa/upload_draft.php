@@ -402,7 +402,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                             
                             <div class="d-flex flex-wrap gap-2 mb-2">
                                 <?php if (!empty($pengajuan_judul['file_draft'])): ?>
-                                    <a href="../assets/uploads/<?= htmlspecialchars($pengajuan_judul['file_draft']); ?>" target="_blank" download class="btn btn-sm btn-outline-danger">
+                                    <a href="../unduh_berkas.php?id=<?= $pengajuan_judul['id']; ?>" target="_blank" download class="btn btn-sm btn-outline-danger">
                                         <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Dokumen Usulan Judul
                                     </a>
                                 <?php endif; ?>

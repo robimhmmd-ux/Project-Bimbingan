@@ -3,12 +3,9 @@
 $page_title   = "Rekapitulasi & Cetak Laporan Bimbingan";
 $current_page = "laporan";
 
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 // Cek autentikasi dosen
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'dosen') {
     header("Location: ../login.php");
     exit;
@@ -97,7 +94,6 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
             box-shadow: none !important;
             text-shadow: none !important;
             font-family: 'Times New Roman', Times, 'Liberation Serif', serif;
-        }
         }
 
         body {

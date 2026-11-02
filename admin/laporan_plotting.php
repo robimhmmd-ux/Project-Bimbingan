@@ -1,16 +1,12 @@
 <?php
 // admin/laporan_plotting.php - Rekapitulasi & Cetak Laporan Pembagian Bimbingan
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../config/database.php';
 
 // Proteksi akses role admin
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../login.php");
     exit;
 }
-
-require_once '../config/database.php';
 
 // Filter parameter
 $filter_dosen_id = isset($_GET['dosen_id']) && $_GET['dosen_id'] !== '' ? (int)$_GET['dosen_id'] : 0;

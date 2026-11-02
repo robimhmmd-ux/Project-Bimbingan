@@ -1,14 +1,12 @@
 <?php
 // mahasiswa/cetak_laporan.php - Format Cetak Resmi Kartu Kendali & Laporan Progres Skripsi
-session_start();
+require_once __DIR__ . '/../config/database.php';
 
 // Proteksi akses
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'mahasiswa') {
     header("Location: ../login.php");
     exit;
 }
-
-require_once '../config/database.php';
 
 // Ambil data mahasiswa dan dosen pembimbing
 $stmt_mhs = $pdo->prepare("

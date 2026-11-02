@@ -1,16 +1,12 @@
 <?php
 // admin/data_dosen.php - Manajemen Master Data Dosen Pembimbing
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../config/database.php';
 
 // Proteksi akses role admin
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../login.php");
     exit;
 }
-
-require_once '../config/database.php';
 
 $success_msg = '';
 $error_msg   = '';

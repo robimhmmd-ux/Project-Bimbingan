@@ -21,7 +21,7 @@ class TiDBSessionHandler implements SessionHandlerInterface {
             $stmt = $this->pdo->prepare("SELECT data FROM user_sessions WHERE id = :id AND last_activity > :exp LIMIT 1");
             $stmt->execute([
                 ':id'  => $id,
-                ':exp' => time() - (86400 * 7) // Berlaku 7 hari
+                ':exp' => time() - (86400 * 30) // Berlaku 30 hari
             ]);
             $data = $stmt->fetchColumn();
             return ($data !== false) ? (string)$data : '';
@@ -88,7 +88,7 @@ function init_app_session(?PDO $pdo = null): void {
     $is_secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
     
     session_set_cookie_params([
-        'lifetime' => 86400 * 7,
+        'lifetime' => 86400 * 30, // 30 hari
         'path'     => '/',
         'domain'   => '',
         'secure'   => $is_secure,
@@ -104,4 +104,3 @@ function init_app_session(?PDO $pdo = null): void {
 
     session_start();
 }
-

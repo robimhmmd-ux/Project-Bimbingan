@@ -417,7 +417,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                     <?php endif; ?>
                 </ul>
             </div>
-            <div class="d-inline-flex align-items-center gap-2 text-white">
+            <a href="profil.php" class="text-decoration-none d-inline-flex align-items-center gap-2 text-white" title="Buka Profil & Pengaturan Akun">
                 <?php if (function_exists('render_avatar')): ?>
                     <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white'); ?>
                 <?php endif; ?>
@@ -425,7 +425,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                     <span class="small d-none d-md-inline text-white-50">Halo,</span>
                     <span class="fw-bold text-white"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
                 </div>
-            </div>
+            </a>
             <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
                 <i class="bi bi-person-gear"></i><span class="d-none d-md-inline">Profil</span>
             </a>

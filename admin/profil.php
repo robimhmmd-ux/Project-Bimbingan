@@ -1,16 +1,12 @@
 <?php
 // admin/profil.php - Manajemen Profil, Nama Lengkap & Pengaturan Akun Administrator
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../config/database.php';
 
 // Proteksi akses role admin (wajib sebelum ada output HTML)
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../login.php");
     exit;
 }
-
-require_once '../config/database.php';
 if (file_exists(__DIR__ . '/../config/avatar_helper.php')) {
     require_once __DIR__ . '/../config/avatar_helper.php';
 }

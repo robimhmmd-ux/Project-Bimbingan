@@ -1,7 +1,9 @@
 <?php
 // index.php - Portal Publik Sistem Informasi Pengelolaan Bimbingan Skripsi
 // Model Desain: Terinspirasi dari Bahasa Desain Modern Gojek (Human, Bold, Clean)
-session_start();
+if (file_exists(__DIR__ . '/config/database.php')) {
+    require_once __DIR__ . '/config/database.php';
+}
 
 // Jika pengguna sudah login, arahkan langsung ke dashboard sesuai peran
 if (isset($_SESSION['role'])) {

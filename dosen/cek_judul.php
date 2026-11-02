@@ -1,7 +1,6 @@
 <?php
 // dosen/cek_judul.php - Pencarian & Deteksi Kemiripan Judul Skripsi Mahasiswa
-session_start();
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 // Validasi otentikasi role dosen
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'dosen') {
