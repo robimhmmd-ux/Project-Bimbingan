@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS admin_profil (
     email VARCHAR(100) DEFAULT 'admin@univ.ac.id',
     no_whatsapp VARCHAR(20) DEFAULT '081234567890',
     jabatan VARCHAR(100) DEFAULT 'Staf Administrasi Akademik & Skripsi',
-    foto_profil VARCHAR(255) DEFAULT 'default.png',
+    foto_profil MEDIUMTEXT NULL,
     foto_zoom DECIMAL(3,2) DEFAULT 1.00,
     foto_width INT DEFAULT 135,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS dosen (
     nama_dosen VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
     no_whatsapp VARCHAR(20),
-    foto_profil VARCHAR(255) DEFAULT 'default.png',
+    foto_profil MEDIUMTEXT NULL,
     foto_zoom DECIMAL(3,2) DEFAULT 1.00,
     foto_width INT DEFAULT 135,
     kuota_bimbingan INT DEFAULT 5,
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS mahasiswa (
     judul_skripsi VARCHAR(255) DEFAULT 'Belum Ditentukan',
     dosen_pembimbing_id INT NULL,
     status_pembimbing ENUM('belum_diplot', 'menunggu_konfirmasi', 'aktif') DEFAULT 'belum_diplot',
-    foto_profil VARCHAR(255) DEFAULT 'default.png',
+    foto_profil MEDIUMTEXT NULL,
     foto_zoom DECIMAL(3,2) DEFAULT 1.00,
     foto_width INT DEFAULT 135,
     status_kelulusan ENUM('proses_bimbingan', 'siap_sidang', 'lulus') DEFAULT 'proses_bimbingan',
@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS pengajuan_bimbingan (
     bab_pembahasan VARCHAR(100) NOT NULL,
     catatan_mahasiswa TEXT,
     file_draft VARCHAR(255) NULL,
+    file_draft_data LONGTEXT NULL,
     link_drive VARCHAR(255) NULL,
     status ENUM('menunggu', 'disetujui', 'ditolak', 'revisi', 'selesai') DEFAULT 'menunggu',
     catatan_dosen TEXT NULL,
@@ -157,6 +158,17 @@ CREATE TABLE IF NOT EXISTS notifikasi (
     is_read TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 10. TABEL SESI TERPUSAT (PERSISTEN SERVERLESS / CLOUD)
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id VARCHAR(128) NOT NULL PRIMARY KEY,
+    user_id INT NULL,
+    role VARCHAR(20) NULL,
+    data MEDIUMTEXT NOT NULL,
+    last_activity INT NOT NULL,
+    INDEX idx_last_activity (last_activity),
+    INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB;
 
 -- -------------------------------------------------------------

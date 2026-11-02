@@ -1,10 +1,15 @@
 {
+  "regions": ["sin1"],
   "functions": {
     "api/index.php": {
       "runtime": "vercel-php@0.7.3"
     }
   },
   "routes": [
+    {
+      "src": "/assets/uploads/(.*)",
+      "dest": "/api/index.php"
+    },
     {
       "src": "/assets/(.*)",
       "dest": "/assets/$1"

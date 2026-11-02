@@ -11,6 +11,9 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
 }
 
 require_once '../config/database.php';
+if (file_exists(__DIR__ . '/../config/avatar_helper.php')) {
+    require_once __DIR__ . '/../config/avatar_helper.php';
+}
 
 $my_user_id = $_SESSION['user_id'];
 $success_msg = '';
@@ -39,14 +42,7 @@ $mhs_id = $mhs['id'];
 
 // Path Foto Dosen Pembimbing Resmi
 $foto_dosen_src = null;
-if (!empty($mhs['foto_dosen']) && $mhs['foto_dosen'] !== 'default.png') {
-    $fname_dosen = basename($mhs['foto_dosen']);
-    if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname_dosen)) {
-        $foto_dosen_src = '../assets/uploads/profile/' . htmlspecialchars($fname_dosen);
-    } elseif (file_exists(__DIR__ . '/../assets/uploads/' . $fname_dosen)) {
-        $foto_dosen_src = '../assets/uploads/' . htmlspecialchars($fname_dosen);
-    }
-}
+$foto_dosen_src = get_avatar_url($mhs['foto_dosen'] ?? null);
 
 // Jadwal Dosen Pembimbing untuk Modal Profil Dosen
 $jadwal_dosen_list = [];
@@ -104,25 +100,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 }
             }
 
-            // A. Proses Foto yang Telah Disesuaikan / Di-Crop (Base64)
-            if (empty($error_msg) && !empty($_POST['cropped_photo']) && strpos($_POST['cropped_photo'], 'data:image/') === 0) {
-                $cropped_data = $_POST['cropped_photo'];
-                if (preg_match('/^data:image\/(\w+);base64,/', $cropped_data)) {
-                    $img_raw = substr($cropped_data, strpos($cropped_data, ',') + 1);
-                    $decoded_img = base64_decode($img_raw);
-                    if ($decoded_img !== false) {
-                        $upload_dir = '../assets/uploads/';
-                        if (!is_dir($upload_dir)) {
-                            mkdir($upload_dir, 0777, true);
-                        }
-                        $foto_name = 'profil_' . $mhs_id . '_' . uniqid() . '.jpg';
-                        if (file_put_contents($upload_dir . $foto_name, $decoded_img)) {
-                            $foto_baru = $foto_name;
-                        } else {
-                            $error_msg = "Gagal menyimpan foto hasil penyesuaian.";
-                        }
-                    }
-                }
+            // A. Proses Foto yang Telah Disesuaikan / Di-Crop (Base64 Data URI - Cloud & Serverless Safe)
+            if (empty($error_msg) && !empty($_POST['cropped_photo']) && str_starts_with($_POST['cropped_photo'], 'data:image/')) {
+                $foto_baru = $_POST['cropped_photo'];
             }
             // B. Fallback Upload File Biasa jika tidak melalui crop modal
             elseif (empty($error_msg) && isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === UPLOAD_ERR_OK) {
@@ -137,15 +117,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 } elseif ($file_size > 2 * 1024 * 1024) {
                     $error_msg = "Ukuran file foto profil maksimal 2 MB.";
                 } else {
-                    $upload_dir = '../assets/uploads/';
-                    if (!is_dir($upload_dir)) {
-                        mkdir($upload_dir, 0777, true);
-                    }
-                    $foto_name = 'profil_' . $mhs_id . '_' . uniqid() . '.' . $ext;
-                    if (move_uploaded_file($file_tmp, $upload_dir . $foto_name)) {
-                        $foto_baru = $foto_name;
+                    $mime_type = ($ext === 'png') ? 'image/png' : (($ext === 'webp') ? 'image/webp' : 'image/jpeg');
+                    $raw_bytes = @file_get_contents($file_tmp);
+                    if ($raw_bytes !== false) {
+                        $foto_baru = 'data:' . $mime_type . ';base64,' . base64_encode($raw_bytes);
                     } else {
-                        $error_msg = "Gagal mengunggah foto profil ke server.";
+                        $error_msg = "Gagal memproses file foto profil.";
                     }
                 }
             }
@@ -158,6 +135,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     // Update data di tabel users (username)
                     $stmt_u = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
                     $stmt_u->execute([':u' => $username, ':uid' => $my_user_id]);
+
+                    // Hapus berkas foto lama jika mengunggah foto profil baru
+                    if (!empty($foto_baru) && $foto_baru !== $mhs['foto_profil'] && function_exists('delete_old_profile_photo')) {
+                        delete_old_profile_photo($mhs['foto_profil'] ?? null);
+                    }
 
                     // Update data di tabel mahasiswa
                     $stmt_m = $pdo->prepare("
@@ -182,6 +164,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                     // Perbarui session
                     $_SESSION['username'] = $username;
+                    $_SESSION['nama_lengkap'] = $nama_lengkap;
+                    $_SESSION['foto_profil']  = $foto_baru;
                     $success_msg = "Data akun dan foto profil Anda berhasil diperbarui!";
 
                     // Refresh data mhs
@@ -296,10 +280,12 @@ require_once '../templates/sidebar_mahasiswa.php';
                 <div class="mb-3 position-relative d-inline-block">
                     <div class="student-avatar-frame">
                         <div class="student-avatar-inner">
-                            <?php if (!empty($mhs['foto_profil']) && $mhs['foto_profil'] !== 'default.png' && file_exists('../assets/uploads/' . $mhs['foto_profil'])): ?>
-                                <img id="fotoProfilPreview" src="../assets/uploads/<?= htmlspecialchars($mhs['foto_profil']); ?>?v=<?= time(); ?>" alt="Foto Profil">
+                            <?php 
+                            $prev_url = function_exists('get_avatar_url') ? get_avatar_url($mhs['foto_profil'] ?? '') : null;
+                            if ($prev_url): ?>
+                                <img id="fotoProfilPreview" src="<?= htmlspecialchars($prev_url); ?>" alt="Foto Profil" style="width:100%; height:100%; object-fit:cover;">
                             <?php else: ?>
-                                <div id="fotoProfilPreview" class="avatar-placeholder bg-primary text-white d-flex align-items-center justify-content-center fw-bold">
+                                <div id="fotoProfilPreview" class="avatar-placeholder bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width:100%; height:100%;">
                                     <?= strtoupper(substr($mhs['nama_lengkap'] ?? 'M', 0, 1)); ?>
                                 </div>
                             <?php endif; ?>
@@ -461,7 +447,7 @@ require_once '../templates/sidebar_mahasiswa.php';
                                     <label for="foto_profil" class="form-label small fw-semibold text-secondary mb-0">
                                         Unggah Foto Profil Baru
                                     </label>
-                                    <?php if (!empty($mhs['foto_profil']) && $mhs['foto_profil'] !== 'default.png' && file_exists('../assets/uploads/' . $mhs['foto_profil'])): ?>
+                                    <?php if (!empty($mhs['foto_profil']) && $mhs['foto_profil'] !== 'default.png'): ?>
                                         <button type="button" class="btn btn-sm btn-outline-primary py-0.5 px-2.5 rounded-pill small fw-semibold" id="btnAdjustExistingPhoto" style="font-size: 0.74rem;">
                                             <i class="bi bi-crop me-1"></i>Sesuaikan Foto Saat Ini
                                         </button>

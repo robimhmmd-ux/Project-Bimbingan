@@ -450,9 +450,7 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                 <td class="text-center fw-semibold text-muted"><?= $idx + 1; ?></td>
                                 <td>
                                     <div class="d-flex align-items-start gap-2">
-                                        <div class="avatar-circle avatar-sm avatar-primary mt-1">
-                                            <?= strtoupper(substr($mhs['nama_lengkap'], 0, 1)); ?>
-                                        </div>
+                                        <?= function_exists('render_avatar') ? render_avatar($mhs['foto_profil'] ?? '', $mhs['nama_lengkap'] ?? 'M', 38, 'mt-1') : '<div class="avatar-circle avatar-sm avatar-primary mt-1">' . strtoupper(substr($mhs['nama_lengkap'], 0, 1)) . '</div>'; ?>
                                         <div>
                                             <div class="fw-bold text-dark"><?= htmlspecialchars($mhs['nama_lengkap']); ?></div>
                                             <div class="small text-muted d-flex flex-wrap align-items-center gap-1 mt-1">
@@ -802,7 +800,7 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                                                                 <strong><?= htmlspecialchars($h['bab_pembahasan']); ?></strong>
                                                                                 <div class="mt-1 d-flex flex-wrap gap-1">
                                                                                     <?php if (!empty($h['file_draft'])): ?>
-                                                                                        <a href="../assets/uploads/<?= htmlspecialchars($h['file_draft']); ?>" target="_blank" class="badge bg-danger-subtle text-danger border border-danger-subtle text-decoration-none" title="Unduh PDF"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+                                                                                        <a href="../unduh_berkas.php?id=<?= $h['id']; ?>" target="_blank" class="badge bg-danger-subtle text-danger border border-danger-subtle text-decoration-none" title="Unduh PDF"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
                                                                                     <?php endif; ?>
                                                                                     <?php if (!empty($h['link_drive'])): ?>
                                                                                         <a href="<?= htmlspecialchars($h['link_drive']); ?>" target="_blank" rel="noopener noreferrer" class="badge bg-success-subtle text-success border border-success-subtle text-decoration-none" title="Buka Google Drive"><i class="bi bi-google me-1"></i>Drive</a>

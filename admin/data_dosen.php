@@ -341,9 +341,7 @@ require_once '../templates/sidebar_admin.php';
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="avatar-initial bg-success-subtle text-success">
-                                            <?= $initial; ?>
-                                        </div>
+                                        <?= function_exists('render_avatar') ? render_avatar($row['foto_profil'] ?? '', $row['nama_dosen'] ?? 'D', 38, '', 'success') : '<div class="avatar-initial bg-success-subtle text-success">' . $initial . '</div>'; ?>
                                         <div>
                                             <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_dosen']); ?></div>
                                             <span class="font-monospace text-muted small">NIDN: <?= htmlspecialchars($row['nidn']); ?></span>

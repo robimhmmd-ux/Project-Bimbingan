@@ -210,15 +210,7 @@ function format_indo_date($date_str) {
                 </div>
                 <div class="card-body text-center p-4">
                     <?php 
-                    $foto_dosen_src = null;
-                    if (!empty($mhs['foto_dosen']) && $mhs['foto_dosen'] !== 'default.png') {
-                        $fname_dosen = basename($mhs['foto_dosen']);
-                        if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname_dosen)) {
-                            $foto_dosen_src = '../assets/uploads/profile/' . htmlspecialchars($fname_dosen);
-                        } elseif (file_exists(__DIR__ . '/../assets/uploads/' . $fname_dosen)) {
-                            $foto_dosen_src = '../assets/uploads/' . htmlspecialchars($fname_dosen);
-                        }
-                    }
+                    $foto_dosen_src = get_avatar_url($mhs['foto_dosen'] ?? null);
                     ?>
                     <div class="mb-3">
                         <div class="position-relative d-inline-block">
@@ -478,7 +470,7 @@ function format_indo_date($date_str) {
                                     </td>
                                     <td>
                                         <?php if (!empty($sesi['file_draft'])): ?>
-                                            <a href="../assets/uploads/<?= htmlspecialchars($sesi['file_draft']); ?>" target="_blank" class="btn btn-outline-danger btn-sm py-1 px-2 mb-1 d-inline-flex align-items-center">
+                                            <a href="../unduh_berkas.php?id=<?= $sesi['id']; ?>" target="_blank" class="btn btn-outline-danger btn-sm py-1 px-2 mb-1 d-inline-flex align-items-center">
                                                 <i class="bi bi-file-earmark-pdf me-1"></i>Lihat PDF
                                             </a>
                                         <?php endif; ?>

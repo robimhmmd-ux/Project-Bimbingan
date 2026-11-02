@@ -312,7 +312,7 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                             <td>
                                 <div class="d-flex flex-column gap-1">
                                     <?php if (!empty($row['file_draft'])): ?>
-                                        <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" 
+                                        <a href="../unduh_berkas.php?id=<?= $row['id']; ?>" 
                                            class="btn btn-sm btn-outline-danger fw-semibold shadow-sm" 
                                            target="_blank" download>
                                             <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh PDF

@@ -55,9 +55,14 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
 
 <!-- Header Halaman -->
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-2 pb-2 mb-4 border-bottom">
-    <div>
-        <h1 class="h2 fw-bold text-dark mb-1">Dashboard Dosen Pembimbing</h1>
-        <p class="text-muted small mb-0">Selamat datang di portal pembimbing, <strong><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Bapak/Ibu Dosen'); ?></strong>.</p>
+    <div class="d-flex align-items-center gap-3">
+        <a href="profil.php" title="Kelola Profil & Foto Dosen">
+            <?= function_exists('render_avatar') ? render_avatar($dosen['foto_profil'] ?? $_SESSION['foto_profil'] ?? '', $dosen['nama_dosen'] ?? 'Dosen', 54, '', 'success') : ''; ?>
+        </a>
+        <div>
+            <h1 class="h2 fw-bold text-dark mb-1">Dashboard Dosen Pembimbing</h1>
+            <p class="text-muted small mb-0">Selamat datang di portal pembimbing, <strong><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Bapak/Ibu Dosen'); ?></strong> (NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?>).</p>
+        </div>
     </div>
     <div class="btn-toolbar mb-2 mb-md-0 gap-2">
         <a href="mahasiswa_bimbingan.php" class="btn btn-sm btn-outline-primary">

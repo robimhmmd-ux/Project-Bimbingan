@@ -1,17 +1,26 @@
 <?php
 // templates/header.php
-if (session_status() === PHP_SESSION_NONE) {
+if (!isset($pdo) && file_exists(__DIR__ . '/../config/database.php')) {
+    require_once __DIR__ . '/../config/database.php';
+}
+if (file_exists(__DIR__ . '/../config/session_helper.php')) {
+    require_once __DIR__ . '/../config/session_helper.php';
+    init_app_session($pdo ?? null);
+} elseif (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
 // Proteksi login umum
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../login.php");
     exit;
 }
 
-// Pastikan koneksi database tersedia untuk sinkronisasi akun
-if (!isset($pdo) && file_exists(__DIR__ . '/../config/database.php')) {
-    require_once __DIR__ . '/../config/database.php';
+if (file_exists(__DIR__ . '/../config/avatar_helper.php')) {
+    require_once __DIR__ . '/../config/avatar_helper.php';
+}
+if (file_exists(__DIR__ . '/../config/storage_helper.php')) {
+    require_once __DIR__ . '/../config/storage_helper.php';
 }
 
 $css_ver     = file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : time();
@@ -35,10 +44,13 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     // Handle aksi klik notifikasi spesifik (tandai dibaca lalu redirect ke link tujuan)
     if (isset($_GET['open_nid']) && !empty($_GET['open_nid'])) {
         $nid = (int)$_GET['open_nid'];
-        $dest = $_GET['dest'] ?? 'index.php';
+        $dest = trim($_GET['dest'] ?? 'index.php');
         try {
             $pdo->prepare("UPDATE notifikasi SET is_read = 1 WHERE id = :nid AND user_id = :uid")->execute([':nid' => $nid, ':uid' => $cur_user_id]);
         } catch (PDOException $e) {}
+        if (empty($dest)) {
+            $dest = 'index.php';
+        }
         header("Location: " . $dest);
         exit;
     }
@@ -54,16 +66,6 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     } catch (PDOException $e) {
         $notif_unread_count = 0;
         $notif_list = [];
-    }
-}
-
-// Selalu sinkronkan username di session dengan database terkini
-if (isset($pdo) && isset($_SESSION['user_id'])) {
-    $stmt_sync_u = $pdo->prepare("SELECT username FROM users WHERE id = :uid LIMIT 1");
-    $stmt_sync_u->execute([':uid' => $cur_user_id]);
-    $live_u = $stmt_sync_u->fetchColumn();
-    if ($live_u) {
-        $_SESSION['username'] = $live_u;
     }
 }
 ?>
@@ -415,9 +417,14 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                     <?php endif; ?>
                 </ul>
             </div>
-            <div class="d-inline-flex align-items-center gap-1 text-white">
-                <span class="small d-none d-md-inline text-white-50">Halo,</span>
-                <span class="fw-bold text-white"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
+            <div class="d-inline-flex align-items-center gap-2 text-white">
+                <?php if (function_exists('render_avatar')): ?>
+                    <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white'); ?>
+                <?php endif; ?>
+                <div>
+                    <span class="small d-none d-md-inline text-white-50">Halo,</span>
+                    <span class="fw-bold text-white"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
+                </div>
             </div>
             <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
                 <i class="bi bi-person-gear"></i><span class="d-none d-md-inline">Profil</span>

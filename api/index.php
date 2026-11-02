@@ -6,6 +6,9 @@ $rootDir = realpath(__DIR__ . '/..');
 // Handle root path
 if ($uri === '/' || $uri === '' || empty($uri)) {
     $target = $rootDir . DIRECTORY_SEPARATOR . 'index.php';
+} elseif (str_starts_with($uri, '/assets/uploads/')) {
+    $_GET['file'] = basename($uri);
+    $target = $rootDir . DIRECTORY_SEPARATOR . 'unduh_berkas.php';
 } else {
     $target = realpath($rootDir . $uri);
 }

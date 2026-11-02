@@ -11,6 +11,9 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'dosen') {
 }
 
 require_once '../config/database.php';
+if (file_exists(__DIR__ . '/../config/avatar_helper.php')) {
+    require_once __DIR__ . '/../config/avatar_helper.php';
+}
 
 $page_title   = "Profil & Pengaturan Akun";
 $current_page = "profil";
@@ -76,16 +79,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
             } elseif ($file_size > $max_size) {
                 $error_msg = "Ukuran foto maksimal 2 MB.";
             } else {
-                $upload_dir = '../assets/uploads/profile/';
-                if (!is_dir($upload_dir)) {
-                    mkdir($upload_dir, 0777, true);
-                }
-
-                $foto_nama_baru = 'dosen_' . $user_id . '_' . time() . '.' . $file_ext;
-                $target_file = $upload_dir . $foto_nama_baru;
-
-                if (!move_uploaded_file($file_tmp, $target_file)) {
-                    $error_msg = "Gagal mengunggah foto profil.";
+                $mime_type = ($file_ext === 'png') ? 'image/png' : (($file_ext === 'webp') ? 'image/webp' : 'image/jpeg');
+                $raw_bytes = @file_get_contents($file_tmp);
+                if ($raw_bytes !== false) {
+                    $foto_nama_baru = 'data:' . $mime_type . ';base64,' . base64_encode($raw_bytes);
+                } else {
+                    $error_msg = "Gagal memproses berkas foto profil.";
                 }
             }
         }
@@ -97,6 +96,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
                 // Update users table (username)
                 $stmt_up_u = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
                 $stmt_up_u->execute([':u' => $username, ':uid' => $user_id]);
+
+                // Hapus berkas foto lama jika mengunggah foto profil baru
+                if (!empty($foto_nama_baru) && $foto_nama_baru !== $dosen['foto_profil'] && function_exists('delete_old_profile_photo')) {
+                    delete_old_profile_photo($dosen['foto_profil'] ?? null);
+                }
 
                 // Update dosen table
                 $stmt_up = $pdo->prepare("
@@ -174,8 +178,8 @@ require_once '../templates/header.php';
 require_once '../templates/sidebar_dosen.php';
 
 // Tentukan path foto profil
-$foto_path = '../assets/uploads/profile/' . ($dosen['foto_profil'] ?? '');
-$has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default.png' && file_exists($foto_path);
+$foto_url = function_exists('get_avatar_url') ? get_avatar_url($dosen['foto_profil'] ?? '') : null;
+$has_foto = !empty($foto_url);
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
@@ -206,7 +210,7 @@ $has_foto  = !empty($dosen['foto_profil']) && $dosen['foto_profil'] !== 'default
         <div class="card shadow-sm border-0 text-center p-4">
             <div class="mb-3 position-relative d-inline-block mx-auto">
                 <?php if ($has_foto): ?>
-                    <img src="<?= htmlspecialchars($foto_path); ?>" 
+                    <img src="<?= htmlspecialchars($foto_url); ?>" 
                          alt="Foto Profil Dosen" 
                          class="rounded-circle img-thumbnail shadow object-fit-cover" 
                          style="width: 140px; height: 140px;">

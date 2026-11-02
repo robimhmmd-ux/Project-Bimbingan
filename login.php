@@ -1,7 +1,13 @@
 <?php
 // login.php - Autentikasi Pengguna Multi-Role & Pendaftaran Akun
 // Model Desain: Perpaduan Karakter Wisudawan Akademik dengan Warna Baru Gojek Green Modern
-session_start();
+require_once 'config/database.php';
+if (file_exists('config/session_helper.php')) {
+    require_once 'config/session_helper.php';
+    init_app_session($pdo);
+} elseif (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 if (isset($_SESSION['role'])) {
     if ($_SESSION['role'] === 'admin')         header("Location: admin/index.php");
@@ -192,6 +198,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Abaikan jika query profil gagal
                     }
 
+                    // Pengaturan Cookie Remember Me
+                    $remember_me = !empty($_POST['remember_me']);
+                    $is_secure   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+                    $cookie_exp  = $remember_me ? (time() + (86400 * 30)) : 0;
+                    setcookie(session_name(), session_id(), [
+                        'expires'  => $cookie_exp,
+                        'path'     => '/',
+                        'domain'   => '',
+                        'secure'   => $is_secure,
+                        'httponly' => true,
+                        'samesite' => 'Lax'
+                    ]);
+
                     if ($user['role'] === 'admin')         header("Location: admin/index.php");
                     elseif ($user['role'] === 'dosen')     header("Location: dosen/index.php");
                     elseif ($user['role'] === 'mahasiswa') header("Location: mahasiswa/index.php");
@@ -340,16 +359,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             justify-content: center;
         }
 
-        @keyframes float-body {
-            0%, 100% { transform: translateY(0); }
-            50%       { transform: translateY(-8px); }
+        .character-canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            filter: drop-shadow(0 12px 28px rgba(0,0,0,0.32));
         }
 
-        @keyframes point-arm {
-            0%   { transform: rotate(0deg); }
-            35%  { transform: rotate(-7deg); }
-            70%  { transform: rotate(3deg); }
-            100% { transform: rotate(0deg); }
+        @keyframes talking-head {
+            0%, 100% { transform: rotate(0deg) translateY(0); }
+            25%      { transform: rotate(-1.5deg) translateY(-1px); }
+            50%      { transform: rotate(1.2deg) translateY(0.5px); }
+            75%      { transform: rotate(-0.8deg) translateY(-0.5px); }
+        }
+
+        @keyframes pointing-stick {
+            0%, 100% { transform: rotate(0deg); }
+            35%      { transform: rotate(-3.5deg); }
+            70%      { transform: rotate(2deg); }
         }
 
         @keyframes sparkle {
@@ -357,8 +384,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             50%       { opacity: 1;    transform: scale(1.2) rotate(20deg); }
         }
 
-        .g-float   { animation: float-body 4.5s ease-in-out infinite; transform-origin: center bottom; }
-        .g-arm     { animation: point-arm 3.5s ease-in-out infinite; transform-origin: 186px 148px; }
+        .g-char-head {
+            transform-origin: 246px 144px;
+            animation: talking-head 2.4s ease-in-out infinite;
+        }
+
+        .g-char-arm {
+            transform-origin: 135px 225px;
+            animation: pointing-stick 3.6s ease-in-out infinite;
+        }
+
+        .g-char-body,
+        .g-char-collar {
+            /* Statis tegap */
+        }
+
         .g-star-1  { animation: sparkle 3s ease-in-out infinite; }
         .g-star-2  { animation: sparkle 3s ease-in-out infinite 1.2s; }
         .g-star-3  { animation: sparkle 3s ease-in-out infinite 2.1s; }
@@ -571,6 +611,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--gojek-green);
         }
 
+        .custom-checkbox {
+            cursor: pointer;
+            border-color: #cbd5e1;
+            width: 1.1rem;
+            height: 1.1rem;
+            margin-top: 0 !important;
+        }
+        .custom-checkbox:checked {
+            background-color: var(--gojek-green) !important;
+            border-color: var(--gojek-green) !important;
+        }
+        .custom-checkbox:focus {
+            box-shadow: 0 0 0 3px rgba(0, 136, 13, 0.2) !important;
+            border-color: var(--gojek-green) !important;
+        }
+
         .form-label-custom {
             font-size: 0.85rem;
             font-weight: 700;
@@ -683,144 +739,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div><!-- /web-logo-area -->
 
-        <!-- Karakter Wisudawan (Pose Guru, Buku di Dada Kiri, Tongkat Teracung Kanan Atas) -->
+        <!-- Karakter Wisudawan (Badan Diam Statis, Tangan Bergerak, Kepala Berbicara Halus Tanpa Robek) -->
         <div class="character-wrap">
-            <svg viewBox="0 0 280 430" fill="none" xmlns="http://www.w3.org/2000/svg"
-                 width="225" aria-hidden="true">
+            <svg viewBox="0 0 386 552" width="245" class="character-canvas" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Karakter Wisudawan">
 
-                <!-- Bayangan lantai lembut -->
-                <ellipse cx="135" cy="414" rx="68" ry="7" fill="rgba(0,0,0,0.28)"/>
+                <!-- Bayangan lantai lembut di bawah kaki -->
+                <ellipse cx="230" cy="544" rx="75" ry="8" fill="rgba(0,0,0,0.24)"/>
 
-                <g class="g-float">
+                <!-- 1. TUBUH (STATIS — Tetap diam kokoh di tempat) -->
+                <g class="g-char-body">
+                    <image href="assets/img/char_body.png" width="386" height="552" />
+                </g>
 
-                    <!-- Celana panjang formal navy gelap -->
-                    <rect x="105" y="320" width="23" height="74" rx="5" fill="#1e293b"/>
-                    <rect x="142" y="320" width="23" height="74" rx="5" fill="#1e293b"/>
-                    <path d="M105 390 L128 390" stroke="#0f172a" stroke-width="2"/>
-                    <path d="M142 390 L165 390" stroke="#0f172a" stroke-width="2"/>
+                <!-- 2. KEPALA (ANIMASI HALUS BICARA / CENAT-CENUT) -->
+                <g class="g-char-head">
+                    <image href="assets/img/char_head.png" width="386" height="552" />
+                </g>
 
-                    <!-- Sepatu pantofel hitam formal kiri -->
-                    <path d="M100 393 C100 387 115 387 125 387 C130 387 132 392 132 397 C132 403 125 406 103 406 C97 403 100 397 100 393 Z" fill="#090d16"/>
-                    <path d="M98 402 C114 406 133 402 133 402 L133 405 C114 408 98 405 98 402 Z" fill="#020617"/>
-                    <ellipse cx="114" cy="393" rx="6" ry="2" fill="#334155" opacity="0.6"/>
+                <!-- 3. KERAH & SAMIR DEPAN (KUNCI AGAR PUNDAK & LEHER TIDAK PERNAH TEROBEK) -->
+                <g class="g-char-collar">
+                    <image href="assets/img/char_collar.png" width="386" height="552" />
+                </g>
 
-                    <!-- Sepatu pantofel hitam formal kanan -->
-                    <path d="M138 397 C138 392 140 387 145 387 C155 387 170 387 170 393 C170 397 173 403 167 406 C146 406 138 403 138 397 Z" fill="#090d16"/>
-                    <path d="M137 402 C155 402 172 406 172 402 L172 405 C155 405 137 408 137 402 Z" fill="#020617"/>
-                    <ellipse cx="156" cy="393" rx="6" ry="2" fill="#334155" opacity="0.6"/>
+                <!-- 4. TANGAN DENGAN TONGKAT (ANIMASI MENGARAHKAN/MENERANGKAN LUWES) -->
+                <g class="g-char-arm">
+                    <image href="assets/img/char_arm.png" width="386" height="552" />
+                </g>
 
-                    <!-- Jubah toga akademik hitam -->
-                    <path d="M80 148 C66 188 58 248 64 340 Q135 352 206 340 C212 248 204 188 190 148 Z" fill="#0f172a"/>
-                    <path d="M80 148 C66 188 60 258 66 340 L133 344 L133 152 Z" fill="#181f2f"/>
-                    <path d="M190 148 C204 188 210 258 204 340 L137 344 L137 152 Z" fill="#131926"/>
-                    <rect x="133" y="162" width="4" height="182" fill="#d97706"/>
-                    <rect x="130" y="176" width="2" height="168" fill="#f59e0b"/>
-                    <rect x="138" y="176" width="2" height="168" fill="#f59e0b"/>
-                    <path d="M90 172 C84 218 84 278 88 336" stroke="rgba(255,255,255,0.06)" stroke-width="2" fill="none"/>
-                    <path d="M180 172 C186 218 186 278 182 336" stroke="rgba(255,255,255,0.06)" stroke-width="2" fill="none"/>
-
-                    <!-- Samir wisuda Indonesia kuning emas lis merah -->
-                    <path d="M74 148 C74 140 100 134 135 134 C170 134 196 140 196 148 C196 168 182 194 157 204 L135 210 L113 204 C88 194 74 168 74 148 Z" fill="#f59e0b"/>
-                    <path d="M78 152 C82 170 94 190 115 200 L135 205 L155 200 C176 190 188 170 192 152 C184 164 172 184 151 193 L135 197 L119 193 C98 184 86 164 78 152 Z" fill="#dc2626"/>
-                    <path d="M98 140 C110 146 122 148 135 148 C148 148 160 146 172 140 C160 144 148 145 135 145 C122 145 110 144 98 140 Z" fill="#dc2626"/>
-                    <path d="M116 130 L125 142 L135 135 L145 142 L154 130 Q135 134 116 130 Z" fill="#f8fafc"/>
-                    <path d="M132 136 L138 136 L136 149 L134 149 Z" fill="#1e3a8a"/>
-
-                    <!-- Gordon / Medali Emas Wisuda -->
-                    <path d="M131 204 L131 213 L139 213 L139 204 Z" fill="#b45309"/>
-                    <circle cx="135" cy="222" r="10" fill="#d97706"/>
-                    <circle cx="135" cy="222" r="8" fill="#f59e0b"/>
-                    <circle cx="135" cy="222" r="6" fill="#fbbf24"/>
-                    <polygon points="135,217 137,221 141,221 138,223 139,227 135,225 131,227 132,223 129,221 133,221" fill="#b45309"/>
-
-                    <!-- Lengan Kiri & Buku Skripsi Hijau Zamrud -->
-                    <path d="M78 148 C68 165 58 185 60 216 C68 222 80 220 86 210 C86 195 86 175 90 156 Z" fill="#111827"/>
-                    <path d="M60 212 C68 216 76 214 82 208 C78 210 70 210 63 206 Z" fill="#030712"/>
-
-                    <rect x="46" y="168" width="46" height="64" rx="4" fill="rgba(0,0,0,0.25)"/>
-                    <rect x="44" y="166" width="46" height="64" rx="4" fill="#047857"/>
-                    <rect x="44" y="166" width="10" height="64" rx="3" fill="#065f46"/>
-                    <rect x="84" y="168" width="6" height="60" rx="1" fill="#f8fafc"/>
-                    <line x1="86" y1="172" x2="86" y2="224" stroke="#cbd5e1" stroke-width="1"/>
-                    <line x1="88" y1="172" x2="88" y2="224" stroke="#cbd5e1" stroke-width="1"/>
-                    <path d="M50 230 Q54 242 52 248 L56 246 L60 248 Q58 242 54 230 Z" fill="#f59e0b"/>
-                    <rect x="58" y="178" width="20" height="16" rx="2" fill="#10b981" opacity="0.35"/>
-                    <line x1="58" y1="200" x2="78" y2="200" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-                    <line x1="58" y1="206" x2="74" y2="206" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
-
-                    <path d="M68 214 C74 216 84 214 96 206" stroke="#f5c5a3" stroke-width="14" stroke-linecap="round" fill="none"/>
-                    <ellipse cx="88" cy="207" rx="8" ry="9" fill="#f5c5a3"/>
-                    <path d="M78 196 C82 195 86 198 87 202 C87 205 84 207 80 205 Z" fill="#f5c5a3"/>
-                    <path d="M86 199 Q93 200 95 204 Q95 208 89 209" fill="none" stroke="#e6aa84" stroke-width="2.6" stroke-linecap="round"/>
-                    <path d="M86 205 Q94 206 96 210 Q95 214 88 215" fill="none" stroke="#e6aa84" stroke-width="2.6" stroke-linecap="round"/>
-                    <path d="M85 211 Q92 212 94 216 Q93 219 87 220" fill="none" stroke="#e6aa84" stroke-width="2.4" stroke-linecap="round"/>
-                    <path d="M84 216 Q90 217 91 221 Q90 224 85 224" fill="none" stroke="#e6aa84" stroke-width="2" stroke-linecap="round"/>
-
-                    <!-- Leher & Kepala Pria (Faceless) -->
-                    <path d="M125 120 L125 138 Q135 142 145 138 L145 120 Z" fill="#e6aa84"/>
-                    <path d="M126 120 L126 136 Q135 140 144 136 L144 120 Z" fill="#f5c5a3"/>
-                    <path d="M112 84 C112 64 158 64 158 84 C158 104 148 124 135 128 C122 124 112 104 112 84 Z" fill="#f5c5a3"/>
-                    <path d="M123 122 Q135 128 147 122 Q135 126 123 122 Z" fill="#e6aa84"/>
-                    <path d="M110 86 Q106 91 110 98 Q113 99 114 92 Z" fill="#f5c5a3"/>
-                    <path d="M111 89 Q109 92 112 95" stroke="#e6aa84" stroke-width="1" fill="none"/>
-                    <path d="M160 86 Q164 91 160 98 Q157 99 156 92 Z" fill="#f5c5a3"/>
-                    <path d="M159 89 Q161 92 158 95" stroke="#e6aa84" stroke-width="1" fill="none"/>
-
-                    <!-- Rambut Pria Rapi -->
-                    <path d="M112 78 L110 88 L114 92 L115 84 Z" fill="#18181b"/>
-                    <path d="M158 78 L160 88 L156 92 L155 84 Z" fill="#18181b"/>
-                    <path d="M112 76 C115 68 128 66 135 66 C142 66 155 68 158 76 C155 82 146 86 138 82 C132 78 126 84 118 82 C114 80 112 78 112 76 Z" fill="#18181b"/>
-                    <path d="M122 74 Q128 82 134 78 Q129 74 122 74 Z" fill="#27272a"/>
-                    <path d="M136 76 Q144 83 150 78 Q144 74 136 76 Z" fill="#27272a"/>
-                    <ellipse cx="135" cy="95" rx="13" ry="14" fill="rgba(255,255,255,0.09)"/>
-
-                    <!-- Topi Toga Mortarboard -->
-                    <path d="M115 64 L115 52 Q135 46 155 52 L155 64 Q135 58 115 64 Z" fill="#141c2e"/>
-                    <path d="M114 61 Q135 55 156 61 L156 64 Q135 58 114 64 Z" fill="#d97706"/>
-                    <path d="M80 44 L135 56 L135 62 L80 50 Z" fill="#0f172a"/>
-                    <path d="M190 44 L135 56 L135 62 L190 50 Z" fill="#090d16"/>
-                    <polygon points="80,44 135,32 190,44 135,56" fill="#1e293b"/>
-                    <polygon points="82,44 135,33 188,44 135,54" fill="#293548"/>
-                    <ellipse cx="135" cy="44" rx="6" ry="4" fill="#d97706"/>
-                    <ellipse cx="135" cy="44" rx="4" ry="2.5" fill="#f59e0b"/>
-                    <circle cx="135" cy="43.5" r="1.5" fill="#fef08a"/>
-                    <path d="M131 44 Q106 42 92 46 Q84 50 80 58" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                    <ellipse cx="79" cy="60" rx="4" ry="2.5" fill="#b45309"/>
-                    <ellipse cx="79" cy="60" rx="3" ry="1.8" fill="#f59e0b"/>
-                    <path d="M76 61 L72 86 M78 61 L75 88 M80 61 L78 88 M82 61 L81 86" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-                    <path d="M77 61 L74 87 M79 61 L77 87" stroke="#d97706" stroke-width="1.5" stroke-linecap="round"/>
-
-                    <!-- Lengan Kanan & Tongkat Penunjuk Guru -->
-                    <g class="g-arm">
-                        <path d="M188 148 C198 152 208 164 212 184 C214 192 210 200 202 200 C194 198 190 186 186 170 Z" fill="#131926"/>
-                        <path d="M202 200 C206 208 214 210 220 206 C222 198 218 190 212 184 Z" fill="#0f172a"/>
-                        <path d="M208 186 C211 172 210 156 206 142" stroke="#f5c5a3" stroke-width="14" stroke-linecap="round" fill="none"/>
-                        <line x1="206" y1="152" x2="208" y2="166" stroke="#78350f" stroke-width="4.5" stroke-linecap="round"/>
-                        <circle cx="208" cy="167" r="2.8" fill="#b45309"/>
-                        <line x1="203" y1="134" x2="250" y2="34" stroke="#92400e" stroke-width="3.2" stroke-linecap="round"/>
-                        <line x1="204" y1="134" x2="251" y2="34" stroke="#b45309" stroke-width="1.6" stroke-linecap="round"/>
-                        <circle cx="251" cy="33" r="3.5" fill="#f59e0b"/>
-                        <circle cx="251" cy="33" r="2" fill="#fef08a"/>
-                        <ellipse cx="205" cy="142" rx="8" ry="9" fill="#f5c5a3" transform="rotate(-8 205 142)"/>
-                        <path d="M201 133 C206 131 211 132 212 136 C212 139 208 141 202 139" fill="#f5c5a3" stroke="#e6aa84" stroke-width="1.8"/>
-                        <path d="M200 138 C206 136 211 137 213 141 C213 144 208 146 202 144" fill="#f5c5a3" stroke="#e6aa84" stroke-width="1.8"/>
-                        <path d="M200 143 C206 141 211 142 212 146 C212 149 208 151 201 149" fill="#f5c5a3" stroke="#e6aa84" stroke-width="1.8"/>
-                        <path d="M201 148 C206 146 210 147 211 150 C211 153 207 155 202 153" fill="#f5c5a3" stroke="#e6aa84" stroke-width="1.8"/>
-                        <path d="M198 139 C201 141 204 145 204 149 C202 150 199 148 198 144 Z" fill="#f5c5a3"/>
-                        <path d="M198 140 C201 142 203 146 203 149" stroke="#e6aa84" stroke-width="1.2" fill="none"/>
-                    </g>
-
-                </g><!-- /g-float -->
-
-                <!-- Partikel Bintang (Harmonis dengan Emas & Hijau Muda) -->
+                <!-- Dekorasi kilau bintang akademis -->
                 <g class="g-star-1">
-                    <path d="M256 20 L258 25 L263 26 L259 30 L260 35 L256 32 L252 35 L253 30 L249 26 L254 25 Z" fill="#fbbf24" opacity="0.9"/>
+                    <path d="M48 24 L50 29 L55 30 L51 34 L52 39 L48 36 L44 39 L45 34 L41 30 L46 29 Z" fill="#fbbf24" opacity="0.9"/>
                 </g>
                 <g class="g-star-2">
-                    <path d="M36 108 L37.5 113 L43 114 L39 117 L40 122 L36 119 L32 122 L33 117 L29 114 L34.5 113 Z" fill="#86efac" opacity="0.85"/>
+                    <path d="M356 180 L357.5 185 L363 186 L359 189 L360 194 L356 191 L352 194 L353 189 L349 186 L354.5 185 Z" fill="#a5b4fc" opacity="0.8"/>
                 </g>
-                <circle class="g-star-3" cx="240" cy="75" r="3" fill="#4ade80" opacity="0.7"/>
-                <circle class="g-star-3" cx="44" cy="150" r="2.5" fill="#ffffff" opacity="0.6"/>
+                <circle class="g-star-3" cx="30" cy="190" r="3" fill="#818cf8" opacity="0.6"/>
+                <circle class="g-star-3" cx="360" cy="240" r="2.5" fill="#cbd5e1" opacity="0.5"/>
 
             </svg>
         </div><!-- /character-wrap -->
@@ -897,6 +851,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <button type="button" class="btn-toggle-eye" id="btnToggleLoginPass" title="Lihat/Sembunyikan Kata Sandi">
                             <i class="bi bi-eye" id="loginEyeIcon"></i>
                         </button>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+                    <div class="form-check d-flex align-items-center gap-2 m-0">
+                        <input class="form-check-input custom-checkbox" type="checkbox" name="remember_me" id="rememberMe" value="1" checked>
+                        <label class="form-check-label small text-secondary fw-semibold user-select-none" for="rememberMe" style="cursor: pointer; font-size: 0.85rem;">
+                            Ingat saya
+                        </label>
                     </div>
                 </div>
 

@@ -50,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_judul']
         $metode_unggah = trim($_POST['metode_unggah_judul'] ?? 'none');
         $link_drive    = trim($_POST['link_drive_judul'] ?? '');
         $new_filename  = null;
+        $file_draft_data = null;
 
         if (empty($new_judul)) {
             $error_msg = "Judul skripsi yang diajukan tidak boleh kosong.";
@@ -64,11 +65,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_judul']
                 } elseif ($_FILES['file_judul']['size'] > 5 * 1024 * 1024) {
                     $error_msg = "Ukuran berkas pendukung judul maksimal 5 MB.";
                 } else {
-                    $upload_dir = '../assets/uploads/';
-                    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-                    $new_filename = 'judul_' . $mhs_id . '_' . uniqid() . '.pdf';
-                    if (!move_uploaded_file($_FILES['file_judul']['tmp_name'], $upload_dir . $new_filename)) {
-                        $error_msg = "Gagal menyimpan berkas pendukung judul ke server.";
+                    $pdf_raw = file_get_contents($_FILES['file_judul']['tmp_name']);
+                    if ($pdf_raw !== false) {
+                        $new_filename = 'judul_' . $mhs_id . '_' . uniqid() . '.pdf';
+                        $file_draft_data = base64_encode($pdf_raw);
+                        $upload_dir = '../assets/uploads/';
+                        if (!is_dir($upload_dir)) @mkdir($upload_dir, 0777, true);
+                        @move_uploaded_file($_FILES['file_judul']['tmp_name'], $upload_dir . $new_filename);
+                    } else {
+                        $error_msg = "Gagal membaca berkas pendukung judul.";
                     }
                 }
             } elseif ($metode_unggah === 'drive' && !empty($link_drive)) {
@@ -91,19 +96,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_judul']
                         $catatan_full .= "\n\nCatatan / Rumusan Masalah:\n" . $catatan_judul;
                     }
 
+                    // Bersihkan berkas pendukung judul versi lama (maks 2 file terbaru)
+                    if (!empty($new_filename) && function_exists('cleanup_old_draft_files')) {
+                        cleanup_old_draft_files($pdo, $mhs_id, 'Pengajuan Judul Skripsi', 2);
+                    }
+
                     $stmt_pb = $pdo->prepare("
                         INSERT INTO pengajuan_bimbingan 
-                        (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, link_drive, status) 
-                        VALUES (:mid, :did, :tgl, :jam, 'Pengajuan Judul Skripsi', :catatan, :file_draft, :link_drive, 'menunggu')
+                        (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, file_draft_data, link_drive, status) 
+                        VALUES (:mid, :did, :tgl, :jam, 'Pengajuan Judul Skripsi', :catatan, :file_draft, :file_draft_data, :link_drive, 'menunggu')
                     ");
                     $stmt_pb->execute([
-                        ':mid'        => $mhs_id,
-                        ':did'        => $dosen_id,
-                        ':tgl'        => date('Y-m-d'),
-                        ':jam'        => date('H:i:s'),
-                        ':catatan'    => $catatan_full,
-                        ':file_draft' => $new_filename,
-                        ':link_drive' => (!empty($link_drive) ? $link_drive : null)
+                        ':mid'             => $mhs_id,
+                        ':did'             => $dosen_id,
+                        ':tgl'             => date('Y-m-d'),
+                        ':jam'             => date('H:i:s'),
+                        ':catatan'         => $catatan_full,
+                        ':file_draft'      => $new_filename,
+                        ':file_draft_data' => $file_draft_data ?? null,
+                        ':link_drive'      => (!empty($link_drive) ? $link_drive : null)
                     ]);
 
                     // Kirim notifikasi ke dosen pembimbing
@@ -175,14 +186,17 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_upload_nas
                     } elseif ($file_size > 5 * 1024 * 1024) {
                         $error_msg = "Ukuran berkas skripsi maksimal adalah 5 MB.";
                     } else {
-                        $upload_dir = '../assets/uploads/';
-                        if (!is_dir($upload_dir)) {
-                            mkdir($upload_dir, 0777, true);
-                        }
-
-                        $new_filename = 'skripsi_' . $mhs_id . '_' . uniqid() . '.pdf';
-                        if (!move_uploaded_file($file_tmp, $upload_dir . $new_filename)) {
-                            $error_msg = "Gagal menyimpan berkas ke server lokal.";
+                        $pdf_raw = file_get_contents($file_tmp);
+                        if ($pdf_raw !== false) {
+                            $new_filename = 'skripsi_' . $mhs_id . '_' . uniqid() . '.pdf';
+                            $file_draft_data = base64_encode($pdf_raw);
+                            $upload_dir = '../assets/uploads/';
+                            if (!is_dir($upload_dir)) {
+                                @mkdir($upload_dir, 0777, true);
+                            }
+                            @move_uploaded_file($file_tmp, $upload_dir . $new_filename);
+                        } else {
+                            $error_msg = "Gagal membaca berkas skripsi yang diunggah.";
                         }
                     }
                 }
@@ -201,20 +215,26 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_upload_nas
             // Jika validasi lolos, catat ke database
             if (empty($error_msg)) {
                 try {
+                    // Bersihkan berkas draf revisi lama untuk bab ini (maks 2 file terbaru)
+                    if (!empty($new_filename) && function_exists('cleanup_old_draft_files')) {
+                        cleanup_old_draft_files($pdo, $mhs_id, $bab_pembahasan, 2);
+                    }
+
                     $stmt_insert = $pdo->prepare("
                         INSERT INTO pengajuan_bimbingan 
-                        (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, link_drive, status) 
-                        VALUES (:mid, :did, :tgl, :jam, :bab, :catatan, :file_draft, :link_drive, 'menunggu')
+                        (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, file_draft_data, link_drive, status) 
+                        VALUES (:mid, :did, :tgl, :jam, :bab, :catatan, :file_draft, :file_draft_data, :link_drive, 'menunggu')
                     ");
                     $stmt_insert->execute([
-                        ':mid'        => $mhs_id,
-                        ':did'        => $dosen_id,
-                        ':tgl'        => $tanggal_draft,
-                        ':jam'        => $jam_draft,
-                        ':bab'        => $bab_pembahasan,
-                        ':catatan'    => $catatan_revisi,
-                        ':file_draft' => $new_filename,
-                        ':link_drive' => (!empty($link_drive) ? $link_drive : null)
+                        ':mid'             => $mhs_id,
+                        ':did'             => $dosen_id,
+                        ':tgl'             => $tanggal_draft,
+                        ':jam'             => $jam_draft,
+                        ':bab'             => $bab_pembahasan,
+                        ':catatan'         => $catatan_revisi,
+                        ':file_draft'      => $new_filename,
+                        ':file_draft_data' => $file_draft_data ?? null,
+                        ':link_drive'      => (!empty($link_drive) ? $link_drive : null)
                     ]);
 
                     // Tambahkan notifikasi ke dosen pembimbing jika user id dosen ada
@@ -713,7 +733,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-1 flex-wrap">
                                         <?php if (!empty($draft['file_draft'])): ?>
-                                            <a href="../assets/uploads/<?= htmlspecialchars($draft['file_draft']); ?>" target="_blank" class="badge-pdf" title="Lihat Berkas PDF">
+                                            <a href="../unduh_berkas.php?id=<?= $draft['id']; ?>" target="_blank" class="badge-pdf" title="Lihat Berkas PDF">
                                                 <i class="bi bi-file-earmark-pdf"></i>PDF
                                             </a>
                                         <?php endif; ?>

@@ -36,9 +36,14 @@ $mhs_terbaru = $pdo->query("
 
 <!-- Hero Banner Header -->
 <div class="hero-banner d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-    <div>
-        <h2 class="fw-bold text-white mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Administrator'); ?>!</h2>
-        <p class="text-white-50 small mb-0">Kelola master data akademik, jadwal dosen, plotting bimbingan, dan evaluasi kelulusan skripsi.</p>
+    <div class="d-flex align-items-center gap-3">
+        <a href="profil.php" title="Kelola Profil Administrator">
+            <?= function_exists('render_avatar') ? render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? 'Admin', 56, 'border-2 border-white') : ''; ?>
+        </a>
+        <div>
+            <h2 class="fw-bold text-white mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Administrator'); ?>!</h2>
+            <p class="text-white-50 small mb-0">Kelola master data akademik, jadwal dosen, plotting bimbingan, dan evaluasi kelulusan skripsi.</p>
+        </div>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
         <a href="plot_pembimbing.php" class="btn btn-light shadow-sm fw-bold">

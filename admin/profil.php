@@ -11,6 +11,9 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role
 }
 
 require_once '../config/database.php';
+if (file_exists(__DIR__ . '/../config/avatar_helper.php')) {
+    require_once __DIR__ . '/../config/avatar_helper.php';
+}
 
 $user_id     = (int)$_SESSION['user_id'];
 $success_msg = '';
@@ -101,22 +104,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 } elseif ($file_size > $max_size) {
                     $error_msg = "Ukuran file foto profil maksimal 2 MB.";
                 } else {
-                    $upload_dir = '../assets/uploads/profile/';
-                    if (!is_dir($upload_dir)) {
-                        mkdir($upload_dir, 0777, true);
-                    }
-
-                    $foto_baru = 'admin_' . $user_id . '_' . time() . '.' . $file_ext;
-                    $target_dest = $upload_dir . $foto_baru;
-
-                    if (!move_uploaded_file($file_tmp, $target_dest)) {
-                        $error_msg = "Gagal mengunggah foto profil ke server.";
-                        $foto_baru = $foto_lama;
+                    $mime_type = ($file_ext === 'png') ? 'image/png' : (($file_ext === 'webp') ? 'image/webp' : 'image/jpeg');
+                    $raw_bytes = @file_get_contents($file_tmp);
+                    if ($raw_bytes !== false) {
+                        $foto_baru = 'data:' . $mime_type . ';base64,' . base64_encode($raw_bytes);
                     } else {
-                        // Hapus file foto lama jika bukan default.png
-                        if ($foto_lama !== 'default.png' && file_exists($upload_dir . $foto_lama)) {
-                            @unlink($upload_dir . $foto_lama);
-                        }
+                        $error_msg = "Gagal memproses berkas foto profil.";
+                        $foto_baru = $foto_lama;
                     }
                 }
             }
@@ -129,6 +123,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     // Update tabel users
                     $stmt_u = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
                     $stmt_u->execute([':u' => $username, ':uid' => $user_id]);
+
+                    // Hapus berkas foto lama jika mengunggah foto profil baru
+                    if (!empty($foto_baru) && $foto_baru !== $admin['foto_profil'] && function_exists('delete_old_profile_photo')) {
+                        delete_old_profile_photo($admin['foto_profil'] ?? null);
+                    }
 
                     // Update tabel admin_profil
                     $stmt_p = $pdo->prepare("
@@ -219,8 +218,8 @@ foreach (array_slice($words, 0, 2) as $w) {
 }
 if (empty($initials)) $initials = 'AD';
 
-$foto_path = '../assets/uploads/profile/' . ($admin['foto_profil'] ?? 'default.png');
-$has_foto = (!empty($admin['foto_profil']) && $admin['foto_profil'] !== 'default.png' && file_exists($foto_path));
+$foto_url = function_exists('get_avatar_url') ? get_avatar_url($admin['foto_profil'] ?? '') : null;
+$has_foto = !empty($foto_url);
 ?>
 
 <!-- Alert Feedback -->
@@ -262,7 +261,7 @@ $has_foto = (!empty($admin['foto_profil']) && $admin['foto_profil'] !== 'default
                 <!-- Avatar Preview -->
                 <div class="position-relative d-inline-block mb-3">
                     <?php if ($has_foto): ?>
-                        <img src="<?= htmlspecialchars($foto_path); ?>?t=<?= time(); ?>" 
+                        <img src="<?= htmlspecialchars($foto_url); ?>" 
                              alt="Foto Profil Admin" 
                              id="avatarPreviewImg"
                              class="rounded-circle border border-4 border-white shadow" 

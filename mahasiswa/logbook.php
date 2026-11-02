@@ -258,7 +258,7 @@ foreach ($logbook_list as $item) {
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-1 flex-wrap">
                                         <?php if (!empty($row['file_draft'])): ?>
-                                            <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="badge-pdf px-2 py-0.5" style="font-size: 0.72rem;" title="Lihat PDF">
+                                            <a href="../unduh_berkas.php?id=<?= $row['id']; ?>" target="_blank" class="badge-pdf px-2 py-0.5" style="font-size: 0.72rem;" title="Lihat PDF">
                                                 <i class="bi bi-file-earmark-pdf me-0.5"></i>PDF
                                             </a>
                                         <?php endif; ?>

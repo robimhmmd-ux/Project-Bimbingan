@@ -507,9 +507,7 @@ require_once '../templates/sidebar_admin.php';
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="avatar-initial bg-primary-subtle text-primary">
-                                            <?= $initial; ?>
-                                        </div>
+                                        <?= function_exists('render_avatar') ? render_avatar($row['foto_profil'] ?? '', $row['nama_lengkap'] ?? 'M', 38) : '<div class="avatar-initial bg-primary-subtle text-primary">' . $initial . '</div>'; ?>
                                         <div>
                                             <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
                                             <div class="font-monospace text-primary small fw-semibold">NIM: <?= htmlspecialchars($row['nim']); ?></div>

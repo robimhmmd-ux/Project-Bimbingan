@@ -328,7 +328,7 @@ require_once '../templates/sidebar_dosen.php';
                                 <td>
                                     <div class="d-flex flex-column gap-1">
                                         <?php if (!empty($row['file_draft'])): ?>
-                                            <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" target="_blank" class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size: 0.75rem;" download>
+                                            <a href="../unduh_berkas.php?id=<?= $row['id']; ?>" target="_blank" class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size: 0.75rem;" download>
                                                 <i class="bi bi-file-earmark-pdf-fill me-1"></i>PDF
                                             </a>
                                         <?php endif; ?>
@@ -409,7 +409,7 @@ require_once '../templates/sidebar_dosen.php';
                                                                 <small class="text-muted d-block">Berkas Draft Mahasiswa</small>
                                                                 <div class="d-flex flex-wrap gap-2 mt-1">
                                                                     <?php if (!empty($row['file_draft'])): ?>
-                                                                        <a href="../assets/uploads/<?= htmlspecialchars($row['file_draft']); ?>" 
+                                                                        <a href="../unduh_berkas.php?id=<?= $row['id']; ?>" 
                                                                            class="btn btn-sm btn-outline-danger shadow-sm" 
                                                                            target="_blank" download>
                                                                             <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Berkas PDF

@@ -87,7 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_progres
         $judul_diajukan = trim($_POST['judul_skripsi_baru'] ?? '');
         $tanggal_bg     = trim($_POST['tanggal_bimbingan'] ?? date('Y-m-d'));
         $jam_bg         = trim($_POST['jam_bimbingan'] ?? date('H:i:s'));
-        $file_draft_name = null;
+        $file_draft_name   = null;
+        $file_draft_base64 = null;
 
         $valid_tahap = [
             'judul'  => 'Pengajuan Judul Skripsi',
@@ -125,18 +126,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_progres
                 } elseif ($f_size > 5 * 1024 * 1024) {
                     $error_msg = "Ukuran file berkas PDF maksimal 5 MB.";
                 } else {
-                    $upload_dir = '../assets/uploads/';
-                    if (!is_dir($upload_dir)) {
-                        mkdir($upload_dir, 0777, true);
-                    }
-                    $clean_base = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($f_name, PATHINFO_FILENAME));
-                    $new_name   = 'progres_' . ($mhs['nim'] ?? 'mhs') . '_' . $tahap_key . '_' . time() . '.' . $f_ext;
-                    $dest       = $upload_dir . $new_name;
+                    $raw_pdf = file_get_contents($f_tmp);
+                    if ($raw_pdf !== false) {
+                        $clean_base = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($f_name, PATHINFO_FILENAME));
+                        $new_name   = 'progres_' . ($mhs['nim'] ?? 'mhs') . '_' . $tahap_key . '_' . time() . '.' . $f_ext;
+                        $file_draft_name   = $new_name;
+                        $file_draft_base64 = base64_encode($raw_pdf);
 
-                    if (move_uploaded_file($f_tmp, $dest)) {
-                        $file_draft_name = $new_name;
+                        // Coba simpan salinan lokal jika direktori dapat ditulisi
+                        $upload_dir = '../assets/uploads/';
+                        if (!is_dir($upload_dir)) {
+                            @mkdir($upload_dir, 0777, true);
+                        }
+                        @move_uploaded_file($f_tmp, $upload_dir . $new_name);
                     } else {
-                        $error_msg = "Gagal mengunggah berkas PDF ke server.";
+                        $error_msg = "Gagal membaca berkas PDF yang diunggah.";
                     }
                 }
             }
@@ -152,21 +156,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_progres
                         $catatan_mhs = "Rencana Judul: " . $judul_diajukan . ($catatan_mhs ? " | Catatan: " . $catatan_mhs : "");
                     }
 
+                    // Bersihkan berkas draf revisi lama jika melebihi kuota retensi (maks 2 file terbaru)
+                    if (!empty($file_draft_name) && function_exists('cleanup_old_draft_files')) {
+                        cleanup_old_draft_files($pdo, $mhs_id, $nama_tahap, 2);
+                    }
+
                     // Simpan ke pengajuan_bimbingan
                     $st_in = $pdo->prepare("
                         INSERT INTO pengajuan_bimbingan 
-                        (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, link_drive, status, nilai_progres, created_at)
-                        VALUES (:mid, :did, :tgl, :jam, :bab, :cat, :fld, :lnk, 'menunggu', 0, NOW())
+                        (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, file_draft_data, link_drive, status, nilai_progres, created_at)
+                        VALUES (:mid, :did, :tgl, :jam, :bab, :cat, :fld, :fld_data, :lnk, 'menunggu', 0, NOW())
                     ");
                     $st_in->execute([
-                        ':mid' => $mhs_id,
-                        ':did' => $dosen_pembimbing_id,
-                        ':tgl' => $tanggal_bg,
-                        ':jam' => $jam_bg,
-                        ':bab' => $nama_tahap,
-                        ':cat' => $catatan_mhs,
-                        ':fld' => $file_draft_name,
-                        ':lnk' => !empty($link_drive) ? $link_drive : null
+                        ':mid'      => $mhs_id,
+                        ':did'      => $dosen_pembimbing_id,
+                        ':tgl'      => $tanggal_bg,
+                        ':jam'      => $jam_bg,
+                        ':bab'      => $nama_tahap,
+                        ':cat'      => $catatan_mhs,
+                        ':fld'      => $file_draft_name,
+                        ':fld_data' => $file_draft_base64,
+                        ':lnk'      => !empty($link_drive) ? $link_drive : null
                     ]);
 
                     // Kirim notifikasi ke dosen
@@ -242,21 +252,8 @@ if ($mhs_id) {
     }
 }
 
-// Ambil Notifikasi Aktif Mahasiswa (UPDATE Robi: tabel notifikasi)
-$daftar_notif = [];
-if (isset($_SESSION['user_id'])) {
-    try {
-        $stmt_n = $pdo->prepare("
-            SELECT * FROM notifikasi 
-            WHERE user_id = :uid 
-            ORDER BY id DESC LIMIT 5
-        ");
-        $stmt_n->execute([':uid' => $_SESSION['user_id']]);
-        $daftar_notif = $stmt_n->fetchAll();
-    } catch (PDOException $e) {
-        $daftar_notif = [];
-    }
-}
+// Ambil Notifikasi Aktif Mahasiswa (Gunakan cache dari header.php agar hemat query)
+$daftar_notif = $notif_list ?? [];
 
 // Hitung statistik bimbingan
 $total_bimbingan    = 0;
@@ -807,11 +804,18 @@ $bab_list = [
                 <span class="badge <?= $badge_class; ?>"><?= $badge_label; ?></span>
             </div>
             <h5 class="fw-bold text-dark mb-2"><?= htmlspecialchars($mhs['judul_skripsi'] ?? 'Judul Belum Diatur'); ?></h5>
-            <p class="text-muted small mb-3">
-                NIM: <strong class="text-dark"><?= htmlspecialchars($mhs['nim'] ?? '-'); ?></strong> | 
-                Nama: <strong class="text-dark"><?= htmlspecialchars($mhs['nama_lengkap'] ?? '-'); ?></strong> |
-                Kelas: <strong class="text-dark"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></strong>
-            </p>
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <a href="profil.php" title="Kelola Profil & Foto Mahasiswa">
+                    <?= function_exists('render_avatar') ? render_avatar($mhs['foto_profil'] ?? '', $mhs['nama_lengkap'] ?? 'M', 50) : ''; ?>
+                </a>
+                <div>
+                    <div class="fw-bold text-dark"><?= htmlspecialchars($mhs['nama_lengkap'] ?? '-'); ?></div>
+                    <div class="text-muted small">
+                        NIM: <strong class="text-dark"><?= htmlspecialchars($mhs['nim'] ?? '-'); ?></strong> |
+                        Kelas: <strong class="text-dark"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></strong>
+                    </div>
+                </div>
+            </div>
 
             <!-- Bar Progres Skripsi -->
             <div class="mt-auto">
@@ -846,15 +850,7 @@ $bab_list = [
             </div>
 
             <?php 
-            $foto_dosen_src = null;
-            if (!empty($mhs['foto_dosen']) && $mhs['foto_dosen'] !== 'default.png') {
-                $fname_dosen = basename($mhs['foto_dosen']);
-                if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname_dosen)) {
-                    $foto_dosen_src = '../assets/uploads/profile/' . htmlspecialchars($fname_dosen);
-                } elseif (file_exists(__DIR__ . '/../assets/uploads/' . $fname_dosen)) {
-                    $foto_dosen_src = '../assets/uploads/' . htmlspecialchars($fname_dosen);
-                }
-            }
+            $foto_dosen_src = function_exists('get_avatar_url') ? get_avatar_url($mhs['foto_dosen'] ?? '') : null;
             ?>
             <?php if (!empty($mhs['nama_dosen'])): ?>
                 <div class="d-flex align-items-center mb-3">
@@ -1105,7 +1101,7 @@ $bab_list = [
                                 <td>
                                     <div class="d-flex flex-column gap-1">
                                         <?php if (!empty($item['file_draft'])): ?>
-                                            <a href="../assets/uploads/<?= htmlspecialchars($item['file_draft']); ?>" target="_blank" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;">
+                                            <a href="../unduh_berkas.php?id=<?= $item['id']; ?>" target="_blank" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.75rem;">
                                                 <i class="bi bi-file-earmark-pdf me-1"></i>PDF
                                             </a>
                                         <?php endif; ?>

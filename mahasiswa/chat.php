@@ -192,15 +192,7 @@ if (!empty($mhs['no_whatsapp'])) {
                 <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
                     <div class="d-flex align-items-center">
                         <?php 
-            $foto_dosen_src = null;
-            if (!empty($mhs['foto_dosen']) && $mhs['foto_dosen'] !== 'default.png') {
-                $fname_dosen = basename($mhs['foto_dosen']);
-                if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname_dosen)) {
-                    $foto_dosen_src = '../assets/uploads/profile/' . htmlspecialchars($fname_dosen);
-                } elseif (file_exists(__DIR__ . '/../assets/uploads/' . $fname_dosen)) {
-                    $foto_dosen_src = '../assets/uploads/' . htmlspecialchars($fname_dosen);
-                }
-            }
+            $foto_dosen_src = get_avatar_url($mhs['foto_dosen'] ?? null);
             ?>
             <div class="position-relative me-3">
                 <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#modalProfilDosen" title="Klik untuk melihat profil dosen">
