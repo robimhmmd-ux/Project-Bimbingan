@@ -44,9 +44,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_catatan_progre
             $current_level = $info_progres['current_level'];
             $tahap_current = $info_progres['tahap_saat_ini'];
 
-            if ($keputusan_aksi === 'acc' && $current_level === 1 && empty($judul_skripsi)) {
-                $error_msg = "Judul skripsi wajib diisi sebelum melakukan ACC Judul Skripsi!";
-            } else {
+            // Tahap 1 (Judul): Ambil judul resmi dari pengajuan mahasiswa, bukan dari ketikan dosen
+            $judul_skripsi = '';
+            if ($current_level === 1) {
+                $st_pj_judul = $pdo->prepare("
+                    SELECT catatan_mahasiswa, file_draft, link_drive FROM pengajuan_bimbingan 
+                    WHERE mahasiswa_id = :mid AND (bab_pembahasan LIKE '%Judul%') 
+                    ORDER BY id DESC LIMIT 1
+                ");
+                $st_pj_judul->execute([':mid' => $mahasiswa_id]);
+                $pj_judul = $st_pj_judul->fetch();
+
+                $mhs_data = $pdo->prepare("SELECT judul_skripsi FROM mahasiswa WHERE id = :mid LIMIT 1");
+                $mhs_data->execute([':mid' => $mahasiswa_id]);
+                $mhs_row = $mhs_data->fetch();
+                $judul_mhs = trim($mhs_row['judul_skripsi'] ?? '');
+
+                if (!empty($judul_mhs) && !in_array(strtolower($judul_mhs), ['belum ditentukan', '-', 'null'])) {
+                    $judul_skripsi = $judul_mhs;
+                } elseif ($pj_judul && preg_match('/Usulan Judul[^:]*:(.+)/i', $pj_judul['catatan_mahasiswa'] ?? '', $mm)) {
+                    $judul_skripsi = trim($mm[1]);
+                }
+
+                if ($keputusan_aksi === 'acc' && empty($judul_skripsi)) {
+                    $error_msg = "Mahasiswa belum mengajukan judul skripsi. Tidak dapat melakukan ACC!";
+                }
+            }
+
+            if (empty($error_msg)) {
                 try {
                     $pdo->beginTransaction();
 
@@ -604,22 +629,47 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                                             </div>
 
                                                             <?php if ($p_info['current_level'] === 1): ?>
-                                                                <div class="mt-2">
-                                                                    <input type="text" 
-                                                                           name="judul_skripsi" 
-                                                                           class="form-control form-control-sm" 
-                                                                           value="<?= htmlspecialchars(($mhs['judul_skripsi'] !== 'Belum Ditentukan') ? $mhs['judul_skripsi'] : ''); ?>" 
-                                                                           placeholder="Masukkan judul skripsi resmi mahasiswa untuk disahkan (ACC)..."
-                                                                           required>
-                                                                    <small class="text-muted d-block mt-1">
-                                                                        <i class="bi bi-info-circle me-1 text-primary"></i>Mahasiswa belum memiliki judul resmi. Masukkan judul untuk memulai alur bimbingan.
+                                                                <!-- Tampilan READ-ONLY judul & dokumen yang diajukan mahasiswa -->
+                                                                <?php if ($p_info['has_submitted_judul'] || $p_info['has_judul']): ?>
+                                                                    <div class="p-2 bg-info bg-opacity-10 rounded border border-info-subtle text-dark fw-semibold small mt-1">
+                                                                        <i class="bi bi-send-check text-info me-1"></i>
+                                                                        Judul Diajukan: "<?= htmlspecialchars($p_info['judul_diajukan'] ?: ($mhs['judul_skripsi'] !== 'Belum Ditentukan' ? $mhs['judul_skripsi'] : 'Lihat dokumen terlampir')); ?>"
+                                                                    </div>
+                                                                    <?php if ($p_info['pengajuan_judul']): ?>
+                                                                        <?php if (!empty($p_info['pengajuan_judul']['catatan_mahasiswa'])): ?>
+                                                                            <div class="mt-2 p-2 bg-light rounded small border">
+                                                                                <i class="bi bi-chat-left-text text-muted me-1"></i><strong>Catatan / Ringkasan Mahasiswa:</strong><br>
+                                                                                <?= nl2br(htmlspecialchars($p_info['pengajuan_judul']['catatan_mahasiswa'])); ?>
+                                                                            </div>
+                                                                        <?php endif; ?>
+                                                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                                                            <?php if (!empty($p_info['pengajuan_judul']['file_draft'])): ?>
+                                                                                <a href="../assets/uploads/<?= htmlspecialchars($p_info['pengajuan_judul']['file_draft']); ?>" 
+                                                                                   class="btn btn-sm btn-outline-danger shadow-sm" target="_blank" download>
+                                                                                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Dokumen Judul
+                                                                                </a>
+                                                                            <?php endif; ?>
+                                                                            <?php if (!empty($p_info['pengajuan_judul']['link_drive'])): ?>
+                                                                                <a href="<?= htmlspecialchars($p_info['pengajuan_judul']['link_drive']); ?>" 
+                                                                                   class="btn btn-sm btn-outline-success shadow-sm" target="_blank" rel="noopener noreferrer">
+                                                                                    <i class="bi bi-google me-1"></i>Buka Dokumen Google Drive
+                                                                                </a>
+                                                                            <?php endif; ?>
+                                                                        </div>
+                                                                    <?php endif; ?>
+                                                                    <small class="text-muted d-block mt-2">
+                                                                        <i class="bi bi-info-circle me-1 text-primary"></i>Judul dikirimkan oleh mahasiswa. Tinjau dokumen naskah usulan di atas, lalu tentukan keputusan ACC atau Revisi.
                                                                     </small>
-                                                                </div>
+                                                                <?php else: ?>
+                                                                    <div class="alert alert-warning small mt-2 mb-0 py-2">
+                                                                        <i class="bi bi-exclamation-triangle me-1"></i>Mahasiswa belum mengajukan judul skripsi beserta dokumen usulan. Mahasiswa harus mengirimkan usulan judul terlebih dahulu melalui portal mahasiswa.
+                                                                    </div>
+                                                                <?php endif; ?>
                                                             <?php else: ?>
+                                                                <!-- Tampilan judul jika sudah pernah di-ACC sebelumnya -->
                                                                 <div class="p-2 bg-light rounded text-dark fw-semibold small mt-1">
                                                                     <?= htmlspecialchars($mhs['judul_skripsi']); ?>
                                                                 </div>
-                                                                <input type="hidden" name="judul_skripsi" value="<?= htmlspecialchars($mhs['judul_skripsi']); ?>">
                                                             <?php endif; ?>
                                                         </div>
 

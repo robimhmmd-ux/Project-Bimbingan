@@ -90,6 +90,24 @@ $info_sidang = $stmt_sidang->fetch();
             padding: 20mm 20mm;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
             border-radius: 4px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .paper-sheet,
+        .paper-sheet table,
+        .paper-sheet th,
+        .paper-sheet td,
+        .paper-sheet p,
+        .paper-sheet h1,
+        .paper-sheet h2,
+        .paper-sheet h3,
+        .paper-sheet h4,
+        .paper-sheet h5,
+        .paper-sheet h6,
+        .paper-sheet span,
+        .paper-sheet div,
+        .paper-sheet small {
+            font-family: 'Times New Roman', Times, serif !important;
         }
 
         .kop-surat {
@@ -102,7 +120,7 @@ $info_sidang = $stmt_sidang->fetch();
             border: 1px solid #334155 !important;
             padding: 6px 8px;
             font-size: 9pt;
-            font-family: Arial, sans-serif;
+            font-family: 'Times New Roman', Times, serif;
             vertical-align: middle;
         }
 
@@ -115,7 +133,7 @@ $info_sidang = $stmt_sidang->fetch();
             border: 1px solid #334155 !important;
             padding: 5px 8px;
             font-size: 9pt;
-            font-family: Arial, sans-serif;
+            font-family: 'Times New Roman', Times, serif;
             vertical-align: middle;
         }
 
@@ -129,6 +147,7 @@ $info_sidang = $stmt_sidang->fetch();
                 background: none;
                 margin: 0;
                 padding: 0;
+                font-family: 'Times New Roman', Times, serif !important;
             }
             .no-print {
                 display: none !important;
@@ -169,7 +188,7 @@ $info_sidang = $stmt_sidang->fetch();
         <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 1px;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI</h5>
         <h4 class="fw-bold mb-1 text-uppercase">UNIVERSITAS TEKNOLOGI DAN ILMU KOMPUTER</h4>
         <h6 class="mb-0 text-uppercase fw-semibold">FAKULTAS ILMU KOMPUTER - PROGRAM STUDI TEKNIK INFORMATIKA</h6>
-        <p class="small mb-0 text-muted" style="font-family: Arial, sans-serif; font-size: 8.5pt;">
+        <p class="small mb-0 text-muted" style="font-family: 'Times New Roman', Times, serif; font-size: 8.5pt;">
             Jl. Pendidikan No. 45 Kampus Terpadu | Telp: (021) 1234-5678 | Email: akademik@univ.ac.id | Laman: www.univ.ac.id
         </p>
     </div>
@@ -181,7 +200,7 @@ $info_sidang = $stmt_sidang->fetch();
     </div>
 
     <!-- Identitas Mahasiswa & Dosen -->
-    <table class="table table-borderless table-sm mb-3" style="font-size: 10pt; font-family: Arial, sans-serif;">
+    <table class="table table-borderless table-sm mb-3" style="font-size: 10pt; font-family: 'Times New Roman', Times, serif;">
         <tbody>
             <tr>
                 <td style="width: 18%;"><strong>Nama Mahasiswa</strong></td>
@@ -229,7 +248,7 @@ $info_sidang = $stmt_sidang->fetch();
          INFORMASI JADWAL SIDANG SKRIPSI (JIKA ADA - UPDATE ROBI)
     ============================================================ -->
     <?php if ($info_sidang): ?>
-        <div class="mb-3 p-2 border bg-light" style="font-family: Arial, sans-serif; font-size: 9pt;">
+        <div class="mb-3 p-2 border bg-light" style="font-family: 'Times New Roman', Times, serif; font-size: 9pt;">
             <div class="fw-bold text-uppercase border-bottom pb-1 mb-2 text-dark">
                 <i class="bi bi-mortarboard-fill me-1"></i>Penetapan Dewan Penguji & Jadwal Ujian Sidang Skripsi
             </div>
@@ -345,7 +364,7 @@ $info_sidang = $stmt_sidang->fetch();
     </table>
 
     <!-- Ringkasan Kelayakan -->
-    <div class="border p-2 mb-4 small bg-light" style="font-family: Arial, sans-serif; font-size: 9pt;">
+    <div class="border p-2 mb-4 small bg-light" style="font-family: 'Times New Roman', Times, serif; font-size: 9pt;">
         <strong>Catatan Ketentuan Akademik:</strong>
         <ul class="mb-0 ps-3">
             <li>Mahasiswa dinyatakan berhak mendaftar Ujian Sidang Skripsi apabila telah menyelesaikan minimal <strong>8 (delapan) kali bimbingan</strong> dengan status <strong>ACC Sidang</strong>.</li>
@@ -354,7 +373,7 @@ $info_sidang = $stmt_sidang->fetch();
     </div>
 
     <!-- Lembar Tanda Tangan Pengesahan -->
-    <div class="row ttd-box text-center" style="font-family: Arial, sans-serif; font-size: 10pt;">
+    <div class="row ttd-box text-center" style="font-family: 'Times New Roman', Times, serif; font-size: 10pt;">
         <div class="col-4">
             <p class="mb-1">Mahasiswa Yang Bersangkutan,</p>
             <div style="height: 60px;"></div>

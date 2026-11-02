@@ -96,7 +96,7 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
         body {
             background-color: #f8f9fa;
             color: #212529;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Times New Roman', Times, serif;
         }
         .report-sheet {
             background: #ffffff;
@@ -105,6 +105,23 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
             padding: 40px;
             margin-top: 25px;
             margin-bottom: 40px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        .report-sheet,
+        .report-sheet table,
+        .report-sheet th,
+        .report-sheet td,
+        .report-sheet p,
+        .report-sheet h1,
+        .report-sheet h2,
+        .report-sheet h3,
+        .report-sheet h4,
+        .report-sheet h5,
+        .report-sheet h6,
+        .report-sheet span,
+        .report-sheet div,
+        .report-sheet small {
+            font-family: 'Times New Roman', Times, serif !important;
         }
         .kop-surat {
             border-bottom: 3px double #000;
@@ -116,6 +133,7 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
                 background-color: #ffffff;
                 margin: 0;
                 padding: 0;
+                font-family: 'Times New Roman', Times, serif !important;
             }
             .no-print {
                 display: none !important;
@@ -125,6 +143,7 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
                 padding: 0;
                 margin: 0;
                 border-radius: 0;
+                font-family: 'Times New Roman', Times, serif !important;
             }
             .table-bordered th, .table-bordered td {
                 border-color: #000000 !important;
@@ -147,8 +166,8 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
                     <a href="index.php" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
                     </a>
-                    <a href="riwayat_bimbingan.php" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-journal-text me-1"></i> Menu Riwayat & Nilai
+                    <a href="mahasiswa_bimbingan.php" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-people-fill me-1"></i> Mahasiswa Bimbingan
                     </a>
                 </div>
 
