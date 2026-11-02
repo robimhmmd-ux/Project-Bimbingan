@@ -27,7 +27,7 @@
                 <li class="nav-item mb-1">
                     <a class="nav-link <?= ($current_page == 'jadwal_dosen') ? 'active' : ''; ?>" href="jadwal_dosen.php">
                         <i class="bi bi-calendar2-week-fill me-2 text-warning"></i>
-                        <span>Jadwal Harian Dosen</span>
+                        <span>Jadwal Bimbingan Dosen</span>
                     </a>
                 </li>
                 <li class="nav-item mb-1">

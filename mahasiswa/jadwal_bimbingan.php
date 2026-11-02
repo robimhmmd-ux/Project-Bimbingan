@@ -39,7 +39,7 @@ if ($dosen_id) {
     $stmt_jadwal = $pdo->prepare("
         SELECT * FROM jadwal_dosen 
         WHERE dosen_id = :did 
-        ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'), jam_mulai ASC
+        ORDER BY (tanggal IS NULL), tanggal ASC, FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'), jam_mulai ASC
     ");
     $stmt_jadwal->execute([':did' => $dosen_id]);
     $jadwal_dosen_list = $stmt_jadwal->fetchAll();
@@ -321,7 +321,7 @@ function format_indo_date($date_str) {
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Hari</th>
+                                        <th>Tanggal & Hari</th>
                                         <th>Jam Bimbingan</th>
                                         <th>Status Ketersediaan</th>
                                         <th class="text-end">Aksi / Tindak Lanjut</th>
@@ -343,9 +343,20 @@ function format_indo_date($date_str) {
                                     ?>
                                         <tr>
                                             <td>
-                                                <span class="badge bg-<?= $color; ?> px-2.5 py-1.5 fs-6">
-                                                    <?= htmlspecialchars($row['hari']); ?>
-                                                </span>
+                                                <?php if (!empty($row['tanggal'])): ?>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="badge bg-primary text-white px-2.5 py-1.5 shadow-sm">
+                                                            <i class="bi bi-calendar-check me-1"></i><?= date('d M Y', strtotime($row['tanggal'])); ?>
+                                                        </span>
+                                                        <span class="badge bg-light text-dark border">
+                                                            Hari <?= htmlspecialchars($row['hari']); ?>
+                                                        </span>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="badge bg-<?= $color; ?> px-2.5 py-1.5 fs-6">
+                                                        <i class="bi bi-repeat me-1"></i>Rutin <?= htmlspecialchars($row['hari']); ?>
+                                                    </span>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <i class="bi bi-clock me-1 text-muted"></i>

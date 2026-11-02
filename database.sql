@@ -61,7 +61,8 @@ CREATE TABLE IF NOT EXISTS mahasiswa (
 CREATE TABLE IF NOT EXISTS jadwal_dosen (
     id INT AUTO_INCREMENT PRIMARY KEY,
     dosen_id INT NOT NULL,
-    hari ENUM('Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu') NOT NULL,
+    tanggal DATE NULL,
+    hari VARCHAR(20) NOT NULL,
     jam_mulai TIME NOT NULL,
     jam_selesai TIME NOT NULL,
     status_aktif ENUM('aktif', 'libur') DEFAULT 'aktif',
