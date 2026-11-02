@@ -41,7 +41,7 @@ $mhs_terbaru = $pdo->query("
             <i class="bi bi-stars text-warning"></i>
             <span>Executive Command Center</span>
         </div>
-        <h2 class="fw-bold text-white mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Administrator'); ?>! 👋</h2>
+        <h2 class="fw-bold text-white mb-1">Selamat Datang, <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'Administrator'); ?>!</h2>
         <p class="text-white-50 small mb-0">Kelola master data akademik, jadwal dosen, plotting bimbingan, dan evaluasi kelulusan skripsi.</p>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -53,6 +53,9 @@ $mhs_terbaru = $pdo->query("
         </a>
         <a href="jadwal_sidang.php" class="btn btn-warning text-dark fw-bold">
             <i class="bi bi-calendar2-check-fill me-1"></i> Jadwal Sidang (3 Penguji)
+        </a>
+        <a href="monitoring_kelulusan.php" class="btn btn-danger text-white fw-bold shadow-sm">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Progress
         </a>
         <a href="laporan_plotting.php" class="btn btn-outline-light">
             <i class="bi bi-printer me-1"></i> Cetak Laporan
