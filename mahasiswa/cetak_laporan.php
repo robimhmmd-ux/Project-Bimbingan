@@ -76,68 +76,105 @@ $info_sidang = $stmt_sidang->fetch();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        * {
+            box-shadow: none !important;
+            text-shadow: none !important;
+            font-family: 'Times New Roman', Times, 'Liberation Serif', serif;
+        }
+
         body {
             background-color: #f1f5f9;
-            color: #1e293b;
-            font-family: 'Times New Roman', Times, serif;
+            color: #000000;
+            font-family: 'Times New Roman', Times, 'Liberation Serif', serif;
+            margin: 0;
+            padding: 0;
         }
 
         .paper-sheet {
             background: #ffffff;
             width: 210mm;
             min-height: 297mm;
-            margin: 20px auto;
-            padding: 20mm 20mm;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-            border-radius: 4px;
+            margin: 25px auto;
+            padding: 15mm 20mm;
+            box-shadow: none !important;
+            border: 1px solid #000000;
+            border-radius: 0 !important;
+            color: #000000;
         }
 
         .kop-surat {
-            border-bottom: 3px double #000;
-            padding-bottom: 12px;
+            border-bottom: 3px double #000000;
+            padding-bottom: 10px;
             margin-bottom: 20px;
+            text-align: center;
+            color: #000000;
+        }
+
+        .table-laporan {
+            border: 1px solid #000000 !important;
+            border-collapse: collapse !important;
+            width: 100%;
         }
 
         .table-laporan th, .table-laporan td {
-            border: 1px solid #334155 !important;
+            border: 1px solid #000000 !important;
             padding: 6px 8px;
-            font-size: 9pt;
-            font-family: Arial, sans-serif;
+            font-size: 10pt;
             vertical-align: middle;
+            background: #ffffff !important;
+            color: #000000 !important;
         }
 
         .table-laporan thead th {
-            background-color: #f8fafc !important;
+            background-color: #ffffff !important;
+            color: #000000 !important;
             text-align: center;
+            font-weight: bold;
+            border-bottom: 2px solid #000000 !important;
+        }
+
+        .table-sidang {
+            border: 1px solid #000000 !important;
+            border-collapse: collapse !important;
+            width: 100%;
         }
 
         .table-sidang th, .table-sidang td {
-            border: 1px solid #334155 !important;
+            border: 1px solid #000000 !important;
             padding: 5px 8px;
-            font-size: 9pt;
-            font-family: Arial, sans-serif;
+            font-size: 9.5pt;
             vertical-align: middle;
+            background: #ffffff !important;
+            color: #000000 !important;
         }
 
         .ttd-box {
             margin-top: 35px;
             page-break-inside: avoid;
+            color: #000000;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 15mm 15mm 15mm 15mm;
         }
 
         @media print {
             body {
-                background: none;
-                margin: 0;
-                padding: 0;
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                color: #000000 !important;
             }
             .no-print {
                 display: none !important;
             }
             .paper-sheet {
-                box-shadow: none;
-                margin: 0;
-                width: 100%;
-                padding: 10mm 15mm;
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
+                width: 100% !important;
+                padding: 0 !important;
             }
         }
     </style>
@@ -145,12 +182,12 @@ $info_sidang = $stmt_sidang->fetch();
 <body>
 
 <!-- Panel Kontrol Tombol Cetak (Tidak ikut tercetak) -->
-<div class="no-print bg-dark text-white py-3 sticky-top shadow-sm">
+<div class="no-print bg-dark text-white py-3 sticky-top">
     <div class="container d-flex justify-content-between align-items-center">
         <div>
             <i class="bi bi-file-earmark-pdf-fill text-danger fs-4 me-2"></i>
             <span class="fw-bold">Pratinjau Dokumen Cetak / Export PDF</span>
-            <span class="badge bg-secondary ms-2">Ukuran A4</span>
+            <span class="border px-2 py-1 ms-2" style="font-size: 9pt;">Ukuran A4</span>
         </div>
         <div>
             <button onclick="window.print()" class="btn btn-primary btn-sm px-3 me-2">
@@ -166,22 +203,22 @@ $info_sidang = $stmt_sidang->fetch();
 <div class="paper-sheet">
     <!-- Kop Surat Kampus -->
     <div class="kop-surat text-center">
-        <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 1px;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI</h5>
-        <h4 class="fw-bold mb-1 text-uppercase">UNIVERSITAS TEKNOLOGI DAN ILMU KOMPUTER</h4>
-        <h6 class="mb-0 text-uppercase fw-semibold">FAKULTAS ILMU KOMPUTER - PROGRAM STUDI TEKNIK INFORMATIKA</h6>
-        <p class="small mb-0 text-muted" style="font-family: Arial, sans-serif; font-size: 8.5pt;">
+        <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.5px; font-size: 13pt;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI</h5>
+        <h4 class="fw-bold mb-1 text-uppercase" style="font-size: 15pt;">UNIVERSITAS TEKNOLOGI DAN ILMU KOMPUTER</h4>
+        <h6 class="mb-1 text-uppercase fw-semibold" style="font-size: 11pt;">FAKULTAS ILMU KOMPUTER - PROGRAM STUDI TEKNIK INFORMATIKA</h6>
+        <p class="mb-0" style="font-size: 9.5pt;">
             Jl. Pendidikan No. 45 Kampus Terpadu | Telp: (021) 1234-5678 | Email: akademik@univ.ac.id | Laman: www.univ.ac.id
         </p>
     </div>
 
     <!-- Judul Dokumen -->
     <div class="text-center my-3">
-        <h5 class="fw-bold text-uppercase mb-1" style="text-decoration: underline;">KARTU KENDALI & LAPORAN PROGRES BIMBINGAN SKRIPSI</h5>
-        <p class="small text-muted mb-0">Tahun Akademik <?= date('Y'); ?> / <?= date('Y') + 1; ?></p>
+        <h5 class="fw-bold text-uppercase mb-1" style="text-decoration: underline; font-size: 13pt;">KARTU KENDALI & LAPORAN PROGRES BIMBINGAN SKRIPSI</h5>
+        <p class="mb-0" style="font-size: 10.5pt;">Tahun Akademik <?= date('Y'); ?> / <?= date('Y') + 1; ?></p>
     </div>
 
     <!-- Identitas Mahasiswa & Dosen -->
-    <table class="table table-borderless table-sm mb-3" style="font-size: 10pt; font-family: Arial, sans-serif;">
+    <table class="table table-borderless table-sm mb-3" style="font-size: 10.5pt; color: #000000;">
         <tbody>
             <tr>
                 <td style="width: 18%;"><strong>Nama Mahasiswa</strong></td>
@@ -229,13 +266,13 @@ $info_sidang = $stmt_sidang->fetch();
          INFORMASI JADWAL SIDANG SKRIPSI (JIKA ADA - UPDATE ROBI)
     ============================================================ -->
     <?php if ($info_sidang): ?>
-        <div class="mb-3 p-2 border bg-light" style="font-family: Arial, sans-serif; font-size: 9pt;">
-            <div class="fw-bold text-uppercase border-bottom pb-1 mb-2 text-dark">
-                <i class="bi bi-mortarboard-fill me-1"></i>Penetapan Dewan Penguji & Jadwal Ujian Sidang Skripsi
+        <div class="mb-3 p-2 border" style="border: 1px solid #000000 !important; background: transparent; font-size: 10pt; color: #000000;">
+            <div class="fw-bold text-uppercase border-bottom pb-1 mb-2 text-dark" style="border-bottom: 1px solid #000000 !important;">
+                Penetapan Dewan Penguji & Jadwal Ujian Sidang Skripsi
             </div>
             <div class="row g-2">
                 <div class="col-6">
-                    <table class="table-borderless table-sm w-100" style="font-size: 8.5pt;">
+                    <table class="table-borderless table-sm w-100" style="font-size: 9.5pt; color: #000000;">
                         <tr>
                             <td style="width: 35%;"><strong>Waktu Sidang</strong></td>
                             <td style="width: 5%;">:</td>
@@ -254,7 +291,7 @@ $info_sidang = $stmt_sidang->fetch();
                     </table>
                 </div>
                 <div class="col-6">
-                    <table class="table-borderless table-sm w-100" style="font-size: 8.5pt;">
+                    <table class="table-borderless table-sm w-100" style="font-size: 9.5pt; color: #000000;">
                         <tr>
                             <td style="width: 40%;"><strong>Ketua Penguji (1)</strong></td>
                             <td style="width: 5%;">:</td>
@@ -281,18 +318,18 @@ $info_sidang = $stmt_sidang->fetch();
         <thead>
             <tr>
                 <th style="width: 30px;">No</th>
-                <th style="width: 80px;">Tanggal</th>
+                <th style="width: 85px;">Tanggal</th>
                 <th style="width: 140px;">Bab / Materi Pembahasan</th>
                 <th>Uraian Masukan & Catatan Pembimbing</th>
-                <th style="width: 45px;">Nilai</th>
-                <th style="width: 65px;">Status</th>
-                <th style="width: 75px;">Paraf</th>
+                <th style="width: 50px;">Nilai</th>
+                <th style="width: 75px;">Status</th>
+                <th style="width: 85px;">Paraf</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($bimbingan_list)): ?>
                 <tr>
-                    <td colspan="7" class="text-center py-4 text-muted fst-italic">
+                    <td colspan="7" class="text-center py-4 fst-italic">
                         Belum ada catatan logbook bimbingan resmi yang terdaftar.
                     </td>
                 </tr>
@@ -302,7 +339,7 @@ $info_sidang = $stmt_sidang->fetch();
                         <td class="text-center"><?= $no++; ?></td>
                         <td class="text-center">
                             <?= date('d/m/Y', strtotime($item['tanggal_bimbingan'])); ?><br>
-                            <small class="text-muted"><?= substr($item['jam_bimbingan'], 0, 5); ?> WIB</small>
+                            <small><?= substr($item['jam_bimbingan'], 0, 5); ?> WIB</small>
                         </td>
                         <td>
                             <strong><?= htmlspecialchars($item['bab_pembahasan']); ?></strong>
@@ -313,7 +350,7 @@ $info_sidang = $stmt_sidang->fetch();
                             <?php elseif (!empty($item['catatan_dosen'])): ?>
                                 <?= nl2br(htmlspecialchars($item['catatan_dosen'])); ?>
                             <?php else: ?>
-                                <span class="text-muted fst-italic">-</span>
+                                <span class="fst-italic">-</span>
                             <?php endif; ?>
                         </td>
                         <td class="text-center">
@@ -323,19 +360,19 @@ $info_sidang = $stmt_sidang->fetch();
                             <?php
                             $st_bab = $item['status_bab'] ?? '';
                             if ($st_bab === 'acc_sidang' || $st_bab === 'acc_bab' || $st_bab === 'acc_judul' || in_array($item['status'], ['disetujui', 'selesai'])) {
-                                echo '<span class="text-success fw-bold">' . ($st_bab === 'acc_judul' ? 'ACC Judul' : 'ACC') . '</span>';
+                                echo '<span class="fw-bold">' . ($st_bab === 'acc_judul' ? 'ACC Judul' : 'ACC') . '</span>';
                             } elseif ($st_bab === 'revisi' || $item['status'] === 'revisi') {
-                                echo '<span class="text-warning fw-bold">Revisi</span>';
+                                echo '<span>Revisi</span>';
                             } else {
-                                echo '<span class="text-muted">Proses</span>';
+                                echo '<span>Proses</span>';
                             }
                             ?>
                         </td>
                         <td class="text-center align-middle">
                             <?php if (in_array($item['status'], ['selesai', 'disetujui']) || in_array($st_bab, ['acc_judul', 'acc_bab', 'acc_sidang'])): ?>
-                                <span class="badge bg-success py-1 px-2" style="font-size: 8pt;">Tervalidasi</span>
+                                <span class="fw-bold">Tervalidasi</span>
                             <?php else: ?>
-                                <span class="text-muted small">-</span>
+                                <span>-</span>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -345,7 +382,7 @@ $info_sidang = $stmt_sidang->fetch();
     </table>
 
     <!-- Ringkasan Kelayakan -->
-    <div class="border p-2 mb-4 small bg-light" style="font-family: Arial, sans-serif; font-size: 9pt;">
+    <div class="border p-2 mb-4" style="border: 1px solid #000000 !important; background: transparent; font-size: 9.5pt; color: #000000;">
         <strong>Catatan Ketentuan Akademik:</strong>
         <ul class="mb-0 ps-3">
             <li>Mahasiswa dinyatakan berhak mendaftar Ujian Sidang Skripsi apabila telah menyelesaikan minimal <strong>8 (delapan) kali bimbingan</strong> dengan status <strong>ACC Sidang</strong>.</li>
@@ -354,26 +391,26 @@ $info_sidang = $stmt_sidang->fetch();
     </div>
 
     <!-- Lembar Tanda Tangan Pengesahan -->
-    <div class="row ttd-box text-center" style="font-family: Arial, sans-serif; font-size: 10pt;">
+    <div class="row ttd-box text-center" style="font-size: 10.5pt; color: #000000;">
         <div class="col-4">
             <p class="mb-1">Mahasiswa Yang Bersangkutan,</p>
             <div style="height: 60px;"></div>
             <p class="fw-bold mb-0" style="text-decoration: underline;"><?= htmlspecialchars($mhs['nama_lengkap']); ?></p>
-            <span class="text-muted">NIM. <?= htmlspecialchars($mhs['nim']); ?></span>
+            <span>NIM. <?= htmlspecialchars($mhs['nim']); ?></span>
         </div>
 
         <div class="col-4">
             <p class="mb-1">Mengetahui,<br>Ketua Program Studi</p>
             <div style="height: 50px;"></div>
             <p class="fw-bold mb-0" style="text-decoration: underline;">Dr. Ir. Wahyudi, M.Kom.</p>
-            <span class="text-muted">NIP. 19780512 200501 1 002</span>
+            <span>NIP. 19780512 200501 1 002</span>
         </div>
 
         <div class="col-4">
             <p class="mb-1"><?= date('d F Y'); ?><br>Dosen Pembimbing,</p>
             <div style="height: 50px;"></div>
             <p class="fw-bold mb-0" style="text-decoration: underline;"><?= htmlspecialchars($mhs['nama_dosen'] ?? '( Belum Diplot )'); ?></p>
-            <span class="text-muted">NIDN. <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></span>
+            <span>NIDN. <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></span>
         </div>
     </div>
 </div>
