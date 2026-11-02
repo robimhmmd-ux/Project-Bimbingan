@@ -50,6 +50,12 @@
                     </a>
                 </li>
                 <li class="nav-item mb-1">
+                    <a class="nav-link <?= ($current_page == 'jadwal_bimbingan') ? 'active' : ''; ?>" href="jadwal_bimbingan.php">
+                        <i class="bi bi-calendar2-range-fill me-2 text-info"></i>
+                        <span>Jadwal Bimbingan</span>
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
                     <a class="nav-link <?= ($current_page == 'monitoring') ? 'active' : ''; ?>" href="monitoring_kelulusan.php">
                         <i class="bi bi-mortarboard-fill me-2 text-purple"></i>
                         <span>Monitoring Kelulusan</span>

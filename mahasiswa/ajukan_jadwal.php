@@ -136,7 +136,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ");
                         $stmt_n->execute([
                             ':uid'   => $dosen_user_id,
-                            ':pesan' => "Mahasiswa {$nama_mhs} mengajukan jadwal bimbingan pada tanggal {$tanggal_bimbingan} jam {$jam_bimbingan} WIB."
+                            ':pesan' => "Mahasiswa {$nama_mhs} mengajukan jadwal bimbingan '{$bab_pembahasan}' pada tanggal {$tanggal_bimbingan} jam {$jam_bimbingan} WIB."
+                        ]);
+                    }
+
+                    // Kirim notifikasi konfirmasi ke mahasiswa sendiri
+                    if (!empty($_SESSION['user_id'])) {
+                        $stmt_nm = $pdo->prepare("
+                            INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
+                            VALUES (:uid, 'Pengajuan Bimbingan Terkirim', :pesan, 'info', 'ajukan_jadwal.php')
+                        ");
+                        $stmt_nm->execute([
+                            ':uid'   => $_SESSION['user_id'],
+                            ':pesan' => "Permohonan bimbingan '{$bab_pembahasan}' pada tanggal {$tanggal_bimbingan} jam {$jam_bimbingan} WIB berhasil diajukan ke Dosen Pembimbing. Menunggu persetujuan."
                         ]);
                     }
 

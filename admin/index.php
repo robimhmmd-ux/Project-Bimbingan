@@ -310,6 +310,20 @@ $mhs_terbaru = $pdo->query("
                     <i class="bi bi-chevron-right text-muted"></i>
                 </a>
 
+                <!-- Action: Jadwal Bimbingan -->
+                <a href="jadwal_bimbingan.php" class="btn btn-outline-info d-flex align-items-center justify-content-between p-3 text-start border bg-light bg-opacity-50">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-2 rounded-3 bg-info-subtle text-info">
+                            <i class="bi bi-calendar2-range fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">Jadwal Sesi Bimbingan</div>
+                            <small class="text-muted">Atur pertemuan mhs & dosen + notif otomatis</small>
+                        </div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </a>
+
                 <!-- Action 5: Jadwal Sidang -->
                 <a href="jadwal_sidang.php" class="btn btn-outline-warning d-flex align-items-center justify-content-between p-3 text-start border bg-light bg-opacity-50">
                     <div class="d-flex align-items-center gap-3">
