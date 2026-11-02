@@ -89,36 +89,56 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                     $pdo->beginTransaction();
 
-                    if ($reset_mode === 'hard') {
-                        // Hard Reset: Bersihkan rekam logbook, bimbingan, dan sidang skripsi
-                        $stmtDelLog = $pdo->prepare("DELETE FROM logbook_bimbingan WHERE mahasiswa_id IN ($placeholders)");
-                        $stmtDelLog->execute($mhs_ids);
+                    if ($target_scope === 'all') {
+                        if ($reset_mode === 'hard') {
+                            // Hard Reset Global: Bersihkan seluruh riwayat bimbingan & sidang semua mahasiswa
+                            $pdo->exec("DELETE FROM logbook_bimbingan");
+                            $pdo->exec("DELETE FROM sidang_skripsi");
+                            $pdo->exec("DELETE FROM pengajuan_bimbingan");
+                            $pdo->exec("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan'");
 
-                        $stmtDelSid = $pdo->prepare("DELETE FROM sidang_skripsi WHERE mahasiswa_id IN ($placeholders)");
-                        $stmtDelSid->execute($mhs_ids);
+                            $mode_label = "Reset Total Keseluruhan (Seluruh riwayat bimbingan, logbook, dan sidang dibersihkan total ke 0%)";
+                        } else {
+                            // Soft Reset Global: Set seluruh status bimbingan ke revisi & nilai ke 0%
+                            $pdo->exec("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan'");
+                            $pdo->exec("UPDATE pengajuan_bimbingan SET status = 'revisi', nilai_progres = 0");
+                            $pdo->exec("UPDATE logbook_bimbingan SET status_bab = 'revisi'");
+                            $pdo->exec("UPDATE sidang_skripsi SET status_sidang = 'pengajuan', nilai_penguji_1 = NULL, nilai_penguji_2 = NULL, nilai_penguji_3 = NULL, nilai_akhir = NULL, tanggal_sidang = NULL, jam_sidang = NULL, ruangan = NULL");
 
-                        $stmtDelBim = $pdo->prepare("DELETE FROM pengajuan_bimbingan WHERE mahasiswa_id IN ($placeholders)");
-                        $stmtDelBim->execute($mhs_ids);
-
-                        $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
-                        $stmtUpMhs->execute($mhs_ids);
-
-                        $mode_label = "Reset Total (Riwayat pengajuan, logbook, dan sidang dibersihkan ke titik awal)";
+                            $mode_label = "Soft Reset Keseluruhan (Status kelulusan kembali ke 'proses_bimbingan' dan capaian bab dinolkan)";
+                        }
                     } else {
-                        // Soft Reset: Set status & nilai ke 0 tanpa menghapus rekaman fisik/arsip
-                        $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
-                        $stmtUpMhs->execute($mhs_ids);
+                        if ($reset_mode === 'hard') {
+                            // Hard Reset per Kelas: Bersihkan rekam logbook, bimbingan, dan sidang mahasiswa kelas terpilih
+                            $stmtDelLog = $pdo->prepare("DELETE FROM logbook_bimbingan WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtDelLog->execute($mhs_ids);
 
-                        $stmtUpBim = $pdo->prepare("UPDATE pengajuan_bimbingan SET status = 'revisi', nilai_progres = 0 WHERE mahasiswa_id IN ($placeholders)");
-                        $stmtUpBim->execute($mhs_ids);
+                            $stmtDelSid = $pdo->prepare("DELETE FROM sidang_skripsi WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtDelSid->execute($mhs_ids);
 
-                        $stmtUpLog = $pdo->prepare("UPDATE logbook_bimbingan SET status_bab = 'revisi' WHERE mahasiswa_id IN ($placeholders)");
-                        $stmtUpLog->execute($mhs_ids);
+                            $stmtDelBim = $pdo->prepare("DELETE FROM pengajuan_bimbingan WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtDelBim->execute($mhs_ids);
 
-                        $stmtUpSid = $pdo->prepare("UPDATE sidang_skripsi SET status_sidang = 'pengajuan', nilai_penguji_1 = NULL, nilai_penguji_2 = NULL, nilai_penguji_3 = NULL, nilai_akhir = NULL, tanggal_sidang = NULL, jam_sidang = NULL, ruangan = NULL WHERE mahasiswa_id IN ($placeholders)");
-                        $stmtUpSid->execute($mhs_ids);
+                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
+                            $stmtUpMhs->execute($mhs_ids);
 
-                        $mode_label = "Soft Reset (Status kelulusan dikembalikan ke 'proses_bimbingan' dan capaian bab dinolkan)";
+                            $mode_label = "Reset Total Kelas";
+                        } else {
+                            // Soft Reset per Kelas
+                            $stmtUpMhs = $pdo->prepare("UPDATE mahasiswa SET status_kelulusan = 'proses_bimbingan' WHERE id IN ($placeholders)");
+                            $stmtUpMhs->execute($mhs_ids);
+
+                            $stmtUpBim = $pdo->prepare("UPDATE pengajuan_bimbingan SET status = 'revisi', nilai_progres = 0 WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtUpBim->execute($mhs_ids);
+
+                            $stmtUpLog = $pdo->prepare("UPDATE logbook_bimbingan SET status_bab = 'revisi' WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtUpLog->execute($mhs_ids);
+
+                            $stmtUpSid = $pdo->prepare("UPDATE sidang_skripsi SET status_sidang = 'pengajuan', nilai_penguji_1 = NULL, nilai_penguji_2 = NULL, nilai_penguji_3 = NULL, nilai_akhir = NULL, tanggal_sidang = NULL, jam_sidang = NULL, ruangan = NULL WHERE mahasiswa_id IN ($placeholders)");
+                            $stmtUpSid->execute($mhs_ids);
+
+                            $mode_label = "Soft Reset Kelas (Nilai & Status di-set 0%)";
+                        }
                     }
 
                     // Notifikasi otomatis ke dashboard mahasiswa terdampak
