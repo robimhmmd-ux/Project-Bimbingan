@@ -18,9 +18,12 @@ $error_msg   = '';
 
 // Ambil data profil mahasiswa beserta info dosen pembimbingnya
 $stmt_mhs = $pdo->prepare("
-    SELECT m.*, d.user_id AS dosen_user_id, d.nidn, d.nama_dosen, d.email AS email_dosen, d.no_whatsapp, d.foto_profil AS foto_dosen 
+    SELECT m.*, d.id AS dosen_id, d.user_id AS dosen_user_id, d.nidn, d.nama_dosen, 
+           d.email AS email_dosen, d.no_whatsapp, d.foto_profil AS foto_dosen, 
+           d.kuota_bimbingan, u_dos.username AS username_dosen
     FROM mahasiswa m 
     LEFT JOIN dosen d ON m.dosen_pembimbing_id = d.id 
+    LEFT JOIN users u_dos ON d.user_id = u_dos.id
     WHERE m.user_id = :uid LIMIT 1
 ");
 $stmt_mhs->execute([':uid' => $_SESSION['user_id']]);
@@ -29,6 +32,23 @@ $mhs = $stmt_mhs->fetch();
 $mhs_id = $mhs['id'] ?? 0;
 $dosen_pembimbing_id = $mhs['dosen_pembimbing_id'] ?? null;
 $status_pembimbing = $mhs['status_pembimbing'] ?? 'belum_diplot';
+
+// Ambil jadwal ketersediaan konsultasi dosen pembimbing
+$jadwal_dosen_list = [];
+if (!empty($dosen_pembimbing_id)) {
+    try {
+        $st_jd = $pdo->prepare("
+            SELECT hari, jam_mulai, jam_selesai, status_aktif 
+            FROM jadwal_dosen 
+            WHERE dosen_id = :did AND status_aktif = 'aktif'
+            ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu')
+        ");
+        $st_jd->execute([':did' => $dosen_pembimbing_id]);
+        $jadwal_dosen_list = $st_jd->fetchAll();
+    } catch (PDOException $e) {
+        $jadwal_dosen_list = [];
+    }
+}
 
 // Handle Konfirmasi Penerimaan SK Dosen Pembimbing (UPDATE Robi)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'konfirmasi_sk') {
@@ -55,6 +75,147 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
 }
+
+// Handle Pengajuan Progres Mahasiswa (Judul s.d. ACC Sidang)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_progres'])) {
+    if (!$dosen_pembimbing_id || $status_pembimbing !== 'aktif') {
+        $error_msg = "Anda belum dapat mengajukan progres karena SK Dosen Pembimbing belum aktif. Silakan konfirmasi SK terlebih dahulu.";
+    } else {
+        $tahap_key      = trim($_POST['tahap_key'] ?? '');
+        $catatan_mhs    = trim($_POST['catatan_mahasiswa'] ?? '');
+        $link_drive     = trim($_POST['link_drive'] ?? '');
+        $judul_diajukan = trim($_POST['judul_skripsi_baru'] ?? '');
+        $tanggal_bg     = trim($_POST['tanggal_bimbingan'] ?? date('Y-m-d'));
+        $jam_bg         = trim($_POST['jam_bimbingan'] ?? date('H:i:s'));
+        $file_draft_name = null;
+
+        $valid_tahap = [
+            'judul'  => 'Pengajuan Judul Skripsi',
+            'bab1'   => 'Bab 1: Pendahuluan',
+            'bab2'   => 'Bab 2: Tinjauan Pustaka',
+            'bab3'   => 'Bab 3: Metodologi Penelitian',
+            'bab4'   => 'Bab 4: Hasil & Pembahasan',
+            'bab5'   => 'Bab 5: Kesimpulan & Saran',
+            'sidang' => 'ACC Kelayakan Sidang Skripsi'
+        ];
+
+        if (!array_key_exists($tahap_key, $valid_tahap)) {
+            $error_msg = "Tahap progres yang dipilih tidak valid.";
+        } elseif ($tahap_key === 'judul' && empty($judul_diajukan)) {
+            $error_msg = "Rencana judul skripsi yang diajukan tidak boleh kosong.";
+        } elseif (empty($catatan_mhs)) {
+            $error_msg = "Catatan atau ringkasan progres wajib diisi.";
+        } else {
+            $nama_tahap = $valid_tahap[$tahap_key];
+
+            // Validasi format link Google Drive jika diisi
+            if (!empty($link_drive) && !filter_var($link_drive, FILTER_VALIDATE_URL)) {
+                $error_msg = "Format tautan Google Drive / Docs tidak valid (harus diawali https://).";
+            }
+
+            // Handle file upload PDF
+            if (empty($error_msg) && isset($_FILES['file_draft']) && $_FILES['file_draft']['error'] === UPLOAD_ERR_OK) {
+                $f_tmp  = $_FILES['file_draft']['tmp_name'];
+                $f_name = $_FILES['file_draft']['name'];
+                $f_size = $_FILES['file_draft']['size'];
+                $f_ext  = strtolower(pathinfo($f_name, PATHINFO_EXTENSION));
+
+                if ($f_ext !== 'pdf') {
+                    $error_msg = "Berkas lampiran draf skripsi harus berformat PDF (.pdf).";
+                } elseif ($f_size > 5 * 1024 * 1024) {
+                    $error_msg = "Ukuran file berkas PDF maksimal 5 MB.";
+                } else {
+                    $upload_dir = '../assets/uploads/';
+                    if (!is_dir($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    $clean_base = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($f_name, PATHINFO_FILENAME));
+                    $new_name   = 'progres_' . ($mhs['nim'] ?? 'mhs') . '_' . $tahap_key . '_' . time() . '.' . $f_ext;
+                    $dest       = $upload_dir . $new_name;
+
+                    if (move_uploaded_file($f_tmp, $dest)) {
+                        $file_draft_name = $new_name;
+                    } else {
+                        $error_msg = "Gagal mengunggah berkas PDF ke server.";
+                    }
+                }
+            }
+
+            if (empty($error_msg)) {
+                try {
+                    $pdo->beginTransaction();
+
+                    // Update judul jika mengajukan judul
+                    if ($tahap_key === 'judul' && !empty($judul_diajukan)) {
+                        $st_uj = $pdo->prepare("UPDATE mahasiswa SET judul_skripsi = :jdl WHERE id = :mid");
+                        $st_uj->execute([':jdl' => $judul_diajukan, ':mid' => $mhs_id]);
+                        $catatan_mhs = "Rencana Judul: " . $judul_diajukan . ($catatan_mhs ? " | Catatan: " . $catatan_mhs : "");
+                    }
+
+                    // Simpan ke pengajuan_bimbingan
+                    $st_in = $pdo->prepare("
+                        INSERT INTO pengajuan_bimbingan 
+                        (mahasiswa_id, dosen_id, tanggal_bimbingan, jam_bimbingan, bab_pembahasan, catatan_mahasiswa, file_draft, link_drive, status, nilai_progres, created_at)
+                        VALUES (:mid, :did, :tgl, :jam, :bab, :cat, :fld, :lnk, 'menunggu', 0, NOW())
+                    ");
+                    $st_in->execute([
+                        ':mid' => $mhs_id,
+                        ':did' => $dosen_pembimbing_id,
+                        ':tgl' => $tanggal_bg,
+                        ':jam' => $jam_bg,
+                        ':bab' => $nama_tahap,
+                        ':cat' => $catatan_mhs,
+                        ':fld' => $file_draft_name,
+                        ':lnk' => !empty($link_drive) ? $link_drive : null
+                    ]);
+
+                    // Kirim notifikasi ke dosen
+                    if (!empty($mhs['dosen_user_id'])) {
+                        $nama_m = $mhs['nama_lengkap'] ?? 'Mahasiswa';
+                        $nim_m  = $mhs['nim'] ?? '';
+                        $st_nd = $pdo->prepare("
+                            INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan)
+                            VALUES (:uid, :jdl, :psn, 'pembimbing', 'riwayat_bimbingan.php')
+                        ");
+                        $st_nd->execute([
+                            ':uid' => $mhs['dosen_user_id'],
+                            ':jdl' => 'Pengajuan Progres Baru',
+                            ':psn' => "Mahasiswa {$nama_m} ({$nim_m}) mengajukan permohonan evaluasi progres: '{$nama_tahap}'. Silakan berikan keputusan ACC."
+                        ]);
+                    }
+
+                    // Kirim notifikasi ke mahasiswa sendiri
+                    if (!empty($_SESSION['user_id'])) {
+                        $st_nm = $pdo->prepare("
+                            INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan)
+                            VALUES (:uid, :jdl, :psn, 'info', 'index.php')
+                        ");
+                        $st_nm->execute([
+                            ':uid' => $_SESSION['user_id'],
+                            ':jdl' => 'Pengajuan Progres Terkirim',
+                            ':psn' => "Permohonan progres '{$nama_tahap}' berhasil diajukan ke Dosen Pembimbing. Menunggu keputusan evaluasi (ACC)."
+                        ]);
+                    }
+
+                    $pdo->commit();
+
+                    $success_msg = "Pengajuan progres '{$nama_tahap}' berhasil dikirim ke Dosen Pembimbing! Silakan pantau status evaluasi dan ACC di halaman ini.";
+
+                    // Refresh data profil mahasiswa
+                    $stmt_mhs->execute([':uid' => $_SESSION['user_id']]);
+                    $mhs = $stmt_mhs->fetch();
+
+                } catch (Exception $e) {
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+                    $error_msg = "Gagal memproses pengajuan progres: " . $e->getMessage();
+                }
+            }
+        }
+    }
+}
+
 
 // Ambil Informasi Jadwal Sidang Skripsi Mahasiswa (UPDATE Robi: tabel sidang_skripsi)
 $info_sidang = null;
@@ -149,78 +310,197 @@ if ($mhs_id) {
     $recent_bimbingan = [];
 }
 
-// Analisis progres bab 1 - 5
-$bab_list = [
-    'Bab 1' => ['label' => 'Bab 1: Pendahuluan', 'status' => 'belum'],
-    'Bab 2' => ['label' => 'Bab 2: Tinjauan Pustaka', 'status' => 'belum'],
-    'Bab 3' => ['label' => 'Bab 3: Metodologi Penelitian', 'status' => 'belum'],
-    'Bab 4' => ['label' => 'Bab 4: Hasil & Pembahasan', 'status' => 'belum'],
-    'Bab 5' => ['label' => 'Bab 5: Kesimpulan & Saran', 'status' => 'belum'],
+// Analisis progres bertahap dari Pengajuan Judul sampai Selesai / Siap Sidang
+$tahapan_progres = [
+    'judul' => [
+        'nama'   => 'Judul Skripsi',
+        'label'  => 'Pengajuan Judul',
+        'status' => 'belum',
+        'icon'   => 'bi-bookmark-check'
+    ],
+    'bab1' => [
+        'nama'   => 'Bab 1',
+        'label'  => 'Bab 1: Pendahuluan',
+        'status' => 'belum',
+        'icon'   => 'bi-file-earmark-text'
+    ],
+    'bab2' => [
+        'nama'   => 'Bab 2',
+        'label'  => 'Bab 2: Tinjauan Pustaka',
+        'status' => 'belum',
+        'icon'   => 'bi-journal-richtext'
+    ],
+    'bab3' => [
+        'nama'   => 'Bab 3',
+        'label'  => 'Bab 3: Metodologi Penelitian',
+        'status' => 'belum',
+        'icon'   => 'bi-gear-wide-connected'
+    ],
+    'bab4' => [
+        'nama'   => 'Bab 4',
+        'label'  => 'Bab 4: Hasil & Pembahasan',
+        'status' => 'belum',
+        'icon'   => 'bi-bar-chart-steps'
+    ],
+    'bab5' => [
+        'nama'   => 'Bab 5',
+        'label'  => 'Bab 5: Kesimpulan & Saran',
+        'status' => 'belum',
+        'icon'   => 'bi-award'
+    ],
+    'sidang' => [
+        'nama'   => 'Sidang Skripsi',
+        'label'  => 'ACC Kelayakan Sidang',
+        'status' => 'belum',
+        'icon'   => 'bi-mortarboard'
+    ],
 ];
 
-$bab_acc_count = 0;
+// Cek status pengajuan judul di database mahasiswa
+$judul_mhs = trim($mhs['judul_skripsi'] ?? '');
+if (!empty($judul_mhs) && $judul_mhs !== 'Belum Ditentukan') {
+    $tahapan_progres['judul']['status'] = 'acc';
+}
+
+// Analisis pengajuan dari riwayat bimbingan
+$map_bab_str = [
+    'bab1' => 'Bab 1',
+    'bab2' => 'Bab 2',
+    'bab3' => 'Bab 3',
+    'bab4' => 'Bab 4',
+    'bab5' => 'Bab 5',
+];
+
 foreach ($riwayat_semua as $row) {
-    foreach ($bab_list as $key => $val) {
-        if (stripos($row['bab_pembahasan'], $key) !== false) {
-            if (in_array($row['status'], ['selesai', 'disetujui']) && $val['status'] !== 'acc') {
-                $bab_list[$key]['status'] = 'acc';
-                $bab_acc_count++;
-            } elseif ($row['status'] === 'revisi' && $val['status'] === 'belum') {
-                $bab_list[$key]['status'] = 'revisi';
-            } elseif ($row['status'] === 'menunggu' && $val['status'] === 'belum') {
-                $bab_list[$key]['status'] = 'proses';
+    // 1. Cek Judul
+    if (stripos($row['bab_pembahasan'], 'Judul') !== false) {
+        if (in_array($row['status'], ['selesai', 'disetujui'])) {
+            $tahapan_progres['judul']['status'] = 'acc';
+        } elseif ($row['status'] === 'revisi' && $tahapan_progres['judul']['status'] !== 'acc') {
+            $tahapan_progres['judul']['status'] = 'revisi';
+        } elseif ($row['status'] === 'menunggu' && $tahapan_progres['judul']['status'] !== 'acc') {
+            $tahapan_progres['judul']['status'] = 'proses';
+        }
+    }
+
+    // 2. Cek Bab 1 s.d. 5
+    foreach ($map_bab_str as $b_key => $b_str) {
+        if (stripos($row['bab_pembahasan'], $b_str) !== false) {
+            if (in_array($row['status'], ['selesai', 'disetujui']) && $tahapan_progres[$b_key]['status'] !== 'acc') {
+                $tahapan_progres[$b_key]['status'] = 'acc';
+            } elseif ($row['status'] === 'revisi' && $tahapan_progres[$b_key]['status'] === 'belum') {
+                $tahapan_progres[$b_key]['status'] = 'revisi';
+            } elseif ($row['status'] === 'menunggu' && $tahapan_progres[$b_key]['status'] === 'belum') {
+                $tahapan_progres[$b_key]['status'] = 'proses';
             }
+        }
+    }
+
+    // 3. Cek Sidang
+    if (stripos($row['bab_pembahasan'], 'Sidang') !== false) {
+        if (in_array($row['status'], ['selesai', 'disetujui'])) {
+            $tahapan_progres['sidang']['status'] = 'acc';
+        } elseif ($row['status'] === 'menunggu' && $tahapan_progres['sidang']['status'] !== 'acc') {
+            $tahapan_progres['sidang']['status'] = 'proses';
         }
     }
 }
 
-// Hitung estimasi progres keseluruhan (berdasarkan 5 Bab @ 20%)
-$persen_progres = min(100, $bab_acc_count * 20);
-if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
+// Cek kelulusan di tabel mahasiswa
+if (($mhs['status_kelulusan'] ?? '') === 'lulus') {
+    $tahapan_progres['sidang']['status'] = 'acc';
+} elseif (($mhs['status_kelulusan'] ?? '') === 'siap_sidang') {
+    $tahapan_progres['sidang']['status'] = 'acc';
+}
+
+// Tentukan tahap yang aktif / harus diajukan berikutnya secara berurutan
+$tahap_berikutnya = null;
+foreach ($tahapan_progres as $k_stp => $v_stp) {
+    if ($v_stp['status'] !== 'acc') {
+        $tahap_berikutnya = $k_stp;
+        break;
+    }
+}
+if (!$tahap_berikutnya) {
+    $tahap_berikutnya = 'sidang';
+}
+
+// Hitung persentase progres akumulatif
+$total_tahap_acc = 0;
+foreach ($tahapan_progres as $tp) {
+    if ($tp['status'] === 'acc') $total_tahap_acc++;
+}
+$persen_progres = (int)round(($total_tahap_acc / count($tahapan_progres)) * 100);
+if (($mhs['status_kelulusan'] ?? '') === 'lulus') {
     $persen_progres = 100;
-} elseif ($mhs && $mhs['status_kelulusan'] === 'siap_sidang' && $persen_progres < 90) {
+} elseif (($mhs['status_kelulusan'] ?? '') === 'siap_sidang' && $persen_progres < 90) {
     $persen_progres = 90;
 }
+
+// Backward compatibility untuk bab_list
+$bab_list = [
+    'Bab 1' => ['label' => 'Bab 1: Pendahuluan', 'status' => $tahapan_progres['bab1']['status']],
+    'Bab 2' => ['label' => 'Bab 2: Tinjauan Pustaka', 'status' => $tahapan_progres['bab2']['status']],
+    'Bab 3' => ['label' => 'Bab 3: Metodologi Penelitian', 'status' => $tahapan_progres['bab3']['status']],
+    'Bab 4' => ['label' => 'Bab 4: Hasil & Pembahasan', 'status' => $tahapan_progres['bab4']['status']],
+    'Bab 5' => ['label' => 'Bab 5: Kesimpulan & Saran', 'status' => $tahapan_progres['bab5']['status']],
+];
 ?>
 
 <!-- ============================================================
      HERO BANNER MAHASISWA MODERN & BERWARNA
 ============================================================ -->
 <div class="student-hero-banner">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 position-relative" style="z-index: 2;">
-        <div class="pe-md-3">
+    <div class="row align-items-center g-4 position-relative" style="z-index: 2;">
+        <!-- Sisi Kiri: Sapaan & Identitas Mahasiswa (Luas & Rapi) -->
+        <div class="col-lg-6 col-xl-7">
             <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
                 <span class="badge-kelas">
                     <i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
                 </span>
-                <span class="badge bg-white bg-opacity-25 text-white border border-white border-opacity-25 px-2 py-1 small rounded-pill">
+                <span class="badge bg-white bg-opacity-25 text-white border border-white border-opacity-25 px-2.5 py-1 small rounded-pill">
                     <i class="bi bi-person-fill me-1"></i>Portal Mahasiswa
                 </span>
             </div>
-            <h2 class="fw-bold text-white mb-1">Selamat Datang Kembali, <?= htmlspecialchars($mhs['nama_lengkap'] ?? $_SESSION['username']); ?>!</h2>
-            <p class="text-white-50 small mb-0">
+            <h2 class="fw-bold text-white mb-2" style="font-size: 1.65rem; line-height: 1.3;">
+                Selamat Datang Kembali, <?= htmlspecialchars($mhs['nama_lengkap'] ?? $_SESSION['username']); ?>!
+            </h2>
+            <p class="text-white-50 small mb-0" style="line-height: 1.6; max-width: 580px;">
                 NIM: <strong class="text-white"><?= htmlspecialchars($mhs['nim'] ?? '-'); ?></strong> &bull; Pantau progres bimbingan, jadwal konsultasi, dan kesiapan ujian sidang tugas akhir Anda.
             </p>
         </div>
-        <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-nowrap">
-            <?php if ($status_pembimbing === 'aktif'): ?>
-                <a href="jadwal_bimbingan.php" class="btn btn-hero-action btn-hero-blue">
-                    <i class="bi bi-calendar-week"></i>Jadwal Bimbingan
-                </a>
-                <a href="upload_draft.php" class="btn btn-hero-action btn-hero-white">
-                    <i class="bi bi-cloud-arrow-up"></i>Upload Draft
-                </a>
-                <a href="chat.php" class="btn btn-hero-action btn-hero-emerald">
-                    <i class="bi bi-chat-dots-fill"></i>Chat Dosen
-                </a>
-            <?php else: ?>
-                <button class="btn btn-hero-action btn-hero-disabled" title="Konfirmasi SK terlebih dahulu di banner bawah">
-                    <i class="bi bi-lock-fill"></i>Jadwal Bimbingan
-                </button>
-            <?php endif; ?>
-            <a href="cetak_laporan.php" target="_blank" class="btn btn-hero-action btn-hero-outline">
-                <i class="bi bi-printer-fill"></i>Cetak Laporan
-            </a>
+
+        <!-- Sisi Kanan: Tombol Aksi Cepat Tertata Rapi & Tidak Terpotong -->
+        <div class="col-lg-6 col-xl-5">
+            <div class="d-flex flex-wrap gap-2 justify-content-lg-end align-items-center">
+                <?php if ($status_pembimbing === 'aktif'): ?>
+                    <button type="button" class="btn btn-hero-action btn-hero-emerald shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAjukanProgres">
+                        <i class="bi bi-send-check-fill"></i>Pengajuan Progres
+                    </button>
+                    <a href="upload_draft.php" class="btn btn-hero-action btn-hero-white">
+                        <i class="bi bi-cloud-arrow-up"></i>Upload Berkas
+                    </a>
+                    <a href="jadwal_bimbingan.php" class="btn btn-hero-action btn-hero-blue">
+                        <i class="bi bi-calendar-week"></i>Jadwal Bimbingan
+                    </a>
+                    <a href="chat.php" class="btn btn-hero-action btn-hero-outline">
+                        <i class="bi bi-chat-dots-fill"></i>Chat Dosen
+                    </a>
+                    <a href="cetak_laporan.php" target="_blank" class="btn btn-hero-action btn-hero-outline">
+                        <i class="bi bi-printer-fill"></i>Cetak Laporan
+                    </a>
+                <?php else: ?>
+                    <button class="btn btn-hero-action btn-hero-disabled" title="Konfirmasi SK terlebih dahulu di banner bawah">
+                        <i class="bi bi-lock-fill"></i>Pengajuan Progres
+                    </button>
+                    <button class="btn btn-hero-action btn-hero-disabled" title="Konfirmasi SK terlebih dahulu di banner bawah">
+                        <i class="bi bi-lock-fill"></i>Jadwal Bimbingan
+                    </button>
+                    <a href="cetak_laporan.php" target="_blank" class="btn btn-hero-action btn-hero-outline">
+                        <i class="bi bi-printer-fill"></i>Cetak Laporan
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -546,39 +826,57 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                 <?php endif; ?>
             </div>
 
+            <?php 
+            $foto_dosen_src = null;
+            if (!empty($mhs['foto_dosen']) && $mhs['foto_dosen'] !== 'default.png') {
+                $fname_dosen = basename($mhs['foto_dosen']);
+                if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname_dosen)) {
+                    $foto_dosen_src = '../assets/uploads/profile/' . htmlspecialchars($fname_dosen);
+                } elseif (file_exists(__DIR__ . '/../assets/uploads/' . $fname_dosen)) {
+                    $foto_dosen_src = '../assets/uploads/' . htmlspecialchars($fname_dosen);
+                }
+            }
+            ?>
             <?php if (!empty($mhs['nama_dosen'])): ?>
                 <div class="d-flex align-items-center mb-3">
-                    <div class="me-3">
-                        <?php if (!empty($mhs['foto_dosen']) && file_exists('../assets/uploads/' . $mhs['foto_dosen'])): ?>
-                            <img src="../assets/uploads/<?= htmlspecialchars($mhs['foto_dosen']); ?>" class="rounded-circle border" width="55" height="55" style="object-fit: cover;" alt="Dosen">
-                        <?php else: ?>
-                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 55px; height: 55px; font-size: 1.3rem;">
-                                <?= strtoupper(substr($mhs['nama_dosen'], 0, 1)); ?>
-                            </div>
-                        <?php endif; ?>
+                    <div class="me-3 position-relative flex-shrink-0">
+                        <a href="javascript:void(0)" class="text-decoration-none d-inline-block" data-bs-toggle="modal" data-bs-target="#modalProfilDosen" title="Klik untuk melihat profil lengkap dosen">
+                            <?php if ($foto_dosen_src): ?>
+                                <img src="<?= $foto_dosen_src; ?>" class="rounded-circle border shadow-sm img-thumbnail" width="58" height="58" style="object-fit: cover; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" alt="Foto Profil Dosen">
+                            <?php else: ?>
+                                <div class="rounded-circle shadow-sm d-flex align-items-center justify-content-center text-white fw-bold text-decoration-none" style="width: 58px; height: 58px; font-size: 1.5rem; background: #059669; cursor: pointer; transition: transform 0.2s; user-select: none;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+                                    <?= strtoupper(substr($mhs['nama_dosen'] ?? 'D', 0, 1)); ?>
+                                </div>
+                            <?php endif; ?>
+                        </a>
+                        <span class="position-absolute bottom-0 end-0 p-1.5 bg-success border border-2 border-white rounded-circle shadow-sm" title="Dosen Aktif"></span>
                     </div>
-                    <div>
-                        <h6 class="fw-bold text-dark mb-0"><?= htmlspecialchars($mhs['nama_dosen']); ?></h6>
-                        <span class="text-muted small">NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></span>
+                    <div class="flex-grow-1 min-w-0">
+                        <h6 class="fw-bold text-dark mb-1 text-truncate" title="<?= htmlspecialchars($mhs['nama_dosen']); ?>">
+                            <?= htmlspecialchars($mhs['nama_dosen']); ?>
+                        </h6>
+                        <span class="text-muted small d-block">
+                            NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?>
+                        </span>
                     </div>
                 </div>
 
-                <div class="bg-light p-2 rounded small mb-3 border">
-                    <div class="mb-1">
-                        <i class="bi bi-envelope text-primary me-2"></i>
-                        <a href="mailto:<?= htmlspecialchars($mhs['email_dosen'] ?? ''); ?>" class="text-decoration-none text-secondary">
+                <div class="bg-light p-3 rounded-3 small mb-3 border">
+                    <div class="mb-2 d-flex align-items-center justify-content-between">
+                        <span class="text-muted d-flex align-items-center"><i class="bi bi-envelope text-primary me-2"></i>Email:</span>
+                        <a href="mailto:<?= htmlspecialchars($mhs['email_dosen'] ?? ''); ?>" class="text-decoration-none text-dark fw-semibold text-truncate" style="max-width: 175px;" title="<?= htmlspecialchars($mhs['email_dosen'] ?? '-'); ?>">
                             <?= htmlspecialchars($mhs['email_dosen'] ?? '-'); ?>
                         </a>
                     </div>
-                    <div>
-                        <i class="bi bi-whatsapp text-success me-2"></i>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="text-muted d-flex align-items-center"><i class="bi bi-whatsapp text-success me-2"></i>WhatsApp:</span>
                         <?php if (!empty($mhs['no_whatsapp'])): 
                             $clean_wa = preg_replace('/[^0-9]/', '', $mhs['no_whatsapp']);
                             if (str_starts_with($clean_wa, '0')) {
                                 $clean_wa = '62' . substr($clean_wa, 1);
                             }
                         ?>
-                            <a href="https://wa.me/<?= $clean_wa; ?>" target="_blank" class="text-decoration-none text-secondary">
+                            <a href="https://wa.me/<?= $clean_wa; ?>" target="_blank" class="text-decoration-none text-dark fw-semibold d-inline-flex align-items-center gap-1">
                                 <?= htmlspecialchars($mhs['no_whatsapp']); ?> <i class="bi bi-box-arrow-up-right small text-muted"></i>
                             </a>
                         <?php else: ?>
@@ -587,13 +885,22 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                     </div>
                 </div>
 
-                <div class="mt-auto d-flex gap-2">
-                    <a href="chat.php" class="btn btn-outline-success btn-sm w-100">
-                        <i class="bi bi-chat-dots-fill me-1"></i>Chat di Web
-                    </a>
-                    <a href="jadwal_bimbingan.php" class="btn btn-outline-secondary btn-sm w-100">
-                        <i class="bi bi-calendar-week me-1"></i>Jadwal Bimbingan
-                    </a>
+                <div class="mt-auto d-flex flex-column gap-2">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="chat.php" class="btn btn-outline-success btn-sm w-100 d-flex align-items-center justify-content-center gap-1 py-1.5 fw-semibold shadow-xs">
+                                <i class="bi bi-chat-dots-fill"></i>Chat di Web
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="jadwal_bimbingan.php" class="btn btn-outline-secondary btn-sm w-100 d-flex align-items-center justify-content-center gap-1 py-1.5 fw-semibold shadow-xs">
+                                <i class="bi bi-calendar-week"></i>Jadwal
+                            </a>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center gap-1.5 py-1.5 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#modalProfilDosen">
+                        <i class="bi bi-person-vcard-fill"></i>Lihat Profil Lengkap Dosen
+                    </button>
                 </div>
             <?php else: ?>
                 <div class="alert alert-warning small mb-0 py-2">
@@ -604,42 +911,69 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
     </div>
 </div>
 
-<!-- Milestone Tahapan Skripsi (Bab 1 - Bab 5) -->
+<!-- Milestone Tahapan Skripsi (Pengajuan Judul s.d. ACC Sidang) -->
 <div class="card shadow-sm mb-4 border-0">
-    <div class="card-header bg-white py-3 border-bottom">
-        <h6 class="m-0 fw-bold text-dark">
-            <i class="bi bi-check2-circle text-primary me-2"></i>Pencatatan Progres Tahapan Bab Skripsi
-        </h6>
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h6 class="m-0 fw-bold text-dark">
+                <i class="bi bi-check2-circle text-primary me-2"></i>Pencatatan Progres Tahapan Skripsi
+            </h6>
+            <small class="text-muted">Alur pengajuan ACC progres secara bertahap mulai dari pengajuan judul sampai siap sidang.</small>
+        </div>
+        <?php if ($status_pembimbing === 'aktif'): ?>
+            <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm d-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalAjukanProgres">
+                <i class="bi bi-send-check"></i>Pengajuan Progres
+            </button>
+        <?php endif; ?>
     </div>
     <div class="card-body">
-        <div class="row g-3 text-center">
-            <?php foreach ($bab_list as $b_key => $b_data): ?>
-                <div class="col-6 col-md">
-                    <div class="bab-step-card status-<?= $b_data['status']; ?> h-100 d-flex flex-column justify-content-between">
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-xl-7 g-3 text-center">
+            <?php 
+            $t_keys_arr = array_keys($tahapan_progres);
+            foreach ($tahapan_progres as $t_key => $t_data): 
+                $cur_idx = array_search($t_key, $t_keys_arr);
+                $is_step_unlocked = false;
+                if ($t_key === 'judul') {
+                    $is_step_unlocked = true;
+                } else {
+                    $prev_key = $t_keys_arr[$cur_idx - 1];
+                    if ($tahapan_progres[$prev_key]['status'] === 'acc') {
+                        $is_step_unlocked = true;
+                    }
+                }
+            ?>
+                <div class="col">
+                    <div class="bab-step-card status-<?= $t_data['status']; ?> h-100 d-flex flex-column justify-content-between">
                         <div>
                             <div class="bab-icon-circle">
-                                <?php if ($b_data['status'] === 'acc'): ?>
+                                <?php if ($t_data['status'] === 'acc'): ?>
                                     <i class="bi bi-check2-circle"></i>
-                                <?php elseif ($b_data['status'] === 'revisi'): ?>
+                                <?php elseif ($t_data['status'] === 'revisi'): ?>
                                     <i class="bi bi-arrow-repeat"></i>
-                                <?php elseif ($b_data['status'] === 'proses'): ?>
+                                <?php elseif ($t_data['status'] === 'proses'): ?>
                                     <i class="bi bi-hourglass-split"></i>
+                                <?php elseif ($is_step_unlocked): ?>
+                                    <i class="bi bi-plus-circle"></i>
                                 <?php else: ?>
                                     <i class="bi bi-dash-circle"></i>
                                 <?php endif; ?>
                             </div>
-                            <h6 class="fw-bold mb-1 small text-dark"><?= $b_key; ?></h6>
-                            <p class="small text-muted mb-2" style="font-size: 0.75rem;"><?= htmlspecialchars($b_data['label']); ?></p>
+                            <h6 class="fw-bold mb-1 small text-dark"><?= htmlspecialchars($t_data['nama']); ?></h6>
+                            <p class="small text-muted mb-2" style="font-size: 0.72rem;"><?= htmlspecialchars($t_data['label']); ?></p>
                         </div>
                         <div>
-                            <?php if ($b_data['status'] === 'acc'): ?>
+                            <?php if ($t_data['status'] === 'acc'): ?>
                                 <span class="badge bg-success">ACC Selesai</span>
-                            <?php elseif ($b_data['status'] === 'revisi'): ?>
+                            <?php elseif ($t_data['status'] === 'revisi'): ?>
                                 <span class="badge bg-warning text-dark">Perlu Revisi</span>
-                            <?php elseif ($b_data['status'] === 'proses'): ?>
-                                <span class="badge bg-info text-dark">Sedang Bimbingan</span>
+                            <?php elseif ($t_data['status'] === 'proses'): ?>
+                                <span class="badge bg-info text-dark">Sedang Diproses</span>
                             <?php else: ?>
-                                <span class="badge bg-secondary">Belum Mulai</span>
+                                <?php if ($is_step_unlocked): ?>
+                                    <span class="badge bg-primary">Siap Diajukan</span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary">Terkunci</span>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -731,7 +1065,7 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                         <tr>
                             <td colspan="6" class="text-center py-4 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-1"></i>
-                                Belum ada riwayat bimbingan. Silakan serahkan naskah Anda di menu <a href="upload_draft.php" class="fw-semibold">Upload Skripsi</a> atau cek <a href="jadwal_bimbingan.php" class="fw-semibold">Jadwal Bimbingan</a>.
+                                Belum ada riwayat bimbingan. Silakan serahkan naskah Anda di menu <a href="upload_draft.php" class="fw-semibold">Upload Berkas</a> atau cek <a href="jadwal_bimbingan.php" class="fw-semibold">Jadwal Bimbingan</a>.
                             </td>
                         </tr>
                     <?php else: ?>
@@ -789,6 +1123,287 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
         </div>
     </div>
 </div>
+
+
+<!-- ============================================================
+     MODAL PENGAJUAN ACC PROGRES SKRIPSI
+============================================================ -->
+<div class="modal fade" id="modalAjukanProgres" tabindex="-1" aria-labelledby="modalAjukanProgresLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-gradient-navy text-white" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #1e40af 100%);">
+                <div>
+                    <h5 class="modal-title fw-bold text-white mb-0" id="modalAjukanProgresLabel">
+                        <i class="bi bi-send-check text-info me-2"></i>Pengajuan ACC Progres Skripsi
+                    </h5>
+                    <small class="text-white-50">Ajukan permohonan evaluasi dan persetujuan (ACC) secara bertahap kepada Dosen Pembimbing</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <form action="index.php" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action_ajukan_progres" value="1">
+                
+                <div class="modal-body p-4">
+                    <!-- Status Tahap Saat Ini -->
+                    <div class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 rounded-3 p-3 mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-primary px-2.5 py-1">Tahap Saat Ini</span>
+                            <span class="fw-bold text-primary"><?= htmlspecialchars($tahapan_progres[$tahap_berikutnya]['nama'] ?? 'Tahapan Skripsi'); ?></span>
+                        </div>
+                        <p class="small text-muted mb-0">
+                            Sesuai ketentuan akademik, pengajuan progres harus dilakukan secara bertahap mulai dari <strong>Pengajuan Judul</strong> hingga <strong>ACC Sidang</strong>.
+                        </p>
+                    </div>
+
+                    <!-- Dropdown Pilihan Tahap -->
+                    <div class="mb-3">
+                        <label for="selectTahapProgres" class="form-label small fw-semibold text-secondary">
+                            Pilih Tahapan Progres yang Diajukan <span class="text-danger">*</span>
+                        </label>
+                        <select name="tahap_key" id="selectTahapProgres" class="form-select" onchange="toggleTahapFields()" required>
+                            <?php 
+                            $t_keys = array_keys($tahapan_progres);
+                            foreach ($tahapan_progres as $k_step => $info_step):
+                                $idx = array_search($k_step, $t_keys);
+                                $is_unlocked = false;
+                                if ($k_step === 'judul') {
+                                    $is_unlocked = true;
+                                } else {
+                                    $prev_k = $t_keys[$idx - 1];
+                                    if ($tahapan_progres[$prev_k]['status'] === 'acc') {
+                                        $is_unlocked = true;
+                                    }
+                                }
+
+                                $status_badge_text = '';
+                                if ($info_step['status'] === 'acc') {
+                                    $status_badge_text = ' [Sudah di-ACC ✓]';
+                                } elseif ($info_step['status'] === 'revisi') {
+                                    $status_badge_text = ' [Perlu Revisi - Ajukan Ulang ⚠️]';
+                                } elseif ($info_step['status'] === 'proses') {
+                                    $status_badge_text = ' [Sedang Menunggu Review ⏳]';
+                                } elseif ($is_unlocked) {
+                                    $status_badge_text = ' [Siap Diajukan ⭐]';
+                                } else {
+                                    $status_badge_text = ' [Terkunci 🔒 - Selesaikan tahap sebelumnya]';
+                                }
+
+                                $is_selected = ($k_step === $tahap_berikutnya);
+                                $is_disabled = (!$is_unlocked && $info_step['status'] !== 'acc');
+                            ?>
+                                <option value="<?= $k_step; ?>" <?= $is_selected ? 'selected' : ''; ?> <?= $is_disabled ? 'disabled class="text-muted"' : ''; ?>>
+                                    Tahap <?= ($idx + 1); ?>: <?= htmlspecialchars($info_step['nama']); ?> - <?= htmlspecialchars($info_step['label']) . $status_badge_text; ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="text-muted d-block mt-1">Tahap yang belum terbuka (terkunci) akan otomatis dapat dipilih setelah tahap sebelumnya di-ACC oleh Dosen.</small>
+                    </div>
+
+                    <!-- Input Khusus Pengajuan Judul (Muncul jika pilih Judul) -->
+                    <div id="boxJudulSkripsiModal" class="mb-3 p-3 bg-light rounded border" style="display: none;">
+                        <label for="inputJudulBaru" class="form-label small fw-semibold text-secondary">
+                            Rencana Judul Skripsi yang Diajukan <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="judul_skripsi_baru" id="inputJudulBaru" rows="2" class="form-control" placeholder="Tuliskan rancangan judul skripsi yang lengkap dan jelas..."><?= htmlspecialchars(($mhs['judul_skripsi'] !== 'Belum Ditentukan') ? $mhs['judul_skripsi'] : ''); ?></textarea>
+                        <small class="text-muted d-block mt-1">Judul yang diajukan akan otomatis tercatat sebagai judul skripsi Anda di dashboard.</small>
+                    </div>
+
+                    <!-- Catatan / Uraian Progres -->
+                    <div class="mb-3">
+                        <label for="catatanProgres" class="form-label small fw-semibold text-secondary">
+                            Catatan / Ringkasan Uraian Progres <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="catatan_mahasiswa" id="catatanProgres" rows="3" class="form-control" placeholder="Jelaskan progres bab/naskah yang dikerjakan, poin revisi yang telah diperbaiki, atau hal yang ingin dikonsultasikan..." required></textarea>
+                    </div>
+
+                    <!-- Pilihan Berkas / Tautan Naskah -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="file_draft_modal" class="form-label small fw-semibold text-secondary">
+                                <i class="bi bi-file-earmark-pdf text-danger me-1"></i>Unggah Naskah PDF (Maks. 5 MB)
+                            </label>
+                            <input type="file" name="file_draft" id="file_draft_modal" class="form-control form-control-sm" accept=".pdf">
+                            <small class="text-muted" style="font-size: 0.72rem;">Opsional untuk pengajuan judul awal.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="link_drive_modal" class="form-label small fw-semibold text-secondary">
+                                <i class="bi bi-google text-primary me-1"></i>Tautan Google Drive / Docs
+                            </label>
+                            <input type="url" name="link_drive" id="link_drive_modal" class="form-control form-control-sm" placeholder="https://docs.google.com/...">
+                            <small class="text-muted" style="font-size: 0.72rem;">Pastikan izin tautan disetel agar dapat dibaca/dikomentari.</small>
+                        </div>
+                    </div>
+
+                    <!-- Tanggal & Jam Konsultasi Diminta -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="tanggal_bimbingan_modal" class="form-label small fw-semibold text-secondary">
+                                <i class="bi bi-calendar-event me-1"></i>Tanggal Pengajuan / Bimbingan <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" name="tanggal_bimbingan" id="tanggal_bimbingan_modal" class="form-control form-control-sm" value="<?= date('Y-m-d'); ?>" min="<?= date('Y-m-d'); ?>" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="jam_bimbingan_modal" class="form-label small fw-semibold text-secondary">
+                                <i class="bi bi-clock me-1"></i>Jam Bimbingan <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" name="jam_bimbingan" id="jam_bimbingan_modal" class="form-control form-control-sm" value="<?= date('H:i'); ?>" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light py-2 px-4">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4">
+                        <i class="bi bi-send-check me-1"></i>Kirim Pengajuan Progres
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTahapFields() {
+    var sel = document.getElementById('selectTahapProgres');
+    var boxJudul = document.getElementById('boxJudulSkripsiModal');
+    var inpJudul = document.getElementById('inputJudulBaru');
+    if (sel && boxJudul) {
+        if (sel.value === 'judul') {
+            boxJudul.style.display = 'block';
+            if (inpJudul) inpJudul.required = true;
+        } else {
+            boxJudul.style.display = 'none';
+            if (inpJudul) inpJudul.required = false;
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    toggleTahapFields();
+});
+</script>
+
+
+<!-- ============================================================
+     MODAL LIHAT PROFIL DOSEN PEMBIMBING (SESUAI PROFIL DOSEN)
+============================================================ -->
+<div class="modal fade" id="modalProfilDosen" tabindex="-1" aria-labelledby="modalProfilDosenLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header text-white border-0 py-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #1e40af 100%);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-vcard-fill text-info fs-5"></i>
+                    <h5 class="modal-title fw-bold text-white mb-0" id="modalProfilDosenLabel">Profil Dosen Pembimbing</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <!-- Foto & Identitas Utama Dosen -->
+                <div class="text-center mb-4">
+                    <div class="mb-3 position-relative d-inline-block mx-auto">
+                        <?php if ($foto_dosen_src): ?>
+                            <img src="<?= $foto_dosen_src; ?>" 
+                                 alt="Foto Profil Dosen" 
+                                 class="rounded-circle img-thumbnail shadow object-fit-cover" 
+                                 style="width: 125px; height: 125px;">
+                        <?php else: ?>
+                            <div class="avatar-circle avatar-primary shadow mx-auto d-flex align-items-center justify-content-center text-primary rounded-circle" 
+                                 style="width: 125px; height: 125px; font-size: 3.2rem;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        <?php endif; ?>
+                        <span class="position-absolute bottom-0 end-0 p-2 bg-success border border-3 border-white rounded-circle shadow-sm" title="Status Pembimbing Aktif"></span>
+                    </div>
+
+                    <h5 class="fw-bold mb-1 text-dark"><?= htmlspecialchars($mhs['nama_dosen'] ?? 'Dosen Pembimbing'); ?></h5>
+                    <p class="text-muted small mb-2">NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></p>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1.5 rounded-pill">
+                        <i class="bi bi-award-fill me-1"></i>Dosen Pembimbing Utama Skripsi
+                    </span>
+                </div>
+
+                <!-- Detail Biodata Profil Dosen (Sesuai profil dosen itu sendiri) -->
+                <div class="list-group list-group-flush text-start small border rounded-3 p-3 bg-light mb-3">
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
+                        <span class="text-muted"><i class="bi bi-person-badge me-2 text-primary"></i>ID Login / Akun:</span>
+                        <strong class="text-primary">@<?= htmlspecialchars($mhs['username_dosen'] ?? 'dosen'); ?></strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
+                        <span class="text-muted"><i class="bi bi-envelope me-2 text-primary"></i>Email Resmi:</span>
+                        <a href="mailto:<?= htmlspecialchars($mhs['email_dosen'] ?? ''); ?>" class="text-decoration-none fw-semibold text-secondary">
+                            <?= htmlspecialchars($mhs['email_dosen'] ?? '-'); ?>
+                        </a>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
+                        <span class="text-muted"><i class="bi bi-whatsapp me-2 text-success"></i>Nomor WhatsApp:</span>
+                        <?php if (!empty($mhs['no_whatsapp'])): 
+                            $clean_wa = preg_replace('/[^0-9]/', '', $mhs['no_whatsapp']);
+                            if (str_starts_with($clean_wa, '0')) {
+                                $clean_wa = '62' . substr($clean_wa, 1);
+                            }
+                        ?>
+                            <a href="https://wa.me/<?= $clean_wa; ?>" target="_blank" class="text-decoration-none fw-semibold text-success">
+                                <?= htmlspecialchars($mhs['no_whatsapp']); ?> <i class="bi bi-box-arrow-up-right small"></i>
+                            </a>
+                        <?php else: ?>
+                            <span class="text-muted">-</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent">
+                        <span class="text-muted"><i class="bi bi-people me-2 text-primary"></i>Kapasitas Bimbingan:</span>
+                        <strong><?= htmlspecialchars($mhs['kuota_bimbingan'] ?? '5'); ?> Mahasiswa</strong>
+                    </div>
+                </div>
+
+                <!-- Jadwal Ketersediaan Bimbingan Dosen -->
+                <div class="p-3 border rounded-3 bg-white">
+                    <h6 class="fw-bold text-dark mb-2 small d-flex align-items-center">
+                        <i class="bi bi-calendar-check text-primary me-2"></i>Jadwal Konsultasi Dosen
+                    </h6>
+                    <?php if (!empty($jadwal_dosen_list)): ?>
+                        <div class="d-flex flex-wrap gap-2">
+                            <?php foreach ($jadwal_dosen_list as $jd): ?>
+                                <span class="badge bg-light text-dark border px-2.5 py-1.5 small">
+                                    <i class="bi bi-clock-fill text-primary me-1"></i>
+                                    <strong><?= htmlspecialchars($jd['hari']); ?>:</strong> <?= date('H:i', strtotime($jd['jam_mulai'])); ?> - <?= date('H:i', strtotime($jd['jam_selesai'])); ?> WIB
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>Jadwal konsultasi tatap muka / daring dapat disepakati secara fleksibel melalui fitur Chat atau WhatsApp.
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light border-top d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                <div class="d-flex gap-2">
+                    <a href="chat.php" class="btn btn-primary btn-sm">
+                        <i class="bi bi-chat-dots-fill me-1"></i>Kirim Pesan Chat
+                    </a>
+                    <?php if (!empty($mhs['no_whatsapp'])): ?>
+                        <a href="https://wa.me/<?= $clean_wa; ?>" target="_blank" class="btn btn-success btn-sm">
+                            <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fallback Alias modalLihatFotoDosen -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var modalTrigger = document.querySelectorAll('[data-bs-target="#modalLihatFotoDosen"]');
+    modalTrigger.forEach(function(el) {
+        el.setAttribute('data-bs-target', '#modalProfilDosen');
+    });
+});
+</script>
 
 <?php
 require_once '../templates/footer.php';

@@ -1,11 +1,8 @@
 <?php
 // mahasiswa/profil.php - Manajemen Profil & Pengaturan Akun Mahasiswa
-$page_title   = "Profil & Pengaturan Akun";
-$current_page = "profil";
-
-require_once '../config/database.php';
-require_once '../templates/header.php';
-require_once '../templates/sidebar_mahasiswa.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Proteksi akses role mahasiswa
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
@@ -13,16 +10,22 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
     exit;
 }
 
+require_once '../config/database.php';
+
 $my_user_id = $_SESSION['user_id'];
 $success_msg = '';
 $error_msg   = '';
 
-// Ambil data profil mahasiswa saat ini
+// Ambil data profil mahasiswa saat ini beserta info dosen pembimbing
 $stmt_mhs = $pdo->prepare("
-    SELECT m.*, u.username, d.nama_dosen, d.nidn 
+    SELECT m.*, u.username, 
+           d.id AS dosen_id, d.nama_dosen, d.nidn, d.email AS email_dosen, 
+           d.no_whatsapp AS no_wa_dosen, d.foto_profil AS foto_dosen, d.kuota_bimbingan,
+           u_dos.username AS username_dosen
     FROM mahasiswa m 
     JOIN users u ON m.user_id = u.id 
     LEFT JOIN dosen d ON m.dosen_pembimbing_id = d.id 
+    LEFT JOIN users u_dos ON d.user_id = u_dos.id
     WHERE m.user_id = :uid LIMIT 1
 ");
 $stmt_mhs->execute([':uid' => $my_user_id]);
@@ -34,8 +37,38 @@ if (!$mhs) {
 
 $mhs_id = $mhs['id'];
 
-// Handle Update Profil & Akun (POST)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Path Foto Dosen Pembimbing Resmi
+$foto_dosen_src = null;
+if (!empty($mhs['foto_dosen']) && $mhs['foto_dosen'] !== 'default.png') {
+    $fname_dosen = basename($mhs['foto_dosen']);
+    if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname_dosen)) {
+        $foto_dosen_src = '../assets/uploads/profile/' . htmlspecialchars($fname_dosen);
+    } elseif (file_exists(__DIR__ . '/../assets/uploads/' . $fname_dosen)) {
+        $foto_dosen_src = '../assets/uploads/' . htmlspecialchars($fname_dosen);
+    }
+}
+
+// Jadwal Dosen Pembimbing untuk Modal Profil Dosen
+$jadwal_dosen_list = [];
+if (!empty($mhs['dosen_id'])) {
+    try {
+        $st_jd = $pdo->prepare("
+            SELECT hari, jam_mulai, jam_selesai, status_aktif 
+            FROM jadwal_dosen 
+            WHERE dosen_id = :did AND status_aktif = 'aktif'
+            ORDER BY FIELD(hari, 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'), jam_mulai ASC
+        ");
+        $st_jd->execute([':did' => $mhs['dosen_id']]);
+        $jadwal_dosen_list = $st_jd->fetchAll();
+    } catch (PDOException $e) {
+        $jadwal_dosen_list = [];
+    }
+}
+
+// ============================================================
+// HANDLE SUBMIT FORM (POST)
+// ============================================================
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $action = $_POST['action'] ?? '';
 
     // 1. UPDATE DATA AKUN, BIODATA & FOTO PROFIL
@@ -71,8 +104,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // Cek upload foto profil baru jika ada
-            if (empty($error_msg) && isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === UPLOAD_ERR_OK) {
+            // A. Proses Foto yang Telah Disesuaikan / Di-Crop (Base64)
+            if (empty($error_msg) && !empty($_POST['cropped_photo']) && strpos($_POST['cropped_photo'], 'data:image/') === 0) {
+                $cropped_data = $_POST['cropped_photo'];
+                if (preg_match('/^data:image\/(\w+);base64,/', $cropped_data)) {
+                    $img_raw = substr($cropped_data, strpos($cropped_data, ',') + 1);
+                    $decoded_img = base64_decode($img_raw);
+                    if ($decoded_img !== false) {
+                        $upload_dir = '../assets/uploads/';
+                        if (!is_dir($upload_dir)) {
+                            mkdir($upload_dir, 0777, true);
+                        }
+                        $foto_name = 'profil_' . $mhs_id . '_' . uniqid() . '.jpg';
+                        if (file_put_contents($upload_dir . $foto_name, $decoded_img)) {
+                            $foto_baru = $foto_name;
+                        } else {
+                            $error_msg = "Gagal menyimpan foto hasil penyesuaian.";
+                        }
+                    }
+                }
+            }
+            // B. Fallback Upload File Biasa jika tidak melalui crop modal
+            elseif (empty($error_msg) && isset($_FILES['foto_profil']) && $_FILES['foto_profil']['error'] === UPLOAD_ERR_OK) {
                 $file_tmp  = $_FILES['foto_profil']['tmp_name'];
                 $file_name = $_FILES['foto_profil']['name'];
                 $file_size = $_FILES['foto_profil']['size'];
@@ -106,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt_u = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
                     $stmt_u->execute([':u' => $username, ':uid' => $my_user_id]);
 
-                    // Update data di tabel mahasiswa (nama, nim, kelas, judul, foto)
+                    // Update data di tabel mahasiswa
                     $stmt_m = $pdo->prepare("
                         UPDATE mahasiswa 
                         SET nama_lengkap = :nama, 
@@ -129,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     // Perbarui session
                     $_SESSION['username'] = $username;
-                    $success_msg = "Data akun dan profil Anda berhasil diperbarui!";
+                    $success_msg = "Data akun dan foto profil Anda berhasil diperbarui!";
 
                     // Refresh data mhs
                     $stmt_mhs->execute([':uid' => $my_user_id]);
@@ -177,6 +230,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Inisialisasi Tampilan Halaman
+$page_title   = "Profil & Pengaturan Akun";
+$current_page = "profil";
+
+require_once '../templates/header.php';
+require_once '../templates/sidebar_mahasiswa.php';
 ?>
 
 <!-- ============================================================
@@ -221,7 +281,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php endif; ?>
 
 <div class="row g-4 mb-4">
-    <!-- Kartu Tampilan Profil Samping -->
+    <!-- ============================================================
+         KARTU TAMPILAN PROFIL IDENTITAS AKADEMIK (BERSIH & RAPI)
+    ============================================================ -->
     <div class="col-lg-4">
         <div class="card shadow-sm h-100 border-0">
             <div class="card-header bg-white py-3 border-bottom text-center">
@@ -230,36 +292,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </h6>
             </div>
             <div class="card-body text-center p-4">
+                <!-- Avatar Profil Mahasiswa Bersih dengan Gradient Border -->
                 <div class="mb-3 position-relative d-inline-block">
                     <div class="student-avatar-frame">
-                        <?php if (!empty($mhs['foto_profil']) && $mhs['foto_profil'] !== 'default.png' && file_exists('../assets/uploads/' . $mhs['foto_profil'])): ?>
-                            <img src="../assets/uploads/<?= htmlspecialchars($mhs['foto_profil']); ?>" width="125" height="125" style="object-fit: cover;" alt="Foto Profil">
-                        <?php else: ?>
-                            <div class="avatar-placeholder bg-primary text-white d-inline-flex align-items-center justify-content-center fw-bold" style="width: 125px; height: 125px; font-size: 3rem;">
-                                <?= strtoupper(substr($mhs['nama_lengkap'] ?? 'M', 0, 1)); ?>
-                            </div>
-                        <?php endif; ?>
+                        <div class="student-avatar-inner">
+                            <?php if (!empty($mhs['foto_profil']) && $mhs['foto_profil'] !== 'default.png' && file_exists('../assets/uploads/' . $mhs['foto_profil'])): ?>
+                                <img id="fotoProfilPreview" src="../assets/uploads/<?= htmlspecialchars($mhs['foto_profil']); ?>?v=<?= time(); ?>" alt="Foto Profil">
+                            <?php else: ?>
+                                <div id="fotoProfilPreview" class="avatar-placeholder bg-primary text-white d-flex align-items-center justify-content-center fw-bold">
+                                    <?= strtoupper(substr($mhs['nama_lengkap'] ?? 'M', 0, 1)); ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Identitas Nama & NIM -->
                 <h5 class="fw-bold text-dark mb-1"><?= htmlspecialchars($mhs['nama_lengkap']); ?></h5>
-                <p class="text-muted small mb-2">NIM: <strong><?= htmlspecialchars($mhs['nim']); ?></strong></p>
+                <p class="text-muted small mb-3">NIM: <strong><?= htmlspecialchars($mhs['nim']); ?></strong></p>
 
-                <div class="d-flex justify-content-center gap-2 mb-3">
+                <!-- Badges: Kelas & Status (Sejajar, Rata, 1 Baris, Tidak Terpotong) -->
+                <div class="d-flex justify-content-center align-items-center gap-2 mb-4 flex-nowrap">
                     <span class="badge-kelas">
                         <i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
                     </span>
                     <?php
                     $sk = $mhs['status_kelulusan'] ?? 'proses_bimbingan';
-                    $bg_sk = 'warning text-dark';
-                    if ($sk === 'siap_sidang') $bg_sk = 'info text-white';
-                    elseif ($sk === 'lulus') $bg_sk = 'success';
+                    $sk_icon = 'bi-hourglass-split';
+                    if ($sk === 'siap_sidang') $sk_icon = 'bi-check2-all';
+                    elseif ($sk === 'lulus') $sk_icon = 'bi-patch-check-fill';
                     ?>
-                    <span class="badge bg-<?= $bg_sk; ?> px-3 py-1">
-                        <?= ucfirst(str_replace('_', ' ', $sk)); ?>
+                    <span class="badge-status-mhs badge-status-<?= $sk; ?>">
+                        <i class="bi <?= $sk_icon; ?>"></i><?= ucwords(str_replace('_', ' ', $sk)); ?>
                     </span>
                 </div>
 
+                <!-- Informasi Biodata Akademik Singkat -->
                 <div class="bg-light p-3 rounded text-start border small mb-3">
                     <div class="mb-2">
                         <span class="text-muted d-block">ID Login / Username:</span>
@@ -302,7 +370,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <!-- Formulir Edit Pengaturan Akun & Ganti Password (Tab Navigation) -->
+    <!-- ============================================================
+         FORMULIR EDIT PENGATURAN AKUN & GANTI PASSWORD (KANAN)
+    ============================================================ -->
     <div class="col-lg-8">
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white py-3 border-bottom">
@@ -323,7 +393,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="tab-content" id="profilTabContent">
                     <!-- Tab 1: Edit Akun & Biodata -->
                     <div class="tab-pane fade show active" id="tab-akun" role="tabpanel">
-                        <form action="profil.php" method="POST" enctype="multipart/form-data">
+                        <form action="profil.php" method="POST" enctype="multipart/form-data" id="formUpdateProfil">
                             <input type="hidden" name="action" value="update_profil">
 
                             <div class="alert alert-light border small text-muted mb-4">
@@ -385,15 +455,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
 
-                            <!-- Upload Foto Profil Baru -->
+                            <!-- Upload & Penyesuaian Foto Profil Baru Sebelum Simpan -->
                             <div class="mb-4">
-                                <label for="foto_profil" class="form-label small fw-semibold text-secondary">
-                                    Unggah Foto Profil Baru
-                                </label>
-                                <input class="form-control" type="file" id="foto_profil" name="foto_profil" accept="image/jpeg,image/png,image/jpg,image/webp">
-                                <div class="form-text small" style="font-size: 0.75rem;">
-                                    Format file didukung: JPG, PNG, WEBP. Ukuran maksimal <strong>2 MB</strong>.
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label for="foto_profil" class="form-label small fw-semibold text-secondary mb-0">
+                                        Unggah Foto Profil Baru
+                                    </label>
+                                    <?php if (!empty($mhs['foto_profil']) && $mhs['foto_profil'] !== 'default.png' && file_exists('../assets/uploads/' . $mhs['foto_profil'])): ?>
+                                        <button type="button" class="btn btn-sm btn-outline-primary py-0.5 px-2.5 rounded-pill small fw-semibold" id="btnAdjustExistingPhoto" style="font-size: 0.74rem;">
+                                            <i class="bi bi-crop me-1"></i>Sesuaikan Foto Saat Ini
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
+                                <div class="input-group">
+                                    <input class="form-control" type="file" id="foto_profil" name="foto_profil" accept="image/jpeg,image/png,image/jpg,image/webp">
+                                    <button class="btn btn-outline-primary" type="button" id="btnBukaCropModal" style="display: none;">
+                                        <i class="bi bi-crop me-1"></i>Sesuaikan Foto
+                                    </button>
+                                </div>
+                                <div class="form-text small" style="font-size: 0.75rem;">
+                                    Format: JPG, PNG, WEBP (maksimal 2 MB). Setelah memilih file foto, jendela penyesuaian akan terbuka otomatis sehingga Anda dapat mengatur posisi tengah wajah dan zoom in / out sebelum disimpan.
+                                </div>
+
+                                <!-- Notifikasi Foto Telah Disesuaikan -->
+                                <div id="cropPreviewAlert" class="alert alert-success py-2 px-3 small mt-2 d-none align-items-center justify-content-between rounded-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-check-circle-fill me-2 fs-6 text-success"></i>
+                                        <span><strong>Foto profil telah disesuaikan!</strong> Pratinjau tampil di kartu kiri. Klik <em>Simpan Perubahan Akun & Profil</em> di bawah untuk menyimpan permanen.</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill ms-2 text-nowrap" id="btnReAdjust" style="font-size: 0.72rem;">
+                                        <i class="bi bi-sliders me-1"></i>Atur Ulang
+                                    </button>
+                                </div>
+
+                                <!-- Hidden field base64 gambar yang telah disesuaikan -->
+                                <input type="hidden" name="cropped_photo" id="croppedPhotoInput" value="">
                             </div>
 
                             <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
@@ -436,6 +532,328 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     MODAL SESUAIKAN FOTO PROFIL SEBELUM DISIMPAN
+============================================================ -->
+<div class="modal fade" id="modalSesuaikanFoto" tabindex="-1" aria-labelledby="modalSesuaikanFotoLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0 rounded-4">
+            <div class="modal-header border-bottom py-3 px-4">
+                <h6 class="modal-title fw-bold text-dark m-0" id="modalSesuaikanFotoLabel">
+                    <i class="bi bi-crop text-primary me-2"></i>Sesuaikan Foto Profil
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-arrows-move me-1 text-primary"></i><strong>Geser foto</strong> untuk memposisikan wajah di tengah lingkaran, lalu gunakan slider untuk <strong>zoom in / out</strong>.
+                </p>
+
+                <!-- Area Viewport Crop Interaktif -->
+                <div class="crop-viewport-wrapper position-relative mx-auto mb-3" id="cropViewport" title="Geser foto dengan mouse atau touch untuk mengatur posisi">
+                    <img id="cropImage" src="" alt="Crop Source">
+                    <!-- Lingkaran Guide Panduan Masker -->
+                    <div class="crop-mask-overlay"></div>
+                    <div class="crop-circle-ring"></div>
+                </div>
+
+                <!-- Kontrol Zoom Slider & Tombol -->
+                <div class="d-flex align-items-center justify-content-center gap-2 mb-3 px-3">
+                    <button type="button" class="btn btn-sm btn-light border rounded-circle p-0 d-flex align-items-center justify-content-center shadow-xs" id="btnModalZoomOut" style="width: 32px; height: 32px;" title="Zoom Out (-)">
+                        <i class="bi bi-zoom-out text-secondary"></i>
+                    </button>
+                    <input type="range" class="form-range flex-grow-1 custom-slider" id="modalSliderZoom" min="0.5" max="3.0" step="0.02" value="1.0" title="Geser untuk zoom in / out">
+                    <button type="button" class="btn btn-sm btn-light border rounded-circle p-0 d-flex align-items-center justify-content-center shadow-xs" id="btnModalZoomIn" style="width: 32px; height: 32px;" title="Zoom In (+)">
+                        <i class="bi bi-zoom-in text-secondary"></i>
+                    </button>
+                    <span class="badge bg-light text-dark border px-2 py-1 fw-bold rounded-pill" id="badgeModalZoom" style="min-width: 48px; font-size: 0.75rem;">100%</span>
+                </div>
+
+                <!-- Tombol Aksi Bantuan: Reset & Putar -->
+                <div class="d-flex justify-content-center gap-2 mb-1">
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-3 py-1 rounded-pill" id="btnModalResetPos" style="font-size: 0.75rem;">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Posisi
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary px-3 py-1 rounded-pill" id="btnModalRotate" style="font-size: 0.75rem;">
+                        <i class="bi bi-arrow-repeat me-1"></i>Putar 90°
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer border-top py-2.5 px-4 d-flex justify-content-between">
+                <button type="button" class="btn btn-light border px-3" data-bs-dismiss="modal">
+                    Batal
+                </button>
+                <button type="button" class="btn btn-primary px-4 fw-semibold shadow-xs" id="btnTerapkanCrop">
+                    <i class="bi bi-check2-circle me-1"></i>Terapkan Foto Ini
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT: INTERACTIVE PHOTO ADJUSTER & CROPPER
+============================================================ -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputFotoProfil        = document.getElementById('foto_profil');
+    const btnBukaCropModal        = document.getElementById('btnBukaCropModal');
+    const btnAdjustExistingPhoto  = document.getElementById('btnAdjustExistingPhoto');
+    const modalSesuaikanFotoEl    = document.getElementById('modalSesuaikanFoto');
+    const modalSesuaikanFoto      = new bootstrap.Modal(modalSesuaikanFotoEl);
+    const cropViewport            = document.getElementById('cropViewport');
+    const cropImage               = document.getElementById('cropImage');
+    const modalSliderZoom         = document.getElementById('modalSliderZoom');
+    const badgeModalZoom          = document.getElementById('badgeModalZoom');
+    const btnModalZoomIn          = document.getElementById('btnModalZoomIn');
+    const btnModalZoomOut         = document.getElementById('btnModalZoomOut');
+    const btnModalResetPos        = document.getElementById('btnModalResetPos');
+    const btnModalRotate          = document.getElementById('btnModalRotate');
+    const btnTerapkanCrop         = document.getElementById('btnTerapkanCrop');
+    const croppedPhotoInput       = document.getElementById('croppedPhotoInput');
+    const cropPreviewAlert        = document.getElementById('cropPreviewAlert');
+    const btnReAdjust             = document.getElementById('btnReAdjust');
+    const fotoProfilPreview       = document.getElementById('fotoProfilPreview');
+
+    // State Transformasi
+    let naturalW     = 0;
+    let naturalH     = 0;
+    let baseScale    = 1.0;
+    let userZoom     = 1.0;
+    let posX         = 0;
+    let posY         = 0;
+    let rotationDeg  = 0;
+    let isDragging   = false;
+    let startDragX   = 0;
+    let startDragY   = 0;
+    let lastPosX     = 0;
+    let lastPosY     = 0;
+    let activeDataUrl = '';
+
+    // Perbarui Transformasi Gambar
+    function updateTransform() {
+        const curScale = baseScale * userZoom;
+        cropImage.style.transform = 'translate(' + posX + 'px, ' + posY + 'px) rotate(' + rotationDeg + 'deg) scale(' + curScale + ')';
+        if (badgeModalZoom) {
+            badgeModalZoom.textContent = Math.round(userZoom * 100) + '%';
+        }
+        if (modalSliderZoom) {
+            modalSliderZoom.value = userZoom;
+        }
+    }
+
+    // Set Nilai Zoom
+    function setZoom(val) {
+        userZoom = Math.min(3.0, Math.max(0.5, parseFloat(val)));
+        updateTransform();
+    }
+
+    // Reset ke Posisi Tengah
+    function resetPosition() {
+        posX = 0;
+        posY = 0;
+        rotationDeg = 0;
+        userZoom = 1.0;
+        updateTransform();
+    }
+
+    // Memuat Gambar ke dalam Viewport Modal
+    function loadImageIntoCrop(src) {
+        activeDataUrl = src;
+        cropImage.onload = function() {
+            naturalW = cropImage.naturalWidth || 300;
+            naturalH = cropImage.naturalHeight || 300;
+
+            // Diameter crop guide = 240px
+            baseScale = Math.max(240 / naturalW, 240 / naturalH);
+            cropImage.style.width = naturalW + 'px';
+            cropImage.style.height = naturalH + 'px';
+            cropImage.style.marginTop = (-naturalH / 2) + 'px';
+            cropImage.style.marginLeft = (-naturalW / 2) + 'px';
+
+            resetPosition();
+            modalSesuaikanFoto.show();
+        };
+        cropImage.src = src;
+    }
+
+    // 1. Event: Memilih File Foto Baru
+    if (inputFotoProfil) {
+        inputFotoProfil.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    if (btnBukaCropModal) btnBukaCropModal.style.display = 'inline-block';
+                    loadImageIntoCrop(evt.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // 2. Event: Tombol Atur Foto yang Dipilih
+    if (btnBukaCropModal) {
+        btnBukaCropModal.addEventListener('click', function() {
+            if (activeDataUrl) {
+                modalSesuaikanFoto.show();
+            }
+        });
+    }
+
+    // 3. Event: Sesuaikan Foto Saat Ini
+    if (btnAdjustExistingPhoto) {
+        btnAdjustExistingPhoto.addEventListener('click', function() {
+            const curImg = fotoProfilPreview;
+            if (curImg && curImg.tagName === 'IMG' && curImg.src) {
+                loadImageIntoCrop(curImg.src);
+            }
+        });
+    }
+
+    // 4. Drag / Geser Foto pada Viewport (Mouse & Touch)
+    function onDragStart(e) {
+        isDragging = true;
+        const pt = e.touches ? e.touches[0] : e;
+        startDragX = pt.clientX;
+        startDragY = pt.clientY;
+        lastPosX = posX;
+        lastPosY = posY;
+        cropViewport.classList.add('is-dragging');
+    }
+
+    function onDragMove(e) {
+        if (!isDragging) return;
+        const pt = e.touches ? e.touches[0] : e;
+        const dx = pt.clientX - startDragX;
+        const dy = pt.clientY - startDragY;
+        posX = lastPosX + dx;
+        posY = lastPosY + dy;
+        updateTransform();
+    }
+
+    function onDragEnd() {
+        isDragging = false;
+        cropViewport.classList.remove('is-dragging');
+    }
+
+    if (cropViewport) {
+        cropViewport.addEventListener('mousedown', onDragStart);
+        window.addEventListener('mousemove', onDragMove);
+        window.addEventListener('mouseup', onDragEnd);
+
+        cropViewport.addEventListener('touchstart', onDragStart, { passive: true });
+        window.addEventListener('touchmove', onDragMove, { passive: true });
+        window.addEventListener('touchend', onDragEnd);
+
+        // Zoom dengan Scroll Mouse pada Viewport
+        cropViewport.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            const delta = e.deltaY < 0 ? 0.05 : -0.05;
+            setZoom(userZoom + delta);
+        }, { passive: false });
+    }
+
+    // Kontrol Slider & Tombol Zoom
+    if (modalSliderZoom) {
+        modalSliderZoom.addEventListener('input', function() {
+            setZoom(this.value);
+        });
+    }
+    if (btnModalZoomIn) {
+        btnModalZoomIn.addEventListener('click', function() {
+            setZoom(userZoom + 0.1);
+        });
+    }
+    if (btnModalZoomOut) {
+        btnModalZoomOut.addEventListener('click', function() {
+            setZoom(userZoom - 0.1);
+        });
+    }
+    if (btnModalResetPos) {
+        btnModalResetPos.addEventListener('click', function() {
+            resetPosition();
+        });
+    }
+    if (btnModalRotate) {
+        btnModalRotate.addEventListener('click', function() {
+            rotationDeg = (rotationDeg + 90) % 360;
+            updateTransform();
+        });
+    }
+    if (btnReAdjust) {
+        btnReAdjust.addEventListener('click', function() {
+            if (activeDataUrl) {
+                modalSesuaikanFoto.show();
+            }
+        });
+    }
+
+    // 5. Terapkan Foto Hasil Crop & Zoom
+    if (btnTerapkanCrop) {
+        btnTerapkanCrop.addEventListener('click', function() {
+            const outputSize = 500; // Resolusi tinggi 500x500px
+            const cropDiameter = 240; // Diameter circle guide
+            const ratio = outputSize / cropDiameter;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = outputSize;
+            canvas.height = outputSize;
+            const ctx = canvas.getContext('2d');
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            // Background putih bersih
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, outputSize, outputSize);
+
+            // Transformasi kanvas sesuai posisi, rotasi dan skala pengguna
+            ctx.save();
+            ctx.translate(outputSize / 2, outputSize / 2);
+            ctx.rotate((rotationDeg * Math.PI) / 180);
+            ctx.translate(posX * ratio, posY * ratio);
+
+            const drawScale = baseScale * userZoom * ratio;
+            ctx.scale(drawScale, drawScale);
+            ctx.drawImage(cropImage, -naturalW / 2, -naturalH / 2, naturalW, naturalH);
+            ctx.restore();
+
+            const finalDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+            // Simpan ke input hidden untuk dikirim via form
+            if (croppedPhotoInput) {
+                croppedPhotoInput.value = finalDataUrl;
+            }
+
+            // Perbarui tampilan preview di kartu kiri secara instan
+            if (fotoProfilPreview) {
+                if (fotoProfilPreview.tagName === 'IMG') {
+                    fotoProfilPreview.src = finalDataUrl;
+                } else {
+                    const newImg = document.createElement('img');
+                    newImg.id = 'fotoProfilPreview';
+                    newImg.src = finalDataUrl;
+                    newImg.alt = 'Foto Profil';
+                    fotoProfilPreview.parentNode.replaceChild(newImg, fotoProfilPreview);
+                }
+            }
+
+            // Tampilkan notifikasi keberhasilan di formulir
+            if (cropPreviewAlert) {
+                cropPreviewAlert.classList.remove('d-none');
+                cropPreviewAlert.classList.add('d-flex');
+            }
+
+            modalSesuaikanFoto.hide();
+        });
+    }
+});
+</script>
+
     </div>
 </div>
 

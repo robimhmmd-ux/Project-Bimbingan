@@ -85,49 +85,132 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     <link href="../assets/css/style.css?v=<?= $css_ver; ?>" rel="stylesheet">
     <style>
         /* =========================================================================
-           JAMINAN MUTLAK: SIDEBAR TIDAK IKUT SCROLL & BISA DIBUKA-TUTUP (COLLAPSIBLE)
+           JAMINAN MUTLAK: TOPBAR TETAP FIX DI ATAS & SIDEBAR TIDAK IKUT SCROLL
            ========================================================================= */
         :root {
-            --topbar-h: 58px;
-            --sidebar-w: 260px;
+            --navbar-height: 60px;
+            --sidebar-width: 250px;
+            --sidebar-collapsed-width: 72px;
         }
 
-        /* 1. Sidebar Diam di Tempat (Sticky di bawah navbar, scroll independen) */
-        .sidebar, #sidebarMenu {
-            position: sticky !important;
-            top: var(--topbar-h, 58px) !important;
-            height: calc(100vh - var(--topbar-h, 58px)) !important;
-            max-height: calc(100vh - var(--topbar-h, 58px)) !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            align-self: flex-start !important;
-            background-color: #ffffff !important;
-            border-right: 1px solid #e2e8f0 !important;
-            z-index: 1020 !important;
-            transition: all 0.2s ease !important;
+        /* 1. Body wajib diberi padding-top presisi sama dengan tinggi navbar */
+        body {
+            padding-top: var(--navbar-height, 60px) !important;
+            overflow-x: hidden;
         }
 
-        .sidebar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .sidebar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
+        /* 2. Topbar Navbar: Fixed di Atas (TIDAK BISA TER-SCROLL SAMA SEKALI) */
+        #topNavbar.navbar,
+        .navbar.fixed-top {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: var(--navbar-height, 60px) !important;
+            min-height: var(--navbar-height, 60px) !important;
+            max-height: var(--navbar-height, 60px) !important;
+            z-index: 1060 !important;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2) !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            margin: 0 !important;
         }
 
-        /* 2. Desktop: Saat Sidebar Ditutup (Collapsed) */
+        /* 3. Sidebar Desktop (>= 768px): Stationary (Fixed di Kiri di Bawah Navbar) */
         @media (min-width: 768px) {
+            .sidebar,
+            #sidebarMenu {
+                position: fixed !important;
+                top: var(--navbar-height, 60px) !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                width: var(--sidebar-width, 250px) !important;
+                height: calc(100vh - var(--navbar-height, 60px)) !important;
+                max-height: calc(100vh - var(--navbar-height, 60px)) !important;
+                z-index: 1020 !important;
+                background-color: #ffffff !important;
+                border-right: 1px solid #e2e8f0 !important;
+                border-top: none !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                padding: 1.25rem 0.85rem !important;
+                margin: 0 !important;
+                transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), padding 0.22s ease !important;
+            }
+
+            .sidebar::-webkit-scrollbar {
+                width: 4px;
+            }
+            .sidebar::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+
+            /* Area Konten Utama Desktop Berada Pas di Kanan Sidebar */
+            main,
+            .main-content-wrapper,
+            #mainContent {
+                margin-left: var(--sidebar-width, 250px) !important;
+                width: calc(100% - var(--sidebar-width, 250px)) !important;
+                max-width: calc(100% - var(--sidebar-width, 250px)) !important;
+                min-height: calc(100vh - var(--navbar-height, 60px)) !important;
+                padding: 1.5rem 2rem !important;
+                transition: margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1), width 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+
+            /* Mode Mini-Sidebar (Collapsed): Ikon Menu Tetap Tampil, Teks Disembunyikan */
             html.sidebar-collapsed .sidebar,
             body.sidebar-collapsed .sidebar,
             html.sidebar-collapsed #sidebarMenu,
             body.sidebar-collapsed #sidebarMenu {
+                display: block !important;
+                visibility: visible !important;
+                width: var(--sidebar-collapsed-width, 72px) !important;
+                max-width: var(--sidebar-collapsed-width, 72px) !important;
+                padding: 1.25rem 0.4rem !important;
+                overflow-x: hidden !important;
+            }
+
+            html.sidebar-collapsed .sidebar .sidebar-heading,
+            body.sidebar-collapsed .sidebar .sidebar-heading,
+            html.sidebar-collapsed .sidebar .menu-text,
+            body.sidebar-collapsed .sidebar .menu-text,
+            html.sidebar-collapsed .sidebar .badge,
+            body.sidebar-collapsed .sidebar .badge,
+            html.sidebar-collapsed .sidebar .sidebar-category > span,
+            body.sidebar-collapsed .sidebar .sidebar-category > span,
+            html.sidebar-collapsed .sidebar .sidebar-system-card,
+            body.sidebar-collapsed .sidebar .sidebar-system-card,
+            html.sidebar-collapsed .sidebar .lock-icon,
+            body.sidebar-collapsed .sidebar .lock-icon,
+            html.sidebar-collapsed .sidebar .nav-link > span,
+            body.sidebar-collapsed .sidebar .nav-link > span {
                 display: none !important;
-                visibility: hidden !important;
-                width: 0 !important;
-                max-width: 0 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                border: none !important;
+            }
+
+            html.sidebar-collapsed .sidebar .nav-link,
+            body.sidebar-collapsed .sidebar .nav-link {
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+                padding: 0.75rem 0 !important;
+                width: 48px !important;
+                height: 48px !important;
+                margin: 0 auto 6px auto !important;
+                text-align: center !important;
+                border-radius: 10px !important;
+                font-size: 0 !important;
+            }
+
+            html.sidebar-collapsed .sidebar .nav-link i,
+            body.sidebar-collapsed .sidebar .nav-link i {
+                margin-right: 0 !important;
+                font-size: 1.35rem !important;
             }
 
             html.sidebar-collapsed main,
@@ -136,52 +219,62 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             body.sidebar-collapsed main,
             body.sidebar-collapsed .main-content-wrapper,
             body.sidebar-collapsed #mainContent {
-                flex: 0 0 100% !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                margin-left: 0 !important;
+                margin-left: var(--sidebar-collapsed-width, 72px) !important;
+                width: calc(100% - var(--sidebar-collapsed-width, 72px)) !important;
+                max-width: calc(100% - var(--sidebar-collapsed-width, 72px)) !important;
             }
         }
 
-        /* 3. Mobile (< 768px): Drawer Menu */
+        /* 4. Mobile (< 768px): Drawer Menu Melayang */
         @media (max-width: 767.98px) {
-            .sidebar, #sidebarMenu {
-                display: none !important;
+            .sidebar,
+            #sidebarMenu {
+                display: block !important;
                 position: fixed !important;
-                top: var(--topbar-h, 58px) !important;
+                top: var(--navbar-height, 60px) !important;
                 left: 0 !important;
                 bottom: 0 !important;
-                width: var(--sidebar-w, 260px) !important;
+                width: 260px !important;
                 max-width: 85vw !important;
-                height: calc(100vh - var(--topbar-h, 58px)) !important;
+                height: calc(100vh - var(--navbar-height, 60px)) !important;
                 z-index: 1045 !important;
+                transform: translateX(-100%) !important;
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                box-shadow: none !important;
             }
 
             body.sidebar-open-mobile .sidebar,
-            body.sidebar-open-mobile #sidebarMenu {
-                display: block !important;
+            body.sidebar-mobile-open .sidebar,
+            body.sidebar-open-mobile #sidebarMenu,
+            body.sidebar-mobile-open #sidebarMenu {
+                transform: translateX(0) !important;
                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
             }
 
             .sidebar-mobile-backdrop {
                 display: none;
-                position: fixed;
-                top: var(--topbar-h, 58px);
-                left: 0; right: 0; bottom: 0;
-                background: rgba(15, 23, 42, 0.55);
-                backdrop-filter: blur(2px);
-                z-index: 1040;
+                position: fixed !important;
+                top: var(--navbar-height, 60px) !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                background: rgba(15, 23, 42, 0.55) !important;
+                backdrop-filter: blur(2px) !important;
+                z-index: 1040 !important;
             }
 
-            body.sidebar-open-mobile .sidebar-mobile-backdrop {
+            body.sidebar-open-mobile .sidebar-mobile-backdrop,
+            body.sidebar-mobile-open .sidebar-mobile-backdrop {
                 display: block !important;
             }
 
-            main, .main-content-wrapper, #mainContent {
-                flex: 0 0 100% !important;
-                max-width: 100% !important;
-                width: 100% !important;
+            main,
+            .main-content-wrapper,
+            #mainContent {
                 margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 1rem !important;
             }
         }
 
@@ -210,6 +303,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
 
             if (isMobile) {
                 const isOpen = body.classList.toggle('sidebar-open-mobile');
+                body.classList.toggle('sidebar-mobile-open', isOpen);
                 if (icon) {
                     icon.className = isOpen ? 'bi bi-x-lg fs-4 text-white' : 'bi bi-list fs-3 text-white';
                 }
@@ -236,8 +330,8 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
 </head>
 <body class="bg-light">
 
-<!-- Topbar Navbar (Solid High-Contrast Navy Blue) -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm py-2" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;">
+<!-- Topbar Navbar (Fixed Top - Solid High-Contrast Navy Blue) -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 60px; min-height: 60px; max-height: 60px; z-index: 1060 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
     <div class="container-fluid px-md-4">
         <!-- Tombol Buka/Tutup Sidebar & Brand Logo -->
         <div class="d-flex align-items-center gap-2">
