@@ -93,10 +93,11 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        * {
+* {
             box-shadow: none !important;
             text-shadow: none !important;
             font-family: 'Times New Roman', Times, 'Liberation Serif', serif;
+        }
         }
 
         body {
@@ -109,13 +110,29 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
 
         .report-sheet {
             background: #ffffff;
-            border: 1px solid #000000;
+border: 1px solid #000000;
             border-radius: 0;
             box-shadow: none !important;
             padding: 15mm 20mm;
             max-width: 210mm;
             margin: 25px auto 40px auto;
             color: #000000;
+        }
+        .report-sheet,
+        .report-sheet table,
+        .report-sheet th,
+        .report-sheet td,
+        .report-sheet p,
+        .report-sheet h1,
+        .report-sheet h2,
+        .report-sheet h3,
+        .report-sheet h4,
+        .report-sheet h5,
+        .report-sheet h6,
+        .report-sheet span,
+        .report-sheet div,
+        .report-sheet small {
+            font-family: 'Times New Roman', Times, serif !important;
         }
 
         .kop-surat {
@@ -156,21 +173,27 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
 
         @media print {
             body {
-                background: #ffffff !important;
+background: #ffffff !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 color: #000000 !important;
+                font-family: 'Times New Roman', Times, serif !important;
             }
             .no-print {
                 display: none !important;
             }
             .report-sheet {
-                box-shadow: none !important;
+box-shadow: none !important;
                 border: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 max-width: 100% !important;
                 width: 100% !important;
+                border-radius: 0;
+                font-family: 'Times New Roman', Times, serif !important;
+            }
+            .table-bordered th, .table-bordered td {
+                border-color: #000000 !important;
             }
             a {
                 text-decoration: none;
@@ -190,8 +213,8 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
                     <a href="index.php" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
                     </a>
-                    <a href="riwayat_bimbingan.php" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-journal-text me-1"></i> Menu Riwayat & Nilai
+                    <a href="mahasiswa_bimbingan.php" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-people-fill me-1"></i> Mahasiswa Bimbingan
                     </a>
                 </div>
 

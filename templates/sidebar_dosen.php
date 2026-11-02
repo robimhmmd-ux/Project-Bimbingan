@@ -62,11 +62,6 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link <?= ($current_page == 'riwayat') ? 'active' : 'text-dark'; ?>" href="riwayat_bimbingan.php">
-                    <i class="bi bi-journal-check me-2"></i>Riwayat & Nilai
-                </a>
-            </li>
-            <li class="nav-item mb-1">
                 <a class="nav-link <?= ($current_page == 'cek_judul') ? 'active' : 'text-dark'; ?>" href="cek_judul.php">
                     <i class="bi bi-search me-2"></i>Cek Judul Skripsi
                 </a>

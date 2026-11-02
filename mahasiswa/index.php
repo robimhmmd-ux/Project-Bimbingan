@@ -120,9 +120,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_progres
                 $f_size = $_FILES['file_draft']['size'];
                 $f_ext  = strtolower(pathinfo($f_name, PATHINFO_EXTENSION));
 
-                if ($f_ext !== 'pdf') {
-                    $error_msg = "Berkas lampiran draf skripsi harus berformat PDF (.pdf).";
-                } elseif ($f_size > 5 * 1024 * 1024) {
+                $allowed_exts = ($tahap_key === 'judul') ? ['pdf', 'doc', 'docx'] : ['pdf'];
+                if (!in_array($f_ext, $allowed_exts)) {
+                    $error_msg = ($tahap_key === 'judul') 
+                        ? "Berkas dokumen usulan judul harus berformat PDF (.pdf) atau Word (.doc, .docx)." 
+                        : "Berkas lampiran draf skripsi harus berformat PDF (.pdf).";
+                } elseif ($f_size > 10 * 1024 * 1024) {
                     $error_msg = "Ukuran file berkas PDF maksimal 5 MB.";
                 } else {
                     $upload_dir = '../assets/uploads/';
@@ -356,9 +359,9 @@ $tahapan_progres = [
     ],
 ];
 
-// Cek status pengajuan judul di database mahasiswa
-$judul_mhs = trim($mhs['judul_skripsi'] ?? '');
-if (!empty($judul_mhs) && $judul_mhs !== 'Belum Ditentukan') {
+// Cek status pengesahan judul skripsi dari helper resmi (hanya 'acc' jika sudah di-ACC dosen di logbook)
+$info_progres_dash = get_progres_mahasiswa($pdo, $mhs_id);
+if ($info_progres_dash && $info_progres_dash['is_judul_acc']) {
     $tahapan_progres['judul']['status'] = 'acc';
 }
 
@@ -962,9 +965,19 @@ $bab_list = [
                 }
             ?>
                 <div class="col">
-                    <div class="bab-step-card status-<?= $t_data['status']; ?> h-100 d-flex flex-column justify-content-between">
+                    <?php
+                    // URL link upload berkas sesuai tahapan
+                    if ($t_key === 'judul') {
+                        $target_upload_url = 'upload_draft.php?tahap=judul';
+                    } elseif (preg_match('/^bab(\d+)$/', $t_key, $m_b)) {
+                        $target_upload_url = 'upload_draft.php?bab=' . $m_b[1] . '#formUploadBab';
+                    } else {
+                        $target_upload_url = 'upload_draft.php?bab=sidang#formUploadBab';
+                    }
+                    ?>
+                    <a href="<?= $target_upload_url; ?>" class="bab-step-card status-<?= $t_data['status']; ?> h-100 d-flex flex-column justify-content-between text-decoration-none" title="Klik untuk membuka progres upload berkas <?= htmlspecialchars($t_data['nama']); ?>" style="cursor: pointer; color: inherit;">
                         <div>
-                            <div class="bab-icon-circle">
+                            <div class="bab-icon-circle" title="Klik untuk upload berkas <?= htmlspecialchars($t_data['nama']); ?>">
                                 <?php if ($t_data['status'] === 'acc'): ?>
                                     <i class="bi bi-check2-circle"></i>
                                 <?php elseif ($t_data['status'] === 'revisi'): ?>
@@ -995,7 +1008,7 @@ $bab_list = [
                                 <?php endif; ?>
                             <?php endif; ?>
                         </div>
-                    </div>
+                    </a>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -1240,10 +1253,10 @@ $bab_list = [
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label for="file_draft_modal" class="form-label small fw-semibold text-secondary">
-                                <i class="bi bi-file-earmark-pdf text-danger me-1"></i>Unggah Naskah PDF (Maks. 5 MB)
+                                <i class="bi bi-file-earmark-arrow-up text-danger me-1"></i>Unggah Dokumen / Naskah
                             </label>
-                            <input type="file" name="file_draft" id="file_draft_modal" class="form-control form-control-sm" accept=".pdf">
-                            <small class="text-muted" style="font-size: 0.72rem;">Opsional untuk pengajuan judul awal.</small>
+                            <input type="file" name="file_draft" id="file_draft_modal" class="form-control form-control-sm" accept=".pdf,.doc,.docx">
+                            <small class="text-muted" style="font-size: 0.72rem;">Judul: Dokumen PDF/Word. Bab: PDF maks 10MB.</small>
                         </div>
                         <div class="col-md-6">
                             <label for="link_drive_modal" class="form-label small fw-semibold text-secondary">
