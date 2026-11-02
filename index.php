@@ -394,13 +394,7 @@ if (file_exists('config/database.php')) {
                     <div class="pilar-icon-gojek bg-success-subtle text-success" style="background-color: var(--gojek-green-subtle) !important; color: var(--gojek-green) !important;">
                         <i class="bi bi-calendar2-check-fill"></i>
                     </div>
-                    <h4 class="fw-bold text-dark mb-2">Jadwal Pasti Tanpa Drama</h4>
-                    <p class="text-muted small mb-4" style="line-height: 1.8;">
-                        Nggak ada lagi nungguin dosen seharian di lorong kampus tanpa kepastian. Mahasiswa cukup melihat ketersediaan slot mingguan dosen dan langsung mereservasi jadwal dalam 1 kali klik.
-                    </p>
-                    <div class="mt-auto pt-3 border-top d-flex align-items-center text-success small fw-bold">
-                        <i class="bi bi-check-circle-fill me-2"></i>Slot Otomatis & Bebas Bentrok
-                    </div>
+                    <h4 class="fw-bold text-dark mb-0">Pasti Tanpa Drama</h4>
                 </div>
             </div>
 
@@ -410,13 +404,7 @@ if (file_exists('config/database.php')) {
                     <div class="pilar-icon-gojek bg-primary-subtle text-primary">
                         <i class="bi bi-file-earmark-diff-fill"></i>
                     </div>
-                    <h4 class="fw-bold text-dark mb-2">Riwayat Revisi Rapi</h4>
-                    <p class="text-muted small mb-4" style="line-height: 1.8;">
-                        Nggak ada lagi draf naskah tercecer atau coretan masukan dosen tenggelam di riwayat pesan instan. Semua naskah PDF dan catatan perbaikan tersimpan runut bab demi bab.
-                    </p>
-                    <div class="mt-auto pt-3 border-top d-flex align-items-center text-primary small fw-bold">
-                        <i class="bi bi-check-circle-fill me-2"></i>Arsip PDF & Nilai Capaian Progres
-                    </div>
+                    <h4 class="fw-bold text-dark mb-0">Riwayat Revisi Rapi</h4>
                 </div>
             </div>
 
@@ -426,13 +414,7 @@ if (file_exists('config/database.php')) {
                     <div class="pilar-icon-gojek bg-warning-subtle text-warning">
                         <i class="bi bi-printer-fill"></i>
                     </div>
-                    <h4 class="fw-bold text-dark mb-2">Kartu Kendali Cetak Sah</h4>
-                    <p class="text-muted small mb-4" style="line-height: 1.8;">
-                        Setiap sesi bimbingan yang disetujui otomatis masuk ke logbook akademik. Saat siap mendaftar sidang, kartu kendali langsung dapat dicetak bergaris rapi siap tanda tangan fisik.
-                    </p>
-                    <div class="mt-auto pt-3 border-top d-flex align-items-center text-warning small fw-bold">
-                        <i class="bi bi-check-circle-fill me-2"></i>Format Dokumen Resmi Standar
-                    </div>
+                    <h4 class="fw-bold text-dark mb-0">Kartu Kendali Cetak Sah</h4>
                 </div>
             </div>
         </div>
