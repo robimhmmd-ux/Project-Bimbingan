@@ -154,7 +154,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
         }
 
         /* 1. Sidebar Diam di Tempat (Sticky di bawah navbar, scroll independen) */
-        .sidebar {
+        .sidebar, #sidebarMenu {
             position: sticky !important;
             top: var(--topbar-h, 58px) !important;
             height: calc(100vh - var(--topbar-h, 58px)) !important;
@@ -179,14 +179,24 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
         /* 2. Desktop: Saat Sidebar Ditutup (Collapsed) */
         @media (min-width: 768px) {
             html.sidebar-collapsed .sidebar,
-            body.sidebar-collapsed .sidebar {
+            body.sidebar-collapsed .sidebar,
+            html.sidebar-collapsed #sidebarMenu,
+            body.sidebar-collapsed #sidebarMenu {
                 display: none !important;
+                visibility: hidden !important;
+                width: 0 !important;
+                max-width: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none !important;
             }
 
             html.sidebar-collapsed main,
             html.sidebar-collapsed .main-content-wrapper,
+            html.sidebar-collapsed #mainContent,
             body.sidebar-collapsed main,
-            body.sidebar-collapsed .main-content-wrapper {
+            body.sidebar-collapsed .main-content-wrapper,
+            body.sidebar-collapsed #mainContent {
                 flex: 0 0 100% !important;
                 max-width: 100% !important;
                 width: 100% !important;
@@ -196,7 +206,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
 
         /* 3. Mobile (< 768px): Drawer Menu */
         @media (max-width: 767.98px) {
-            .sidebar {
+            .sidebar, #sidebarMenu {
                 display: none !important;
                 position: fixed !important;
                 top: var(--topbar-h, 58px) !important;
@@ -208,7 +218,8 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 z-index: 1045 !important;
             }
 
-            body.sidebar-open-mobile .sidebar {
+            body.sidebar-open-mobile .sidebar,
+            body.sidebar-open-mobile #sidebarMenu {
                 display: block !important;
                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
             }
@@ -227,7 +238,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 display: block !important;
             }
 
-            main, .main-content-wrapper {
+            main, .main-content-wrapper, #mainContent {
                 flex: 0 0 100% !important;
                 max-width: 100% !important;
                 width: 100% !important;
@@ -241,53 +252,45 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             transition: all 0.2s ease;
         }
         .btn-sidebar-toggle:hover {
-            background: rgba(255, 255, 255, 0.25) !important;
+            background: rgba(255, 255, 255, 0.28) !important;
             transform: scale(1.06);
         }
     </style>
     <script>
-        // Terapkan preferensi sidebar instan sebelum render untuk mencegah layout flicker
+        // State awal instan sebelum render
         if (window.innerWidth >= 768 && localStorage.getItem('sidebar_collapsed') === 'true') {
             document.documentElement.classList.add('sidebar-collapsed');
         }
 
-        // FUNGSI GLOBAL TOGGLE SIDEBAR (Pasti Jalan Langsung)
-        function toggleSidebarMenu() {
+        // FUNGSI UTAMA TOGGLE SIDEBAR (Tunggal & Handal)
+        window.toggleSidebarMenu = function() {
             const isMobile = window.innerWidth < 768;
             const html = document.documentElement;
             const body = document.body;
             const icon = document.getElementById('sidebarToggleIcon');
 
             if (isMobile) {
-                body.classList.toggle('sidebar-open-mobile');
-                const isOpen = body.classList.contains('sidebar-open-mobile');
+                const isOpen = body.classList.toggle('sidebar-open-mobile');
                 if (icon) {
-                    icon.className = isOpen ? 'bi bi-x-lg fs-5' : 'bi bi-layout-sidebar fs-5';
+                    icon.className = isOpen ? 'bi bi-x-lg fs-4 text-white' : 'bi bi-list fs-3 text-white';
                 }
             } else {
-                const isNowCollapsed = !body.classList.contains('sidebar-collapsed');
-                if (isNowCollapsed) {
-                    body.classList.add('sidebar-collapsed');
-                    html.classList.add('sidebar-collapsed');
-                    localStorage.setItem('sidebar_collapsed', 'true');
-                } else {
-                    body.classList.remove('sidebar-collapsed');
-                    html.classList.remove('sidebar-collapsed');
-                    localStorage.setItem('sidebar_collapsed', 'false');
-                }
+                const isCollapsed = body.classList.toggle('sidebar-collapsed');
+                html.classList.toggle('sidebar-collapsed', isCollapsed);
+                localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
 
                 if (icon) {
-                    icon.className = isNowCollapsed ? 'bi bi-layout-sidebar-inset fs-5' : 'bi bi-layout-sidebar fs-5';
+                    icon.className = isCollapsed ? 'bi bi-list fs-3 text-warning' : 'bi bi-list fs-3 text-white';
                 }
             }
-        }
+        };
 
-        // Sinkronkan icon setelah load
+        // Sinkronisasi ikon saat DOM siap
         document.addEventListener('DOMContentLoaded', function() {
             const isCollapsed = document.body.classList.contains('sidebar-collapsed') || document.documentElement.classList.contains('sidebar-collapsed');
             const icon = document.getElementById('sidebarToggleIcon');
-            if (icon && !window.matchMedia('(max-width: 767.98px)').matches) {
-                icon.className = isCollapsed ? 'bi bi-layout-sidebar-inset fs-5' : 'bi bi-layout-sidebar fs-5';
+            if (icon && window.innerWidth >= 768 && isCollapsed) {
+                icon.className = 'bi bi-list fs-3 text-warning';
             }
         });
     </script>
@@ -299,14 +302,14 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     <div class="container-fluid px-md-4">
         <!-- Tombol Buka/Tutup Sidebar & Brand Logo -->
         <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-outline-light border-0 p-1 px-2 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none" 
+            <button class="btn btn-outline-light border-0 p-1 px-2 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none me-1" 
                     id="sidebarToggleBtn" 
                     type="button" 
                     onclick="toggleSidebarMenu()" 
                     aria-label="Toggle Sidebar" 
-                    title="Buka / Tutup Sidebar (Klik untuk mengecilkan atau membuka)"
-                    style="background: rgba(255, 255, 255, 0.18); border-radius: 8px; cursor: pointer; min-width: 38px; min-height: 38px;">
-                <i class="bi bi-layout-sidebar fs-5" id="sidebarToggleIcon"></i>
+                    title="Buka / Tutup Sidebar"
+                    style="background: rgba(255, 255, 255, 0.18); border-radius: 8px; cursor: pointer; min-width: 42px; min-height: 40px;">
+                <i class="bi bi-list fs-3 text-white" id="sidebarToggleIcon"></i>
             </button>
             <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none m-0" href="#">
                 <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning">
