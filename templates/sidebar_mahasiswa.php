@@ -30,16 +30,8 @@ $is_sk_aktif = ($status_pembimbing_mhs === 'aktif');
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link <?= ($current_page == 'jadwal_dosen') ? 'active' : 'text-dark'; ?>" href="jadwal_dosen.php">
-                    <i class="bi bi-calendar3 me-2"></i>Jadwal Dosen
-                </a>
-            </li>
-            <li class="nav-item mb-1">
-                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'ajukan') ? 'active' : 'text-dark'; ?>" href="ajukan_jadwal.php">
-                    <span><i class="bi bi-calendar-plus me-2"></i>Ajukan Bimbingan</span>
-                    <?php if (!$is_sk_aktif): ?>
-                        <i class="bi bi-lock-fill text-muted" title="Terkunci: Konfirmasi SK terlebih dahulu"></i>
-                    <?php endif; ?>
+                <a class="nav-link <?= ($current_page == 'jadwal_bimbingan' || $current_page == 'jadwal_dosen') ? 'active' : 'text-dark'; ?>" href="jadwal_bimbingan.php">
+                    <i class="bi bi-calendar-week me-2"></i>Jadwal Bimbingan
                 </a>
             </li>
             <li class="nav-item mb-1">

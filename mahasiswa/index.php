@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             ");
             $stmt_notif->execute([':uid' => $_SESSION['user_id']]);
 
-            $success_msg = "Selamat! Penerimaan SK Dosen Pembimbing berhasil dikonfirmasi. Anda kini dapat mengajukan jadwal bimbingan dan mengunggah draf skripsi.";
+            $success_msg = "Selamat! Penerimaan SK Dosen Pembimbing berhasil dikonfirmasi. Anda kini dapat melihat jadwal bimbingan dan mengunggah draf skripsi.";
             
             // Refresh data mhs
             $stmt_mhs->execute([':uid' => $_SESSION['user_id']]);
@@ -204,8 +204,8 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-nowrap">
             <?php if ($status_pembimbing === 'aktif'): ?>
-                <a href="ajukan_jadwal.php" class="btn btn-hero-action btn-hero-blue">
-                    <i class="bi bi-calendar-plus"></i>Ajukan Jadwal
+                <a href="jadwal_bimbingan.php" class="btn btn-hero-action btn-hero-blue">
+                    <i class="bi bi-calendar-week"></i>Jadwal Bimbingan
                 </a>
                 <a href="upload_draft.php" class="btn btn-hero-action btn-hero-white">
                     <i class="bi bi-cloud-arrow-up"></i>Upload Draft
@@ -215,7 +215,7 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                 </a>
             <?php else: ?>
                 <button class="btn btn-hero-action btn-hero-disabled" title="Konfirmasi SK terlebih dahulu di banner bawah">
-                    <i class="bi bi-lock-fill"></i>Ajukan Jadwal
+                    <i class="bi bi-lock-fill"></i>Jadwal Bimbingan
                 </button>
             <?php endif; ?>
             <a href="cetak_laporan.php" target="_blank" class="btn btn-hero-action btn-hero-outline">
@@ -591,8 +591,8 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                     <a href="chat.php" class="btn btn-outline-success btn-sm w-100">
                         <i class="bi bi-chat-dots-fill me-1"></i>Chat di Web
                     </a>
-                    <a href="jadwal_dosen.php" class="btn btn-outline-secondary btn-sm w-100">
-                        <i class="bi bi-eye me-1"></i>Profil & Jadwal
+                    <a href="jadwal_bimbingan.php" class="btn btn-outline-secondary btn-sm w-100">
+                        <i class="bi bi-calendar-week me-1"></i>Jadwal Bimbingan
                     </a>
                 </div>
             <?php else: ?>
@@ -731,7 +731,7 @@ if ($mhs && $mhs['status_kelulusan'] === 'lulus') {
                         <tr>
                             <td colspan="6" class="text-center py-4 text-muted">
                                 <i class="bi bi-inbox fs-2 d-block mb-1"></i>
-                                Belum ada riwayat pengajuan bimbingan. Silakan klik <a href="ajukan_jadwal.php">Ajukan Jadwal</a> untuk memulai.
+                                Belum ada riwayat bimbingan. Silakan serahkan naskah Anda di menu <a href="upload_draft.php" class="fw-semibold">Upload Skripsi</a> atau cek <a href="jadwal_bimbingan.php" class="fw-semibold">Jadwal Bimbingan</a>.
                             </td>
                         </tr>
                     <?php else: ?>

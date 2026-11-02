@@ -84,8 +84,8 @@ foreach ($logbook_list as $item) {
             </p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-wrap">
-            <a href="ajukan_jadwal.php" class="btn btn-hero-action btn-hero-blue">
-                <i class="bi bi-calendar-plus"></i>Ajukan Sesi Baru
+            <a href="jadwal_bimbingan.php" class="btn btn-hero-action btn-hero-blue">
+                <i class="bi bi-calendar-week"></i>Jadwal Bimbingan
             </a>
             <a href="cetak_laporan.php" target="_blank" class="btn btn-hero-action btn-hero-white">
                 <i class="bi bi-printer-fill"></i>Cetak Kartu Bimbingan

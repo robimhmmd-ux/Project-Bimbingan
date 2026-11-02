@@ -134,11 +134,11 @@ if (!empty($mhs['no_whatsapp'])) {
             </p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-wrap">
-            <a href="jadwal_dosen.php" class="btn btn-hero-action btn-hero-white">
-                <i class="bi bi-calendar3"></i>Jadwal Dosen
+            <a href="jadwal_bimbingan.php" class="btn btn-hero-action btn-hero-white">
+                <i class="bi bi-calendar-week"></i>Jadwal Bimbingan
             </a>
-            <a href="ajukan_jadwal.php" class="btn btn-hero-action btn-hero-blue">
-                <i class="bi bi-calendar-plus"></i>Ajukan Jadwal
+            <a href="upload_draft.php" class="btn btn-hero-action btn-hero-blue">
+                <i class="bi bi-cloud-arrow-up"></i>Upload Skripsi
             </a>
             <a href="index.php" class="btn btn-hero-action btn-hero-outline">
                 <i class="bi bi-speedometer2"></i>Dashboard
