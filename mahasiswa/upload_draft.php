@@ -31,12 +31,31 @@ $status_pembimbing = $mhs['status_pembimbing'] ?? 'belum_diplot';
 $success_msg = '';
 $error_msg   = '';
 
-// Periksa apakah mahasiswa telah memiliki judul skripsi terdaftar
-$judul_terdaftar = trim($mhs['judul_skripsi'] ?? '');
-$has_judul = (
-    !empty($judul_terdaftar) && 
-    !in_array(strtolower($judul_terdaftar), ['belum ditentukan', 'judul belum diatur', 'judul belum ditentukan', '-', 'null'])
-);
+// Dapatkan status progres & pengesahan judul skripsi dari helper
+$p_info = get_progres_mahasiswa($pdo, $mhs_id);
+$is_judul_acc     = $p_info ? $p_info['is_judul_acc'] : false;
+$pengajuan_judul  = $p_info ? $p_info['pengajuan_judul'] : null;
+$status_pj        = $pengajuan_judul['status'] ?? null;
+$judul_terdaftar  = trim($mhs['judul_skripsi'] ?? '');
+$has_judul_text   = (!empty($judul_terdaftar) && !in_array(strtolower($judul_terdaftar), ['belum ditentukan', 'judul belum diatur', 'judul belum ditentukan', '-', 'null']));
+$has_judul        = $is_judul_acc; // Tahap 2 HANYA terbuka jika judul telah di-ACC resmi oleh dosen
+
+// Parameter auto-select bab saat diklik dari dashboard progres
+$param_bab = strtolower(trim($_GET['bab'] ?? ''));
+$map_bab_options = [
+    '1'      => 'Bab 1: Pendahuluan',
+    'bab1'   => 'Bab 1: Pendahuluan',
+    '2'      => 'Bab 2: Tinjauan Pustaka',
+    'bab2'   => 'Bab 2: Tinjauan Pustaka',
+    '3'      => 'Bab 3: Metodologi Penelitian',
+    'bab3'   => 'Bab 3: Metodologi Penelitian',
+    '4'      => 'Bab 4: Hasil dan Pembahasan',
+    'bab4'   => 'Bab 4: Hasil dan Pembahasan',
+    '5'      => 'Bab 5: Kesimpulan dan Saran',
+    'bab5'   => 'Bab 5: Kesimpulan dan Saran',
+    'sidang' => 'Naskah Skripsi Lengkap',
+];
+$auto_select_bab = $map_bab_options[$param_bab] ?? '';
 
 // ============================================================
 // 1. HANDLE PENGAJUAN / PEMBARUAN JUDUL SKRIPSI (TAHAP 1)
@@ -52,33 +71,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_judul']
         $new_filename  = null;
         $file_draft_data = null;
 
+        // Wajib melampirkan berkas dokumen proposal / usulan judul
+        $ada_file_upload = (isset($_FILES['file_judul']) && $_FILES['file_judul']['error'] === UPLOAD_ERR_OK);
+        $ada_link_drive  = !empty($link_drive);
+
         if (empty($new_judul)) {
             $error_msg = "Judul skripsi yang diajukan tidak boleh kosong.";
         } elseif (strlen($new_judul) < 8) {
             $error_msg = "Judul skripsi terlalu pendek. Harap masukkan usulan judul penelitian yang lengkap dan jelas.";
+        } elseif (!$ada_file_upload && !$ada_link_drive) {
+            $error_msg = "Anda wajib melampirkan berkas dokumen usulan / proposal judul skripsi (PDF/Word) atau tautan Google Drive agar dosen pembimbing dapat meninjau isinya.";
         } else {
-            // Berkas pendukung matriks / proposal judul jika dilampirkan
-            if ($metode_unggah === 'file' && isset($_FILES['file_judul']) && $_FILES['file_judul']['error'] === UPLOAD_ERR_OK) {
+            // Berkas pendukung matriks / proposal judul
+            if ($ada_file_upload) {
                 $ext = strtolower(pathinfo($_FILES['file_judul']['name'], PATHINFO_EXTENSION));
-                if ($ext !== 'pdf') {
-                    $error_msg = "Berkas pendukung judul harus berformat PDF (.pdf).";
-                } elseif ($_FILES['file_judul']['size'] > 5 * 1024 * 1024) {
-                    $error_msg = "Ukuran berkas pendukung judul maksimal 5 MB.";
+                if (!in_array($ext, ['pdf', 'doc', 'docx'])) {
+                    $error_msg = "Berkas dokumen pendukung judul harus berformat PDF (.pdf) atau Word (.doc, .docx).";
+                } elseif ($_FILES['file_judul']['size'] > 10 * 1024 * 1024) {
+                    $error_msg = "Ukuran berkas dokumen judul maksimal 10 MB.";
                 } else {
-                    $pdf_raw = file_get_contents($_FILES['file_judul']['tmp_name']);
-                    if ($pdf_raw !== false) {
-                        $new_filename = 'judul_' . $mhs_id . '_' . uniqid() . '.pdf';
-                        $file_draft_data = base64_encode($pdf_raw);
+                    $file_raw = @file_get_contents($_FILES['file_judul']['tmp_name']);
+                    if ($file_raw !== false) {
+                        $new_filename = 'judul_' . $mhs_id . '_' . uniqid() . '.' . $ext;
+                        $file_draft_data = base64_encode($file_raw);
                         $upload_dir = '../assets/uploads/';
                         if (!is_dir($upload_dir)) @mkdir($upload_dir, 0777, true);
                         @move_uploaded_file($_FILES['file_judul']['tmp_name'], $upload_dir . $new_filename);
                     } else {
-                        $error_msg = "Gagal membaca berkas pendukung judul.";
+                        $error_msg = "Gagal membaca berkas dokumen usulan judul.";
                     }
                 }
-            } elseif ($metode_unggah === 'drive' && !empty($link_drive)) {
+            } elseif ($ada_link_drive) {
                 if (!filter_var($link_drive, FILTER_VALIDATE_URL)) {
-                    $error_msg = "Format tautan Google Drive tidak valid. Pastikan diawali https://";
+                    $error_msg = "Format tautan Google Drive / Docs tidak valid. Pastikan diawali https://";
                 }
             }
 
@@ -122,26 +147,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_ajukan_judul']
                         $nama_mhs = $mhs['nama_lengkap'] ?? 'Mahasiswa';
                         $stmt_n = $pdo->prepare("
                             INSERT INTO notifikasi (user_id, judul, pesan, tipe, link_tujuan) 
-                            VALUES (:uid, 'Pengajuan Judul Skripsi Baru', :pesan, 'info', 'persetujuan.php')
+                            VALUES (:uid, 'Pengajuan Judul & Dokumen Skripsi', :pesan, 'pembimbing', 'riwayat_bimbingan.php')
                         ");
                         $stmt_n->execute([
                             ':uid'   => $dosen_user_id,
-                            ':pesan' => "Mahasiswa {$nama_mhs} telah mengajukan usulan judul skripsi baru: '{$new_judul}'."
+                            ':pesan' => "Mahasiswa {$nama_mhs} telah mengirimkan usulan judul skripsi dan dokumen pendukung: '{$new_judul}'. Silakan tinjau isi dokumen."
                         ]);
                     }
 
                     $pdo->commit();
 
-                    $success_msg = "Usulan judul skripsi berhasil diajukan dan disimpan! Sekarang Anda dapat melanjutkan penyerahan naskah bab pembahasan di bawah ini.";
+                    $success_msg = "Usulan judul skripsi dan dokumen berhasil diajukan! Dosen pembimbing akan meninjau isi dokumen Anda. Penyerahan Bab 1 s.d. 5 akan otomatis terbuka setelah judul resmi di-ACC.";
 
-                    // Refresh data mahasiswa
+                    // Refresh data mahasiswa & progres
                     $stmt_mhs->execute([':uid' => $_SESSION['user_id']]);
                     $mhs = $stmt_mhs->fetch();
-                    $judul_terdaftar = trim($mhs['judul_skripsi'] ?? '');
-                    $has_judul = (
-                        !empty($judul_terdaftar) && 
-                        !in_array(strtolower($judul_terdaftar), ['belum ditentukan', 'judul belum diatur', 'judul belum ditentukan', '-', 'null'])
-                    );
+                    $p_info = get_progres_mahasiswa($pdo, $mhs_id);
+                    $is_judul_acc     = $p_info ? $p_info['is_judul_acc'] : false;
+                    $pengajuan_judul  = $p_info ? $p_info['pengajuan_judul'] : null;
+                    $status_pj        = $pengajuan_judul['status'] ?? null;
+                    $judul_terdaftar  = trim($mhs['judul_skripsi'] ?? '');
+                    $has_judul_text   = (!empty($judul_terdaftar) && !in_array(strtolower($judul_terdaftar), ['belum ditentukan', 'judul belum diatur', 'judul belum ditentukan', '-', 'null']));
+                    $has_judul        = $is_judul_acc;
                 } catch (PDOException $e) {
                     if ($pdo->inTransaction()) $pdo->rollBack();
                     $error_msg = "Gagal mencatat pengajuan judul: " . $e->getMessage();
@@ -352,74 +379,121 @@ $daftar_drafts = $stmt_drafts->fetchAll();
          KOLOM KIRI: FORMULIR BERDASARKAN STATUS JUDUL
     ============================================================ -->
     <div class="col-lg-5">
-        <?php if (!$has_judul): ?>
-            <!-- FORM TAHAP 1: PENGAJUAN JUDUL SKRIPSI (AKTIF) -->
-            <div class="card shadow-sm h-100 border-0">
+        <?php if (!$is_judul_acc): ?>
+            <!-- FORM TAHAP 1: PENGAJUAN JUDUL & UNGGAH DOKUMEN SKRIPSI -->
+            <div class="card shadow-sm h-100 border-0" id="formTahapJudul">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                     <h6 class="m-0 fw-bold text-dark">
-                        <i class="bi bi-journal-plus text-primary me-2"></i>Tahap 1: Pengajuan Judul Skripsi
+                        <i class="bi bi-file-earmark-text text-primary me-2"></i>Tahap 1: Pengajuan Usulan Judul Skripsi
                     </h6>
                     <span class="badge bg-warning text-dark"><i class="bi bi-1-circle-fill me-1"></i>Langkah 1</span>
                 </div>
                 <div class="card-body p-4">
-                    <form action="upload_draft.php" method="POST" enctype="multipart/form-data">
-                        <input type="hidden" name="action_ajukan_judul" value="1">
-
-                        <div class="mb-3">
-                            <label for="judul_skripsi" class="form-label small fw-semibold text-secondary">
-                                Rencana Judul Skripsi <span class="text-danger">*</span>
-                            </label>
-                            <textarea class="form-control" id="judul_skripsi" name="judul_skripsi" rows="3" placeholder="Contoh: Rancang Bangun Sistem Informasi Bimbingan Skripsi Berbasis Web Menggunakan Metode Agile..." required <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>></textarea>
-                            <div class="form-text small" style="font-size: 0.75rem;">
-                                Tuliskan judul tugas akhir yang jelas, spesifik, dan sesuai bidang keilmuan Teknik Informatika.
+                    <?php if ($pengajuan_judul && $status_pj === 'menunggu'): ?>
+                        <!-- KARTU STATUS: MENUNGGU PENINJAUAN DOKUMEN OLEH DOSEN -->
+                        <div class="p-3 bg-light rounded-3 border mb-3">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="badge bg-warning text-dark px-2.5 py-1">
+                                    <i class="bi bi-hourglass-split me-1"></i>Sedang Ditinjau Dosen
+                                </span>
+                                <small class="text-muted"><?= date('d/m/Y H:i', strtotime($pengajuan_judul['created_at'] ?? 'now')); ?></small>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-2">"<?= htmlspecialchars($judul_terdaftar ?: $pengajuan_judul['catatan_mahasiswa']); ?>"</h6>
+                            
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                <?php if (!empty($pengajuan_judul['file_draft'])): ?>
+                                    <a href="../assets/uploads/<?= htmlspecialchars($pengajuan_judul['file_draft']); ?>" target="_blank" download class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Dokumen Usulan Judul
+                                    </a>
+                                <?php endif; ?>
+                                <?php if (!empty($pengajuan_judul['link_drive'])): ?>
+                                    <a href="<?= htmlspecialchars($pengajuan_judul['link_drive']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-google me-1"></i>Tautan Google Drive
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                            <div class="alert alert-info py-2 px-3 small mb-0 rounded-2">
+                                <i class="bi bi-info-circle me-1"></i>Dokumen usulan Anda telah terkirim. Harap menunggu Dosen Pembimbing meninjau dokumen dan memberikan keputusan ACC. Setelah di-ACC, formulir penyerahan Bab 1 akan otomatis terbuka.
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="catatan_judul" class="form-label small fw-semibold text-secondary">
-                                Catatan / Rumusan Masalah Singkat <span class="text-muted small fw-normal">(Opsional)</span>
-                            </label>
-                            <textarea class="form-control" id="catatan_judul" name="catatan_judul" rows="2" placeholder="Uraikan latar belakang singkat atau fokus penelitian..." <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>></textarea>
+                        <!-- Tombol buka form revisi jika ingin mengganti dokumen -->
+                        <div class="text-center mb-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#formAjukanUlangJudul">
+                                <i class="bi bi-pencil-square me-1"></i>Perbarui Judul atau Dokumen
+                            </button>
                         </div>
-
-                        <!-- Opsi Lampiran Matriks / Kerangka Judul -->
-                        <div class="mb-3">
-                            <label class="form-label small fw-semibold text-secondary d-block">
-                                Lampiran Matriks / Kerangka Judul <span class="text-muted small fw-normal">(Opsional)</span>
-                            </label>
-                            <div class="d-flex gap-3 mb-2 flex-wrap">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="metode_unggah_judul" id="metode_j_none" value="none" checked onchange="toggleMetodeJudul()">
-                                    <label class="form-check-label small" for="metode_j_none">Tanpa Berkas</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="metode_unggah_judul" id="metode_j_file" value="file" onchange="toggleMetodeJudul()">
-                                    <label class="form-check-label small" for="metode_j_file">
-                                        <i class="bi bi-file-earmark-pdf text-danger me-1"></i>Unggah PDF
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="metode_unggah_judul" id="metode_j_drive" value="drive" onchange="toggleMetodeJudul()">
-                                    <label class="form-check-label small" for="metode_j_drive">
-                                        <i class="bi bi-google text-primary me-1"></i>Link GDrive
-                                    </label>
-                                </div>
+                    <?php elseif ($pengajuan_judul && $status_pj === 'revisi'): ?>
+                        <!-- KARTU STATUS: PERLU REVISI -->
+                        <div class="alert alert-danger p-3 rounded-3 mb-3 border-start border-danger border-4">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+                                <strong class="text-danger">Catatan Revisi dari Dosen Pembimbing:</strong>
                             </div>
-
-                            <div id="box_j_file" class="d-none mb-2">
-                                <input type="file" class="form-control form-control-sm" name="file_judul" accept=".pdf">
-                                <div class="form-text small" style="font-size: 0.72rem;">Format berkas PDF maksimal 5 MB.</div>
-                            </div>
-
-                            <div id="box_j_drive" class="d-none mb-2">
-                                <input type="url" class="form-control form-control-sm" name="link_drive_judul" placeholder="https://docs.google.com/... atau https://drive.google.com/...">
-                            </div>
+                            <p class="small mb-0 text-dark">
+                                "<?= nl2br(htmlspecialchars($pengajuan_judul['catatan_dosen'] ?? 'Harap perbaiki usulan judul dan dokumen pendukung sesuai arahan.')); ?>"
+                            </p>
                         </div>
+                    <?php endif; ?>
 
-                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
-                            <i class="bi bi-send-check me-1"></i>Ajukan Judul Skripsi
-                        </button>
-                    </form>
+                    <!-- Form Pengajuan Judul & Upload Dokumen -->
+                    <div id="formAjukanUlangJudul" class="<?= ($pengajuan_judul && $status_pj === 'menunggu') ? 'collapse' : ''; ?>">
+                        <form action="upload_draft.php" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="action_ajukan_judul" value="1">
+
+                            <div class="mb-3">
+                                <label for="judul_skripsi" class="form-label small fw-semibold text-secondary">
+                                    Usulan Judul Skripsi <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="judul_skripsi" name="judul_skripsi" rows="3" placeholder="Contoh: Rancang Bangun Sistem Informasi Bimbingan Skripsi Berbasis Web Menggunakan Metode Agile..." required <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>><?= htmlspecialchars($judul_terdaftar !== 'Belum Ditentukan' ? $judul_terdaftar : ''); ?></textarea>
+                                <div class="form-text small" style="font-size: 0.75rem;">
+                                    Tuliskan rancangan judul skripsi yang jelas, spesifik, dan sesuai bidang keilmuan.
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="catatan_judul" class="form-label small fw-semibold text-secondary">
+                                    Catatan / Rumusan Masalah Singkat <span class="text-muted small fw-normal">(Opsional)</span>
+                                </label>
+                                <textarea class="form-control" id="catatan_judul" name="catatan_judul" rows="2" placeholder="Uraikan fokus penelitian, latar belakang singkat, atau poin matriks..." <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>></textarea>
+                            </div>
+
+                            <!-- Lampiran Dokumen Usulan Judul: Wajib PDF / Word / Drive -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold text-secondary d-block">
+                                    Dokumen Usulan Judul / Matriks Skripsi <span class="text-danger">*</span>
+                                </label>
+                                <div class="d-flex gap-3 mb-2 flex-wrap">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="metode_unggah_judul" id="metode_j_file" value="file" checked onchange="toggleMetodeJudul()">
+                                        <label class="form-check-label small fw-semibold" for="metode_j_file">
+                                            <i class="bi bi-file-earmark-arrow-up text-danger me-1"></i>Unggah Berkas (PDF / Word)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="metode_unggah_judul" id="metode_j_drive" value="drive" onchange="toggleMetodeJudul()">
+                                        <label class="form-check-label small fw-semibold" for="metode_j_drive">
+                                            <i class="bi bi-google text-primary me-1"></i>Link Google Drive / Docs
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="box_j_file" class="mb-2">
+                                    <input type="file" class="form-control form-control-sm" name="file_judul" accept=".pdf,.doc,.docx" <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                                    <div class="form-text small" style="font-size: 0.72rem;">Format: <strong>PDF (.pdf)</strong> atau <strong>Word (.doc, .docx)</strong>. Maksimal 10 MB.</div>
+                                </div>
+
+                                <div id="box_j_drive" class="d-none mb-2">
+                                    <input type="url" class="form-control form-control-sm" name="link_drive_judul" placeholder="https://docs.google.com/... atau https://drive.google.com/..." <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                                    <div class="form-text small" style="font-size: 0.72rem;">Pastikan setelan berbagi disetel agar dosen pembimbing dapat mengakses/membaca dokumen.</div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
+                                <i class="bi bi-send-check me-1"></i>Kirim Dokumen & Usulan Judul
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -449,7 +523,7 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                         <small class="text-muted" style="font-size: 0.78rem;">Dosen Pembimbing: <strong><?= htmlspecialchars($mhs['nama_dosen'] ?? 'Belum Diplot'); ?></strong></small>
 
                         <!-- Collapse Form Ubah Judul -->
-                        <div class="collapse mt-2 pt-2 border-top" id="boxUbahJudul">
+                        <div class="collapse <?= (isset($_GET['tahap']) && $_GET['tahap'] === 'judul') ? 'show' : ''; ?> mt-2 pt-2 border-top" id="boxUbahJudul">
                             <form action="upload_draft.php" method="POST">
                                 <input type="hidden" name="action_ajukan_judul" value="1">
                                 <label class="form-label small fw-semibold text-secondary mb-1">Revisi / Judul Baru:</label>
@@ -469,14 +543,14 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                         <div class="mb-3">
                             <label for="bab_pembahasan" class="form-label small fw-semibold text-secondary">Bab yang Diajukan <span class="text-danger">*</span></label>
                             <select class="form-select" id="bab_pembahasan" name="bab_pembahasan" required <?= $status_pembimbing !== 'aktif' ? 'disabled' : ''; ?>>
-                                <option value="" selected disabled>-- Pilih Bagian Skripsi --</option>
-                                <option value="Bab 1: Pendahuluan">Bab 1: Pendahuluan</option>
-                                <option value="Bab 2: Tinjauan Pustaka">Bab 2: Tinjauan Pustaka</option>
-                                <option value="Bab 3: Metodologi Penelitian">Bab 3: Metodologi Penelitian</option>
-                                <option value="Bab 4: Hasil dan Pembahasan">Bab 4: Hasil & Pembahasan</option>
-                                <option value="Bab 5: Kesimpulan dan Saran">Bab 5: Kesimpulan & Saran</option>
-                                <option value="Proposal Skripsi Lengkap">Proposal Skripsi Lengkap (Bab 1-3)</option>
-                                <option value="Naskah Skripsi Lengkap">Naskah Skripsi Lengkap (Bab 1-5)</option>
+                                <option value="" <?= empty($auto_select_bab) ? 'selected' : ''; ?> disabled>-- Pilih Bagian Skripsi --</option>
+                                <option value="Bab 1: Pendahuluan" <?= $auto_select_bab === 'Bab 1: Pendahuluan' ? 'selected' : ''; ?>>Bab 1: Pendahuluan</option>
+                                <option value="Bab 2: Tinjauan Pustaka" <?= $auto_select_bab === 'Bab 2: Tinjauan Pustaka' ? 'selected' : ''; ?>>Bab 2: Tinjauan Pustaka</option>
+                                <option value="Bab 3: Metodologi Penelitian" <?= $auto_select_bab === 'Bab 3: Metodologi Penelitian' ? 'selected' : ''; ?>>Bab 3: Metodologi Penelitian</option>
+                                <option value="Bab 4: Hasil dan Pembahasan" <?= $auto_select_bab === 'Bab 4: Hasil dan Pembahasan' ? 'selected' : ''; ?>>Bab 4: Hasil & Pembahasan</option>
+                                <option value="Bab 5: Kesimpulan dan Saran" <?= $auto_select_bab === 'Bab 5: Kesimpulan dan Saran' ? 'selected' : ''; ?>>Bab 5: Kesimpulan & Saran</option>
+                                <option value="Proposal Skripsi Lengkap" <?= $auto_select_bab === 'Proposal Skripsi Lengkap' ? 'selected' : ''; ?>>Proposal Skripsi Lengkap (Bab 1-3)</option>
+                                <option value="Naskah Skripsi Lengkap" <?= $auto_select_bab === 'Naskah Skripsi Lengkap' ? 'selected' : ''; ?>>Naskah Skripsi Lengkap (Bab 1-5)</option>
                             </select>
                         </div>
 

@@ -117,6 +117,10 @@ require_once '../templates/sidebar_admin.php';
         background-color: #ffffff !important;
         font-size: 11pt;
         color: #000000 !important;
+        font-family: 'Times New Roman', Times, serif !important;
+    }
+    .print-sheet, .table-print, .table-print th, .table-print td, h2, h3, h4, h5, h6, p, div {
+        font-family: 'Times New Roman', Times, serif !important;
     }
     main {
         width: 100% !important;

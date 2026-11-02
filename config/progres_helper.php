@@ -94,7 +94,20 @@ if (!function_exists('get_progres_mahasiswa')) {
         }
 
         $judul_bersih = trim($mhs['judul_skripsi'] ?? '');
-        $has_judul = (!empty($judul_bersih) && strcasecmp($judul_bersih, 'Belum Ditentukan') !== 0);
+        $has_judul_text = (!empty($judul_bersih) && !in_array(strtolower($judul_bersih), ['belum ditentukan', 'judul belum diatur', 'judul belum ditentukan', '-', 'null']));
+
+        // Cek riwayat pengajuan usulan judul terbaru beserta dokumen pendukungnya
+        $st_pj = $pdo->prepare("
+            SELECT * FROM pengajuan_bimbingan 
+            WHERE mahasiswa_id = :mid AND (
+                bab_pembahasan LIKE '%Judul%' 
+                OR bab_pembahasan = 'Pengajuan Judul Skripsi' 
+                OR bab_pembahasan = 'Pengajuan & ACC Judul Skripsi'
+            )
+            ORDER BY id DESC LIMIT 1
+        ");
+        $st_pj->execute([':mid' => $mahasiswa_id]);
+        $pengajuan_judul = $st_pj->fetch();
 
         // Ambil riwayat logbook ACC resmi
         $st_lb = $pdo->prepare("
@@ -107,7 +120,7 @@ if (!function_exists('get_progres_mahasiswa')) {
         $st_lb->execute([':mid' => $mahasiswa_id]);
         $logs = $st_lb->fetchAll();
 
-        // Status penyelesaian per level
+        // Status penyelesaian per level (Sequential Thesis Pipeline)
         $selesai_level = [
             1 => false, // Judul
             2 => false, // Bab 1
@@ -118,21 +131,23 @@ if (!function_exists('get_progres_mahasiswa')) {
             7 => false  // Sidang
         ];
 
-        // Level 1 selesai jika mahasiswa sudah memiliki judul resmi
-        if ($has_judul) {
-            $selesai_level[1] = true;
-        }
-
+        // Validasi pengesahan logbook resmi:
         foreach ($logs as $log) {
             $sbab   = $log['status_bab'] ?? '';
             $bpem   = $log['bab_pembahasan'] ?? '';
             $chasil = $log['catatan_hasil'] ?? '';
 
+            // Tahap 1: HANYA SELESAI jika dosen telah menerbitkan pengesahan ACC Judul
             if ($sbab === 'acc_judul') {
                 $selesai_level[1] = true;
             }
 
-            // Bab 1 s.d. 5 HANYA BISA DIAKUI JIKA TAHAP 1 (JUDUL) SUDAH SELESAI
+            // Kompatibilitas data legacy: jika ada logbook bab dan judul teks sudah ada
+            if ($sbab === 'acc_bab' && $has_judul_text) {
+                $selesai_level[1] = true;
+            }
+
+            // Bab 1 s.d. 5 HANYA BISA DIAKUI JIKA TAHAP 1 (JUDUL) SUDAH RESMI DI-ACC
             if ($selesai_level[1]) {
                 if ($sbab === 'acc_bab') {
                     if (stripos($bpem, 'Bab 1') !== false || stripos($chasil, 'Bab 1') !== false) {
@@ -179,7 +194,7 @@ if (!function_exists('get_progres_mahasiswa')) {
 
         // Hitung persentase progres saat ini
         if ($current_level === 1) {
-            $progres_persen = 0; // Belum punya judul / belum ngajuin
+            $progres_persen = 0; // Belum ACC judul (0%)
         } elseif ($current_level <= 7) {
             $progres_persen = $tahapan_master[$current_level - 1]['progres'];
         } else {
@@ -202,16 +217,34 @@ if (!function_exists('get_progres_mahasiswa')) {
             $tahapan_ui[$lvl] = array_merge($info, ['status_ui' => $st]);
         }
 
+        // Tentukan judul yang diajukan mahasiswa (usulan atau judul resmi)
+        $judul_diajukan = $has_judul_text ? $judul_bersih : '';
+        if (empty($judul_diajukan) && $pengajuan_judul) {
+            $catatan_pj = $pengajuan_judul['catatan_mahasiswa'] ?? '';
+            // Coba ekstrak judul dari catatan pengajuan mahasiswa
+            if (preg_match('/Usulan Judul[^:]*:(.+)/i', $catatan_pj, $m)) {
+                $judul_diajukan = trim($m[1]);
+            }
+        }
+
+        $has_submitted_document = !empty($pengajuan_judul['file_draft']) || !empty($pengajuan_judul['link_drive']);
+
         return [
-            'mahasiswa'          => $mhs,
-            'has_judul'          => $has_judul,
-            'judul_resmi'        => $has_judul ? $judul_bersih : '',
-            'current_level'      => $current_level,
-            'tahap_saat_ini'     => ($current_level <= 7) ? $tahapan_master[$current_level] : null,
-            'progres_persen'     => $progres_persen,
-            'progres_jika_acc'   => $progres_jika_acc,
-            'tahapan_ui'         => $tahapan_ui,
-            'is_tuntas'          => ($current_level > 7)
+            'mahasiswa'              => $mhs,
+            'has_judul'              => $has_judul_text,
+            'is_judul_acc'           => $selesai_level[1],
+            'judul_resmi'            => $selesai_level[1] ? $judul_bersih : '',
+            'judul_diajukan'         => $judul_diajukan,
+            'current_level'          => $current_level,
+            'tahap_saat_ini'         => ($current_level <= 7) ? $tahapan_master[$current_level] : null,
+            'progres_persen'         => $progres_persen,
+            'progres_jika_acc'       => $progres_jika_acc,
+            'tahapan_ui'             => $tahapan_ui,
+            'selesai_level'          => $selesai_level,
+            'pengajuan_judul'        => $pengajuan_judul ?: null,
+            'has_submitted_document' => $has_submitted_document,
+            'has_submitted_judul'    => (!empty($pengajuan_judul) || !empty($judul_diajukan)),
+            'is_tuntas'              => ($current_level > 7)
         ];
     }
 }

@@ -1582,17 +1582,24 @@ main {
     }
 }
 
-.bab-step-card {
+.bab-step-card,
+a.bab-step-card {
     border-radius: var(--radius-lg);
     padding: 1.25rem 0.9rem;
     transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     background: #ffffff;
     border: 1.5px solid var(--border-color);
+    text-decoration: none !important;
+    color: inherit !important;
+    cursor: pointer;
 }
 
-.bab-step-card:hover {
+.bab-step-card:hover,
+a.bab-step-card:hover {
     transform: translateY(-4px);
+    text-decoration: none !important;
+    color: inherit !important;
 }
 
 .bab-step-card.status-acc {
