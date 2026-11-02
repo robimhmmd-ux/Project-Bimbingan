@@ -68,10 +68,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $reset_plotting = isset($_POST['reset_plotting']) && $_POST['reset_plotting'] == '1';
         $notify_mhs     = isset($_POST['notify_mhs']) && $_POST['notify_mhs'] == '1';
 
-        // Jika reset_mode === 'hard', otomatis lepaskan plotting pembimbing dan bersihkan judul skripsi
-        if ($reset_mode === 'hard') {
-            $reset_plotting = true;
-        }
+        // Bagian penting selalu aman: Data akun login (User ID), NIM, Nama, Kelas, Foto Profil, dan Master Dosen tidak pernah dihapus.
+        // Plotting pembimbing & judul skripsi dipertahankan dan hanya dilepas jika opsi reset_plotting dicentang secara eksplisit.
 
         // Jika dipicu khusus dari modal Reset Mahasiswa Siap Sidang
         if ($action === 'reset_siap_sidang') {
@@ -212,10 +210,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $reset_plotting = isset($_POST['reset_plotting']) && $_POST['reset_plotting'] == '1';
         $notify_mhs     = isset($_POST['notify_mhs']) && $_POST['notify_mhs'] == '1';
 
-        // Jika reset_mode === 'hard', otomatis lepaskan plotting pembimbing dan bersihkan judul skripsi
-        if ($reset_mode === 'hard') {
-            $reset_plotting = true;
-        }
+        // Bagian penting selalu aman: Data akun login (User ID), NIM, Nama, Kelas, Foto Profil, dan Master Dosen tidak pernah dihapus.
+        // Plotting pembimbing & judul skripsi dipertahankan dan hanya dilepas jika opsi reset_plotting dicentang secara eksplisit.
 
         if ($mahasiswa_id <= 0) {
             $error_msg = "ID Mahasiswa tidak valid.";
@@ -839,14 +835,21 @@ require_once '../templates/sidebar_admin.php';
                     </div>
                 </div>
 
-                <!-- Opsi Notifikasi & Plotting Pembimbing -->
+                <!-- Proteksi Bagian Penting & Opsi Plotting Pembimbing -->
+                <div class="alert alert-success d-flex align-items-center gap-2 mb-3 py-2 px-3 border-0 bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-shield-check-fill fs-5 flex-shrink-0"></i>
+                    <div class="small">
+                        <strong>Proteksi Bagian Penting Aktif:</strong> Akun login (User ID & Password), NIM, Nama Lengkap, Kelas, Foto Profil, dan Master Data Dosen <u>dijamin 100% aman dan tidak akan dihapus</u>.
+                    </div>
+                </div>
+
                 <div class="mb-4 p-3 bg-light rounded-3 border">
                     <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" role="switch" name="reset_plotting" id="resetPlottingCheck" value="1" checked>
-                        <label class="form-check-label fw-bold text-danger" for="resetPlottingCheck">
-                            Lepaskan Plotting Dosen Pembimbing & Kosongkan Judul Skripsi
+                        <input class="form-check-input" type="checkbox" role="switch" name="reset_plotting" id="resetPlottingCheck" value="1">
+                        <label class="form-check-label fw-bold text-dark" for="resetPlottingCheck">
+                            Lepaskan Plotting Dosen Pembimbing & Kosongkan Judul (Opsional)
                         </label>
-                        <small class="d-block text-muted">Mahasiswa kembali ke status "Belum Diplot" sehingga <strong>terhapus dari daftar bimbingan dosen</strong>.</small>
+                        <small class="d-block text-muted">Biarkan <em>tidak dicentang</em> agar plotting pembimbing tetap aman. Centang HANYA jika ingin melepas seluruh mahasiswa dari dosen pembimbing.</small>
                     </div>
                     <hr class="my-2">
                     <div class="form-check form-switch mb-0">
@@ -953,13 +956,21 @@ require_once '../templates/sidebar_admin.php';
                     </div>
                 </div>
 
+                <!-- Proteksi Bagian Penting & Opsi Plotting Pembimbing -->
+                <div class="alert alert-success d-flex align-items-center gap-2 mb-3 py-2 px-3 border-0 bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-shield-check-fill fs-5 flex-shrink-0"></i>
+                    <div class="small">
+                        <strong>Proteksi Bagian Penting Aktif:</strong> Akun login, NIM, Nama Lengkap, Kelas, Foto Profil, dan Master Dosen <u>dijamin 100% aman dan tidak akan dihapus</u>.
+                    </div>
+                </div>
+
                 <div class="mb-4 p-3 bg-light rounded-3 border">
                     <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" role="switch" name="reset_plotting" id="resetSiapPlottingCheck" value="1" checked>
-                        <label class="form-check-label fw-bold text-danger" for="resetSiapPlottingCheck">
-                            Lepaskan Plotting Dosen Pembimbing & Kosongkan Judul Skripsi
+                        <input class="form-check-input" type="checkbox" role="switch" name="reset_plotting" id="resetSiapPlottingCheck" value="1">
+                        <label class="form-check-label fw-bold text-dark" for="resetSiapPlottingCheck">
+                            Lepaskan Plotting Dosen Pembimbing & Kosongkan Judul (Opsional)
                         </label>
-                        <small class="d-block text-muted">Mahasiswa kembali ke status "Belum Diplot" sehingga <strong>terhapus dari daftar bimbingan dosen</strong>.</small>
+                        <small class="d-block text-muted">Biarkan <em>tidak dicentang</em> agar alokasi dosen tetap aman. Centang HANYA jika ingin melepas mahasiswa dari dosen pembimbing.</small>
                     </div>
                     <hr class="my-2">
                     <div class="form-check form-switch mb-0">
@@ -1036,13 +1047,21 @@ require_once '../templates/sidebar_admin.php';
                     </div>
                 </div>
 
+                <!-- Proteksi Bagian Penting & Opsi Plotting Pembimbing -->
+                <div class="alert alert-success d-flex align-items-center gap-2 mb-3 py-2 px-3 border-0 bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-shield-check-fill fs-5 flex-shrink-0"></i>
+                    <div class="small">
+                        <strong>Proteksi Bagian Penting:</strong> Akun login, NIM, Nama, Kelas, dan Foto Profil <u>tetap aman & tidak dihapus</u>.
+                    </div>
+                </div>
+
                 <div class="p-3 bg-light rounded-3 border mb-3">
                     <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" role="switch" name="reset_plotting" id="single_reset_plotting" value="1" checked>
-                        <label class="form-check-label fw-bold text-danger" for="single_reset_plotting">
-                            Lepaskan Plotting Dosen Pembimbing (Hapus dari Daftar Dosen)
+                        <input class="form-check-input" type="checkbox" role="switch" name="reset_plotting" id="single_reset_plotting" value="1">
+                        <label class="form-check-label fw-bold text-dark" for="single_reset_plotting">
+                            Lepaskan Dosen Pembimbing (Opsional)
                         </label>
-                        <small class="d-block text-muted">Mahasiswa kembali ke status "Belum Diplot" dan judul dikosongkan ke awal.</small>
+                        <small class="d-block text-muted">Biarkan <em>tidak dicentang</em> agar dosen pembimbing tetap terhubung. Centang HANYA jika ingin melepas mahasiswa ini dari dosen pembimbing.</small>
                     </div>
                     <hr class="my-2">
                     <div class="form-check form-switch mb-0">
