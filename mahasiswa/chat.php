@@ -1,11 +1,16 @@
 <?php
+ob_start();
 // mahasiswa/chat.php - Sistem Chat Internal Mahasiswa & Dosen Pembimbing Terintegrasi
 $page_title   = "Chat Dosen Pembimbing";
 $current_page = "chat";
 
 require_once '../config/database.php';
-require_once '../templates/header.php';
-require_once '../templates/sidebar_mahasiswa.php';
+if (file_exists('../config/session_helper.php')) {
+    require_once '../config/session_helper.php';
+    init_app_session($pdo ?? null);
+} elseif (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Proteksi akses role mahasiswa
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
@@ -82,7 +87,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     ':link'  => $link_chat
                 ]);
 
-                header("Location: chat.php?sent=1");
+                if (!headers_sent()) {
+                    header("Location: chat.php?sent=1");
+                } else {
+                    echo "<script>window.location.href='chat.php?sent=1';</script>";
+                }
                 exit;
             } catch (PDOException $e) {
                 $error_msg = "Gagal mengirim pesan: " . $e->getMessage();
@@ -131,6 +140,9 @@ if (!empty($mhs['no_whatsapp'])) {
     }
     $wa_url = "https://wa.me/{$clean_wa}?text=" . urlencode("Halo Bapak/Ibu " . ($mhs['nama_dosen'] ?? 'Dosen') . ", saya " . ($mhs['nama_lengkap'] ?? 'Mahasiswa') . " ingin mengonfirmasi pesan bimbingan di portal web.");
 }
+
+require_once '../templates/header.php';
+require_once '../templates/sidebar_mahasiswa.php';
 ?>
 
 <!-- ============================================================

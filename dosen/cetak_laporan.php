@@ -1,11 +1,15 @@
 <?php
-// dosen/cetak_laporan.php - Rekapan & Cetak Laporan Hasil Bimbingan Skripsi (Salsa)
-$page_title   = "Rekapitulasi & Cetak Laporan Bimbingan";
+// dosen/cetak_laporan.php - Rekapitulasi & Cetak Laporan Progres Bimbingan Skripsi (Salsa)
+$page_title   = "Laporan Progres Bimbingan Skripsi";
 $current_page = "laporan";
 
-require_once __DIR__ . '/../config/database.php';
+require_once '../config/database.php';
+require_once '../config/session_helper.php';
 
 // Cek autentikasi dosen
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'dosen') {
     header("Location: ../login.php");
     exit;
@@ -19,60 +23,90 @@ $stmt_dosen->execute([':uid' => $user_id]);
 $dosen = $stmt_dosen->fetch();
 $dosen_id = $dosen['id'] ?? 0;
 
-// Ambil filter dari request
+// Ambil filter mahasiswa dari request
 $filter_mhs = isset($_GET['mahasiswa_id']) ? (int)$_GET['mahasiswa_id'] : 0;
-$filter_status = trim($_GET['status'] ?? 'semua');
 
-// Ambil daftar mahasiswa bimbingan dosen ini untuk dropdown
-$stmt_mhs_list = $pdo->prepare("SELECT id, nim, nama_lengkap, judul_skripsi, status_kelulusan FROM mahasiswa WHERE dosen_pembimbing_id = :did ORDER BY nama_lengkap ASC");
+// Ambil seluruh daftar mahasiswa bimbingan dosen ini
+$stmt_mhs_list = $pdo->prepare("
+    SELECT m.*, u.username 
+    FROM mahasiswa m 
+    LEFT JOIN users u ON m.user_id = u.id
+    WHERE m.dosen_pembimbing_id = :did 
+    ORDER BY m.nama_lengkap ASC
+");
 $stmt_mhs_list->execute([':did' => $dosen_id]);
 $daftar_mahasiswa = $stmt_mhs_list->fetchAll();
 
-// Susun Query Rekapan Bimbingan
-$query = "
-    SELECT pb.*, m.nim, m.nama_lengkap, m.judul_skripsi, m.status_kelulusan
-    FROM pengajuan_bimbingan pb
-    JOIN mahasiswa m ON pb.mahasiswa_id = m.id
-    WHERE pb.dosen_id = :did
-";
-$params = [':did' => $dosen_id];
+// Ambil rekap total sesi bimbingan sekaligus dalam 1 query hemat koneksi
+$sesi_map = [];
+try {
+    $st_cnt_all = $pdo->prepare("SELECT mahasiswa_id, COUNT(*) AS total FROM pengajuan_bimbingan WHERE dosen_id = :did GROUP BY mahasiswa_id");
+    $st_cnt_all->execute([':did' => $dosen_id]);
+    $sesi_map = $st_cnt_all->fetchAll(PDO::FETCH_KEY_PAIR);
+} catch (Exception $e) {}
 
-if ($filter_mhs > 0) {
-    $query .= " AND pb.mahasiswa_id = :mid";
-    $params[':mid'] = $filter_mhs;
-}
-
-if ($filter_status !== 'semua' && !empty($filter_status)) {
-    $query .= " AND pb.status = :st";
-    $params[':st'] = $filter_status;
-}
-
-$query .= " ORDER BY pb.tanggal_bimbingan DESC, pb.jam_bimbingan DESC";
-
-$stmt_rekap = $pdo->prepare($query);
-$stmt_rekap->execute($params);
-$data_rekap = $stmt_rekap->fetchAll();
-
-// Hitung Statistik
-$total_sesi = count($data_rekap);
-$total_selesai = 0;
-$total_acc_sidang = 0;
+// Olah data progres setiap mahasiswa
+$list_progres_mhs = [];
+$total_mhs = count($daftar_mahasiswa);
 $sum_progres = 0;
+$count_siap_sidang = 0;
 
-foreach ($data_rekap as $row) {
-    if ($row['status'] === 'selesai' || $row['status'] === 'disetujui') $total_selesai++;
-    $sum_progres += (int)$row['nilai_progres'];
+foreach ($daftar_mahasiswa as $m) {
+    $p_info = null;
+    try {
+        $p_info = get_progres_mahasiswa($pdo, $m['id']);
+    } catch (Throwable $pe) {
+        $p_info = null;
+    }
+
+    $total_sesi     = (int)($sesi_map[$m['id']] ?? 0);
+    $progres_persen = $p_info['progres_persen'] ?? 0;
+    $tahap_label    = $p_info['tahap_saat_ini']['label'] ?? 'Pengajuan & ACC Judul';
+    $tahap_singkat  = $p_info['tahap_saat_ini']['singkat'] ?? 'ACC Judul';
+    $judul_tampil   = !empty($p_info['judul_resmi']) ? $p_info['judul_resmi'] : (!empty($p_info['judul_diajukan']) ? $p_info['judul_diajukan'] : (!empty($m['judul_skripsi']) && $m['judul_skripsi'] !== 'Belum Ditentukan' ? $m['judul_skripsi'] : 'Belum Ditentukan'));
+
+    if (($m['status_kelulusan'] ?? '') === 'siap_sidang' || ($m['status_kelulusan'] ?? '') === 'lulus') {
+        $count_siap_sidang++;
+    }
+    $sum_progres += $progres_persen;
+
+    $list_progres_mhs[] = [
+        'id'               => $m['id'],
+        'nim'              => $m['nim'],
+        'nama_lengkap'     => $m['nama_lengkap'],
+        'kelas'            => $m['kelas'] ?? 'TI',
+        'judul_skripsi'    => $judul_tampil,
+        'is_judul_acc'     => $p_info['is_judul_acc'] ?? false,
+        'progres'          => $progres_persen,
+        'tahap_label'      => $tahap_label,
+        'tahap_singkat'    => $tahap_singkat,
+        'tahapan_ui'       => $p_info['tahapan_ui'] ?? [],
+        'status_kelulusan' => $m['status_kelulusan'] ?? 'proses_bimbingan',
+        'total_sesi'       => $total_sesi
+    ];
 }
-$avg_progres = ($total_sesi > 0) ? round($sum_progres / $total_sesi, 1) : 0;
 
-// Informasi mahasiswa terpilih jika filter aktif
+$avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
+
+// Jika filter mahasiswa tertentu aktif
 $info_mhs_terpilih = null;
+$riwayat_sesi_terpilih = [];
 if ($filter_mhs > 0) {
-    foreach ($daftar_mahasiswa as $m) {
-        if ($m['id'] == $filter_mhs) {
-            $info_mhs_terpilih = $m;
+    foreach ($list_progres_mhs as $pm) {
+        if ($pm['id'] == $filter_mhs) {
+            $info_mhs_terpilih = $pm;
             break;
         }
+    }
+
+    if ($info_mhs_terpilih) {
+        $st_rwy = $pdo->prepare("
+            SELECT * FROM pengajuan_bimbingan 
+            WHERE mahasiswa_id = :mid AND dosen_id = :did 
+            ORDER BY tanggal_bimbingan ASC, jam_bimbingan ASC
+        ");
+        $st_rwy->execute([':mid' => $filter_mhs, ':did' => $dosen_id]);
+        $riwayat_sesi_terpilih = $st_rwy->fetchAll();
     }
 }
 
@@ -84,13 +118,13 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Hasil Bimbingan Skripsi - <?= htmlspecialchars($dosen['nama_dosen'] ?? 'Dosen'); ?></title>
+    <title>Laporan Progres Bimbingan Skripsi - <?= htmlspecialchars($dosen['nama_dosen'] ?? 'Dosen'); ?></title>
     <!-- Bootstrap 5 CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-* {
+        * {
             box-shadow: none !important;
             text-shadow: none !important;
             font-family: 'Times New Roman', Times, 'Liberation Serif', serif;
@@ -106,7 +140,7 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
 
         .report-sheet {
             background: #ffffff;
-border: 1px solid #000000;
+            border: 1px solid #000000;
             border-radius: 0;
             box-shadow: none !important;
             padding: 15mm 20mm;
@@ -158,35 +192,25 @@ border: 1px solid #000000;
             border-bottom: 2px solid #000000 !important;
             background-color: #ffffff !important;
             color: #000000 !important;
-            font-weight: bold;
             text-align: center;
-        }
-
-        @page {
-            size: A4 portrait;
-            margin: 15mm 15mm 15mm 15mm;
+            font-weight: bold;
         }
 
         @media print {
             body {
-background: #ffffff !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                color: #000000 !important;
-                font-family: 'Times New Roman', Times, serif !important;
+                background: none;
+                margin: 0;
+                padding: 0;
+                color: #000000;
             }
             .no-print {
                 display: none !important;
             }
             .report-sheet {
-box-shadow: none !important;
                 border: none !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                border-radius: 0;
-                font-family: 'Times New Roman', Times, serif !important;
+                padding: 0;
+                margin: 0;
+                max-width: 100%;
             }
             .table-bordered th, .table-bordered td {
                 border-color: #000000 !important;
@@ -215,8 +239,8 @@ box-shadow: none !important;
                 </div>
 
                 <form action="cetak_laporan.php" method="GET" class="d-flex flex-wrap gap-2 align-items-center">
-                    <select name="mahasiswa_id" class="form-select form-select-sm" style="min-width: 200px;">
-                        <option value="0">-- Semua Mahasiswa Bimbingan --</option>
+                    <select name="mahasiswa_id" class="form-select form-select-sm" style="min-width: 260px;">
+                        <option value="0">-- Seluruh Mahasiswa (Laporan Progres) --</option>
                         <?php foreach ($daftar_mahasiswa as $m): ?>
                             <option value="<?= $m['id']; ?>" <?= ($filter_mhs == $m['id']) ? 'selected' : ''; ?>>
                                 <?= htmlspecialchars($m['nim']); ?> - <?= htmlspecialchars($m['nama_lengkap']); ?>
@@ -224,16 +248,8 @@ box-shadow: none !important;
                         <?php endforeach; ?>
                     </select>
 
-                    <select name="status" class="form-select form-select-sm">
-                        <option value="semua" <?= ($filter_status === 'semua') ? 'selected' : ''; ?>>Semua Status</option>
-                        <option value="disetujui" <?= ($filter_status === 'disetujui') ? 'selected' : ''; ?>>Disetujui</option>
-                        <option value="selesai" <?= ($filter_status === 'selesai') ? 'selected' : ''; ?>>Selesai</option>
-                        <option value="revisi" <?= ($filter_status === 'revisi') ? 'selected' : ''; ?>>Revisi</option>
-                        <option value="menunggu" <?= ($filter_status === 'menunggu') ? 'selected' : ''; ?>>Menunggu</option>
-                    </select>
-
                     <button type="submit" class="btn btn-secondary btn-sm">
-                        <i class="bi bi-filter me-1"></i> Filter
+                        <i class="bi bi-filter me-1"></i> Tampilkan Laporan
                     </button>
                     
                     <button type="button" onclick="window.print()" class="btn btn-primary btn-sm fw-semibold">
@@ -250,21 +266,18 @@ box-shadow: none !important;
     <div class="report-sheet">
         <!-- Kop Surat Akademik -->
         <div class="kop-surat text-center position-relative">
-            <h5 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 0.5px; font-size: 13pt;">KEMENTERIAN PENDIDIKAN TINGGI, SAINS, DAN TEKNOLOGI</h5>
-            <h4 class="fw-bold mb-1 text-uppercase" style="font-size: 15pt;">UNIVERSITAS TEKNOLOGI DAN ILMU KOMPUTER</h4>
-            <h6 class="mb-1 text-uppercase fw-semibold" style="font-size: 11pt;">FAKULTAS ILMU KOMPUTER - PROGRAM STUDI TEKNIK INFORMATIKA</h6>
-            <p class="mb-0" style="font-size: 9.5pt;">
-                Jl. Pendidikan No. 45 Kampus Terpadu | Telp: (021) 1234-5678 | Email: akademik@univ.ac.id | Laman: www.univ.ac.id
-            </p>
+            <h4 class="fw-bold mb-1 text-uppercase" style="font-size: 14pt;">PROGRAM STUDI TEKNIK INFORMATIKA</h4>
+            <h5 class="fw-bold mb-1 text-uppercase" style="font-size: 12pt;">FAKULTAS ILMU KOMPUTER & SAINS</h5>
+            <p class="small mb-0" style="font-size: 9pt;">Sistem Informasi Pengelolaan & Pemantauan Bimbingan Skripsi Terintegrasi</p>
         </div>
 
         <div class="text-center mb-4">
-            <h5 class="fw-bold text-uppercase text-decoration-underline mb-1" style="font-size: 13pt;">LEMBAR REKAPITULASI HASIL BIMBINGAN SKRIPSI</h5>
-            <p class="mb-0" style="font-size: 10pt;">Dicetak pada: <?= date('d F Y, H:i'); ?> WIB</p>
+            <h5 class="fw-bold text-uppercase text-decoration-underline mb-1" style="font-size: 12pt;">LEMBAR LAPORAN PROGRES BIMBINGAN SKRIPSI</h5>
+            <p class="small mb-0" style="font-size: 9pt;">Dicetak pada: <?= date('d F Y, H:i'); ?> WIB</p>
         </div>
 
-        <!-- Identitas Dosen & Mahasiswa -->
-        <div class="row g-2 mb-4" style="font-size: 10.5pt; color: #000000;">
+        <!-- Identitas Dosen & Ringkasan Laporan -->
+        <div class="row g-2 mb-4" style="font-size: 10pt;">
             <div class="col-6">
                 <table class="table table-sm table-borderless mb-0">
                     <tr>
@@ -289,8 +302,8 @@ box-shadow: none !important;
                             <td>: <?= htmlspecialchars($info_mhs_terpilih['nama_lengkap']); ?> (<?= htmlspecialchars($info_mhs_terpilih['nim']); ?>)</td>
                         </tr>
                         <tr>
-                            <td class="fw-bold">Judul Skripsi</td>
-                            <td>: <?= htmlspecialchars($info_mhs_terpilih['judul_skripsi']); ?></td>
+                            <td class="fw-bold">Capaian Progres</td>
+                            <td>: <strong><?= $info_mhs_terpilih['progres']; ?>% Selesai</strong> (<?= htmlspecialchars($info_mhs_terpilih['tahap_label']); ?>)</td>
                         </tr>
                         <tr>
                             <td class="fw-bold">Status Akademik</td>
@@ -302,99 +315,200 @@ box-shadow: none !important;
                             <td>: Seluruh Mahasiswa Bimbingan Aktif</td>
                         </tr>
                         <tr>
-                            <td class="fw-bold">Total Sesi Bimbingan</td>
-                            <td>: <?= $total_sesi; ?> Sesi Terdata</td>
+                            <td class="fw-bold">Total Mahasiswa</td>
+                            <td>: <?= $total_mhs; ?> Mahasiswa Terdata</td>
                         </tr>
                         <tr>
                             <td class="fw-bold">Rata-rata Progres</td>
-                            <td>: <?= $avg_progres; ?>%</td>
+                            <td>: <?= $avg_progres; ?>% (<?= $count_siap_sidang; ?> Siap Sidang / Lulus)</td>
                         </tr>
                     <?php endif; ?>
                 </table>
             </div>
         </div>
 
-        <!-- Tabel Rekapan Data -->
-        <div class="table-responsive">
-            <table class="table table-bordered table-sm align-middle">
-                <thead>
-                    <tr>
-                        <th style="width: 35px;">No</th>
-                        <?php if (!$info_mhs_terpilih): ?>
-                            <th>Nama Mahasiswa / NIM</th>
-                        <?php endif; ?>
-                        <th style="width: 95px;">Tanggal</th>
-                        <th style="width: 65px;">Waktu</th>
-                        <th>Bab Pembahasan</th>
-                        <th>Catatan Revisi / Umpan Balik Dosen</th>
-                        <th style="width: 60px;">Nilai</th>
-                        <th style="width: 85px;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($data_rekap)): ?>
+        <?php if ($info_mhs_terpilih): ?>
+            <!-- ========================================================
+                 TAMPILAN 1: LAPORAN PROGRES MAHASISWA INDIVIDUAL
+                 ======================================================== -->
+            
+            <!-- Ringkasan Judul Skripsi Mahasiswa -->
+            <div class="mb-3 p-3 border">
+                <span class="small fw-bold d-block text-uppercase mb-1">Judul Skripsi Mahasiswa:</span>
+                <h6 class="fw-bold mb-1" style="font-size: 11pt;">"<?= htmlspecialchars($info_mhs_terpilih['judul_skripsi']); ?>"</h6>
+                <small>
+                    Tahap Pengerjaan: <strong><?= htmlspecialchars($info_mhs_terpilih['tahap_label']); ?></strong> &bull; Total Sesi Bimbingan: <strong><?= $info_mhs_terpilih['total_sesi']; ?> Sesi</strong>
+                </small>
+            </div>
+
+            <!-- Tabel Tahapan Alur Progres Skripsi -->
+            <div class="mb-4">
+                <h6 class="fw-bold mb-2" style="font-size: 10.5pt;">1. Capaian Alur Tahapan Skripsi (Pipeline Berurutan):</h6>
+                <table class="table table-bordered table-sm align-middle">
+                    <thead>
                         <tr>
-                            <td colspan="<?= (!$info_mhs_terpilih) ? '8' : '7'; ?>" class="text-center py-4 fst-italic">
-                                Tidak ada data rekapitulasi bimbingan yang ditemukan.
-                            </td>
+                            <th style="width: 45px;">Tahap</th>
+                            <th>Nama Tahapan Skripsi</th>
+                            <th style="width: 110px;">Target Capaian</th>
+                            <th style="width: 160px;">Status Pengesahan</th>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($data_rekap as $idx => $r): ?>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($info_mhs_terpilih['tahapan_ui'] as $lvl => $t): ?>
                             <tr>
-                                <td class="text-center"><?= $idx + 1; ?></td>
-                                <?php if (!$info_mhs_terpilih): ?>
-                                    <td>
-                                        <div class="fw-bold"><?= htmlspecialchars($r['nama_lengkap']); ?></div>
-                                        <div>NIM: <?= htmlspecialchars($r['nim']); ?></div>
-                                    </td>
-                                <?php endif; ?>
-                                <td class="text-center"><?= date('d/m/Y', strtotime($r['tanggal_bimbingan'])); ?></td>
-                                <td class="text-center"><?= substr($r['jam_bimbingan'], 0, 5); ?> WIB</td>
+                                <td class="text-center fw-bold"><?= $lvl; ?></td>
                                 <td>
-                                    <strong><?= htmlspecialchars($r['bab_pembahasan']); ?></strong>
+                                    <strong><?= htmlspecialchars($t['label']); ?></strong>
+                                    <small class="d-block text-muted"><?= htmlspecialchars($t['deskripsi'] ?? ''); ?></small>
                                 </td>
-                                <td>
-                                    <?= !empty($r['catatan_dosen']) ? nl2br(htmlspecialchars($r['catatan_dosen'])) : '<span class="fst-italic">-</span>'; ?>
-                                </td>
-                                <td class="text-center fw-bold">
-                                    <?= (int)$r['nilai_progres']; ?>%
-                                </td>
+                                <td class="text-center fw-bold"><?= (int)$t['progres']; ?>%</td>
                                 <td class="text-center">
-                                    <?php
-                                    $s = $r['status'];
-                                    if ($s === 'disetujui') echo '<span class="fw-bold">Disetujui</span>';
-                                    elseif ($s === 'selesai') echo '<span class="fw-bold">Selesai</span>';
-                                    elseif ($s === 'revisi') echo '<span>Revisi</span>';
-                                    elseif ($s === 'ditolak') echo '<span>Ditolak</span>';
-                                    else echo ucfirst($s);
-                                    ?>
+                                    <?php if ($t['status_ui'] === 'selesai'): ?>
+                                        <span class="fw-bold">&#10003; Telah Di-ACC</span>
+                                    <?php elseif ($t['status_ui'] === 'aktif'): ?>
+                                        <span class="fw-bold">&#9658; Sedang Dikerjakan</span>
+                                    <?php else: ?>
+                                        <span>Terkunci</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
 
-        <!-- Kolom Pengesahan Tanda Tangan -->
-        <div class="row mt-5 pt-3" style="font-size: 10.5pt; color: #000000; page-break-inside: avoid;">
+            <!-- Tabel Riwayat Sesi Bimbingan Mahasiswa -->
+            <div class="mb-4">
+                <h6 class="fw-bold mb-2" style="font-size: 10.5pt;">2. Riwayat Pertemuan & Catatan Evaluasi Dosen:</h6>
+                <table class="table table-bordered table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 35px;">No</th>
+                            <th style="width: 95px;">Tanggal</th>
+                            <th style="width: 65px;">Waktu</th>
+                            <th>Bagian / Bab Pembahasan</th>
+                            <th>Catatan Arahan & Koreksi Dosen Pembimbing</th>
+                            <th style="width: 65px;">Progres</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($riwayat_sesi_terpilih)): ?>
+                            <tr>
+                                <td colspan="6" class="text-center py-3 fst-italic">
+                                    Belum ada sesi bimbingan atau catatan evaluasi yang tercatat untuk mahasiswa ini.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($riwayat_sesi_terpilih as $idx => $r): ?>
+                                <tr>
+                                    <td class="text-center"><?= $idx + 1; ?></td>
+                                    <td class="text-center"><?= date('d/m/Y', strtotime($r['tanggal_bimbingan'])); ?></td>
+                                    <td class="text-center"><?= substr($r['jam_bimbingan'], 0, 5); ?> WIB</td>
+                                    <td>
+                                        <strong><?= htmlspecialchars($r['bab_pembahasan']); ?></strong>
+                                        <?php if (!empty($r['catatan_mahasiswa'])): ?>
+                                            <small class="d-block mt-1 fst-italic">"<?= htmlspecialchars($r['catatan_mahasiswa']); ?>"</small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?= !empty($r['catatan_dosen']) ? nl2br(htmlspecialchars($r['catatan_dosen'])) : '<span class="fst-italic">-</span>'; ?>
+                                    </td>
+                                    <td class="text-center fw-bold">
+                                        <?= (int)$r['nilai_progres']; ?>%
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+        <?php else: ?>
+            <!-- ========================================================
+                 TAMPILAN 2: LAPORAN PROGRES SELURUH MAHASISWA BIMBINGAN
+                 ======================================================== -->
+            <div class="mb-4">
+                <table class="table table-bordered table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 35px;">No</th>
+                            <th style="width: 95px;">NIM</th>
+                            <th>Nama Mahasiswa</th>
+                            <th>Judul Skripsi</th>
+                            <th style="width: 150px;">Tahap Saat Ini</th>
+                            <th style="width: 75px;">Progres</th>
+                            <th style="width: 110px;">Status</th>
+                            <th style="width: 55px;">Sesi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($list_progres_mhs)): ?>
+                            <tr>
+                                <td colspan="8" class="text-center py-4 fst-italic">
+                                    Belum ada mahasiswa bimbingan yang terdaftar pada sistem pembimbing.
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($list_progres_mhs as $idx => $pm): ?>
+                                <tr>
+                                    <td class="text-center"><?= $idx + 1; ?></td>
+                                    <td class="text-center fw-semibold"><?= htmlspecialchars($pm['nim']); ?></td>
+                                    <td>
+                                        <div class="fw-bold"><?= htmlspecialchars($pm['nama_lengkap']); ?></div>
+                                        <small class="text-muted">Kelas: <?= htmlspecialchars($pm['kelas']); ?></small>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($pm['judul_skripsi']) && $pm['judul_skripsi'] !== 'Belum Ditentukan'): ?>
+                                            <?= htmlspecialchars($pm['judul_skripsi']); ?>
+                                            <?php if (!$pm['is_judul_acc']): ?>
+                                                <small class="d-block fst-italic">(Menunggu ACC Judul)</small>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="fst-italic text-muted">Belum Ditentukan</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="text-center fw-semibold">
+                                        <?= htmlspecialchars($pm['tahap_label']); ?>
+                                    </td>
+                                    <td class="text-center fw-bold">
+                                        <?= (int)$pm['progres']; ?>%
+                                    </td>
+                                    <td class="text-center">
+                                        <?php
+                                        $stk = $pm['status_kelulusan'];
+                                        if ($stk === 'siap_sidang') echo 'Siap Sidang';
+                                        elseif ($stk === 'lulus') echo '<strong>Lulus</strong>';
+                                        else echo 'Proses';
+                                        ?>
+                                    </td>
+                                    <td class="text-center fw-semibold"><?= $pm['total_sesi']; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+
+        <!-- Kolom Pengesahan Tanda Tangan Resmi -->
+        <div class="row mt-5 pt-3">
             <div class="col-7">
-                <div class="border p-2" style="border: 1px solid #000000 !important; font-size: 9.5pt;">
-                    <p class="mb-1 fw-bold">Catatan Ketentuan Akademik:</p>
+                <div class="small" style="font-size: 9pt;">
+                    <p class="mb-1"><strong>Keterangan Catatan:</strong></p>
                     <ul class="ps-3 mb-0">
-                        <li>Dokumen ini merupakan rekapan sah hasil proses konsultasi dan bimbingan skripsi mahasiswa.</li>
-                        <li>Dapat dilampirkan bersama Kartu Bimbingan Mahasiswa saat pendaftaran sidang tugas akhir.</li>
+                        <li>Dokumen ini merupakan laporan resmi pemantauan progres bimbingan tugas akhir skripsi akademik.</li>
+                        <li>Dapat dilampirkan bersama Kartu Kendali Bimbingan Mahasiswa saat pendaftaran sidang sarjana.</li>
                     </ul>
                 </div>
             </div>
-            <div class="col-5 text-end">
+            <div class="col-5 text-end small" style="font-size: 10pt;">
                 <p class="mb-0">Ditetapkan di: Kampus</p>
                 <p class="mb-5">Pada tanggal: <?= date('d F Y'); ?></p>
                 
-                <div style="margin-top: 50px;">
+                <div style="margin-top: 55px;">
                     <p class="fw-bold text-decoration-underline mb-0"><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Nama Dosen Pembimbing'); ?></p>
                     <p class="mb-0">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
-                    <p class="mb-0">Dosen Pembimbing Skripsi</p>
+                    <p>Dosen Pembimbing Skripsi</p>
                 </div>
             </div>
         </div>

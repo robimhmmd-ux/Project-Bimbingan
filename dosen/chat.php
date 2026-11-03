@@ -1,14 +1,19 @@
 <?php
+ob_start();
 // dosen/chat.php - Aplikasi Pesan Chat Dosen & Mahasiswa (Salsa)
 $page_title   = "Pesan & Konsultasi Online";
 $current_page = "chat";
 
 require_once '../config/database.php';
-require_once '../templates/header.php';
-require_once '../templates/sidebar_dosen.php';
+if (file_exists('../config/session_helper.php')) {
+    require_once '../config/session_helper.php';
+    init_app_session($pdo ?? null);
+} elseif (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Proteksi akses role dosen
-if ($_SESSION['role'] !== 'dosen') {
+if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'dosen') {
     header("Location: ../login.php");
     exit;
 }
@@ -65,7 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kirim_pesan'])) {
             ]);
 
             // Redirect agar tidak re-post formulir saat refresh
-            header("Location: chat.php?uid=" . $penerima_id);
+            if (!headers_sent()) {
+                header("Location: chat.php?uid=" . $penerima_id);
+            } else {
+                echo "<script>window.location.href='chat.php?uid=" . $penerima_id . "';</script>";
+            }
             exit;
         } catch (PDOException $e) {
             $chat_error = "Gagal mengirim pesan: " . $e->getMessage();
@@ -104,6 +113,9 @@ if ($active_mhs_user_id > 0) {
     ]);
     $pesan_list = $stmt_chat->fetchAll();
 }
+
+require_once '../templates/header.php';
+require_once '../templates/sidebar_dosen.php';
 ?>
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
