@@ -17,10 +17,12 @@ if (!function_exists('get_avatar_url')) {
         // File lokal legacy
         $fname = basename($foto);
         if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname)) {
-            return '../assets/uploads/profile/' . htmlspecialchars($fname);
+            $prefix = file_exists('assets/uploads/profile/' . $fname) ? 'assets/uploads/profile/' : '../assets/uploads/profile/';
+            return $prefix . htmlspecialchars($fname);
         }
         if (file_exists(__DIR__ . '/../assets/uploads/' . $fname)) {
-            return '../assets/uploads/' . htmlspecialchars($fname);
+            $prefix = file_exists('assets/uploads/' . $fname) ? 'assets/uploads/' : '../assets/uploads/';
+            return $prefix . htmlspecialchars($fname);
         }
         return null;
     }

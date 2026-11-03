@@ -24,8 +24,39 @@ if (file_exists(__DIR__ . '/../config/storage_helper.php')) {
 }
 
 $css_ver     = file_exists(__DIR__ . '/../assets/css/style.css') ? filemtime(__DIR__ . '/../assets/css/style.css') : time();
-$cur_user_id = $_SESSION['user_id'];
+$cur_user_id = (int)($_SESSION['user_id'] ?? 0);
 $cur_role    = $_SESSION['role'] ?? '';
+
+// Sinkronisasi otomatis data profil & foto profil dari database (agar selalu segar & akurat di header)
+if (isset($pdo) && $cur_user_id > 0) {
+    try {
+        if ($cur_role === 'admin') {
+            $stmt_sync = $pdo->prepare("SELECT nama_lengkap, foto_profil FROM admin_profil WHERE user_id = :uid LIMIT 1");
+            $stmt_sync->execute([':uid' => $cur_user_id]);
+            $sync_data = $stmt_sync->fetch(PDO::FETCH_ASSOC);
+            if ($sync_data) {
+                if (!empty($sync_data['nama_lengkap'])) $_SESSION['nama_lengkap'] = $sync_data['nama_lengkap'];
+                if (!empty($sync_data['foto_profil']))  $_SESSION['foto_profil']  = $sync_data['foto_profil'];
+            }
+        } elseif ($cur_role === 'dosen') {
+            $stmt_sync = $pdo->prepare("SELECT nama_dosen, foto_profil FROM dosen WHERE user_id = :uid LIMIT 1");
+            $stmt_sync->execute([':uid' => $cur_user_id]);
+            $sync_data = $stmt_sync->fetch(PDO::FETCH_ASSOC);
+            if ($sync_data) {
+                if (!empty($sync_data['nama_dosen']))   $_SESSION['nama_lengkap'] = $sync_data['nama_dosen'];
+                if (!empty($sync_data['foto_profil']))  $_SESSION['foto_profil']  = $sync_data['foto_profil'];
+            }
+        } elseif ($cur_role === 'mahasiswa') {
+            $stmt_sync = $pdo->prepare("SELECT nama_lengkap, foto_profil FROM mahasiswa WHERE user_id = :uid LIMIT 1");
+            $stmt_sync->execute([':uid' => $cur_user_id]);
+            $sync_data = $stmt_sync->fetch(PDO::FETCH_ASSOC);
+            if ($sync_data) {
+                if (!empty($sync_data['nama_lengkap'])) $_SESSION['nama_lengkap'] = $sync_data['nama_lengkap'];
+                if (!empty($sync_data['foto_profil']))  $_SESSION['foto_profil']  = $sync_data['foto_profil'];
+            }
+        }
+    } catch (PDOException $e) {}
+}
 
 // Ambil data notifikasi aktif untuk pengguna saat ini (UPDATE Robi: tabel notifikasi)
 $notif_unread_count = 0;
@@ -289,6 +320,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             background: rgba(255, 255, 255, 0.28) !important;
             transform: scale(1.06);
         }
+        .navbar-user-pill:hover {
+            background: rgba(255, 255, 255, 0.2) !important;
+            border-color: rgba(255, 255, 255, 0.4) !important;
+            transform: scale(1.02);
+        }
     </style>
     <script>
         // State awal instan sebelum render
@@ -417,13 +453,14 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                     <?php endif; ?>
                 </ul>
             </div>
-            <a href="profil.php" class="text-decoration-none d-inline-flex align-items-center gap-2 text-white" title="Buka Profil & Pengaturan Akun">
-                <?php if (function_exists('render_avatar')): ?>
-                    <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white'); ?>
+            <a href="profil.php" class="text-decoration-none d-inline-flex align-items-center gap-2 text-white px-2 py-1 rounded-pill navbar-user-pill" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); transition: all 0.2s ease;" title="Buka Profil & Pengaturan Akun">
+                <?php if ($cur_role === 'admin' && function_exists('render_avatar')): ?>
+                    <span class="d-inline-flex rounded-circle p-0" style="box-shadow: 0 0 0 2px rgba(255,255,255,0.4);">
+                        <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white shadow-sm', 'warning'); ?>
+                    </span>
                 <?php endif; ?>
-                <div>
-                    <span class="small d-none d-md-inline text-white-50">Halo,</span>
-                    <span class="fw-bold text-white"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
+                <div class="pe-1">
+                    <span class="fw-bold text-white"><?= ($cur_role === 'admin' && !str_starts_with(strtolower(trim($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? '')), 'admin') ? 'Admin ' : '') . htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
                 </div>
             </a>
             <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">

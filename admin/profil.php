@@ -324,7 +324,7 @@ $has_foto = !empty($foto_url);
                 <i class="bi bi-info-circle-fill text-primary me-2"></i>Panduan Pengaturan Akun
             </h6>
             <p class="text-muted small mb-2">
-                Nama lengkap yang Anda masukkan akan langsung ditampilkan pada banner ucapan selamat datang di navbar atas dan kop surat laporan akademik.
+                Nama lengkap yang Anda masukkan akan langsung ditampilkan pada navbar atas dan kop surat laporan akademik.
             </p>
             <p class="text-muted small mb-0">
                 Gunakan kombinasi huruf, angka, dan simbol untuk kata sandi baru demi menjaga keamanan sistem dan data master mahasiswa.
