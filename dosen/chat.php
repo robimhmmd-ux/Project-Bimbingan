@@ -128,7 +128,7 @@ require_once '../templates/sidebar_dosen.php';
 <div class="chat-window-box">
     <div class="row g-0">
         <!-- Kolom Kiri: Daftar Kontak Mahasiswa -->
-        <div class="col-md-4 col-lg-4 border-end bg-light d-flex flex-column" style="height: 640px;">
+        <div class="col-md-4 col-lg-4 border-end bg-light d-flex flex-column chat-contacts-col">
             <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
                 <div>
                     <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Mahasiswa Bimbingan</h6>
@@ -209,7 +209,7 @@ require_once '../templates/sidebar_dosen.php';
         </div>
 
         <!-- Kolom Kanan: Area Ruang Obrolan -->
-        <div class="col-md-8 col-lg-8 d-flex flex-column bg-white" style="height: 640px;">
+        <div class="col-md-8 col-lg-8 d-flex flex-column bg-white chat-messages-col">
             <?php if ($active_mhs): ?>
                 <!-- Header Chat Aktif -->
                 <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white shadow-sm">

@@ -2139,3 +2139,179 @@ a.bab-step-card:hover {
     border-color: #00aa13;
     box-shadow: 0 8px 20px -6px rgba(0, 170, 19, 0.15);
 }
+
+/* ==========================================================================
+   SMARTPHONE & MOBILE RESPONSIVE ENHANCEMENTS (UNIVERSAL SCREEN COMPATIBILITY)
+   ========================================================================== */
+
+/* 1. Mencegah Horizontal Page Shifting / Broken Scroll pada HP */
+html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* 2. Media Query Terpadu Smartphone (< 768px) */
+@media (max-width: 767.98px) {
+    /* Form Inputs: Font minimal 16px mencegah auto-zoom mengganggu di iOS Safari & Android */
+    input.form-control,
+    select.form-select,
+    textarea.form-control,
+    .input-pill,
+    .form-select-custom {
+        font-size: 16px !important;
+    }
+
+    /* Container & Padding Area Konten Utama */
+    .container, .container-fluid {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    main,
+    .main-content-wrapper,
+    #mainContent {
+        padding: 0.85rem 0.65rem 3rem !important;
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Header Halaman & Action Toolbars */
+    .d-flex.justify-content-between.flex-wrap.align-items-center {
+        gap: 0.75rem;
+    }
+
+    .btn-toolbar {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem !important;
+    }
+
+    .btn-toolbar .btn {
+        flex: 1 1 auto;
+        justify-content: center;
+        text-align: center;
+        min-height: 38px;
+    }
+
+    /* Hero Academic & Student Hero Banners */
+    .hero-academic,
+    .hero-banner,
+    .student-hero-banner {
+        padding: 1.25rem 1rem !important;
+        border-radius: 1rem !important;
+        margin-bottom: 1.25rem !important;
+    }
+
+    .student-hero-banner h2 {
+        font-size: 1.35rem !important;
+    }
+
+    .btn-hero-action {
+        width: 100% !important;
+        justify-content: center !important;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Kartu Metrik / Stats Dashboard di Smartphone */
+    .stat-box-gojek,
+    .card-skala-gojek {
+        padding: 1.15rem 1rem !important;
+        border-radius: 16px !important;
+    }
+
+    .stat-number-big {
+        font-size: 2.1rem !important;
+    }
+
+    /* Card Umum */
+    .card {
+        border-radius: 0.875rem !important;
+    }
+    .card-header,
+    .card-footer {
+        padding: 0.75rem 1rem !important;
+    }
+    .card-body {
+        padding: 1rem 0.85rem !important;
+    }
+
+    /* Data Tables Horizontal Smooth Scroll */
+    .table-responsive {
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 1rem;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .table {
+        font-size: 0.84rem !important;
+        margin-bottom: 0;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.6rem 0.65rem !important;
+        white-space: nowrap;
+    }
+
+    /* Chat System Responsif pada Smartphone */
+    .chat-contacts-col {
+        height: 280px !important;
+        border-right: none !important;
+        border-bottom: 2px solid #e2e8f0 !important;
+    }
+
+    .chat-messages-col {
+        height: 520px !important;
+    }
+
+    .chat-main-card {
+        height: 72vh !important;
+        min-height: 480px !important;
+    }
+
+    .chat-bubble,
+    .chat-bubble-me,
+    .chat-bubble-other {
+        max-width: 88% !important;
+        font-size: 0.88rem !important;
+        padding: 0.65rem 0.85rem !important;
+    }
+
+    /* Modal Dialog di Smartphone */
+    .modal-dialog {
+        margin: 0.5rem !important;
+        max-width: calc(100% - 1rem) !important;
+    }
+
+    .modal-content {
+        border-radius: 1.15rem !important;
+    }
+
+    /* Stepper & Tahapan Bimbingan */
+    .bab-step-card {
+        margin-bottom: 0.75rem !important;
+    }
+}
+
+/* 3. Penyesuaian Ekstra untuk Layar Sangat Kecil (< 400px - iPhone SE, Galaxy A series lama) */
+@media (max-width: 399.98px) {
+    .navbar-brand span.fs-6 {
+        font-size: 0.9rem !important;
+        max-width: 120px !important;
+    }
+
+    .btn-sidebar-toggle {
+        min-width: 38px !important;
+        min-height: 38px !important;
+        padding: 0.2rem !important;
+    }
+
+    .btn {
+        font-size: 0.82rem !important;
+        padding: 0.45rem 0.75rem !important;
+    }
+}
