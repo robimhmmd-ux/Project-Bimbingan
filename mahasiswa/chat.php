@@ -18,6 +18,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
     exit;
 }
 
+$page_title   = "Chat Dosen Pembimbing";
+$current_page = "chat";
+
+require_once '../config/database.php';
+
 // Ambil info mahasiswa & dosen pembimbing
 $stmt_mhs = $pdo->prepare("
     SELECT m.*, d.id AS dosen_id, d.user_id AS dosen_user_id, d.nidn, d.nama_dosen, 
@@ -204,7 +209,7 @@ require_once '../templates/sidebar_mahasiswa.php';
                 <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
                     <div class="d-flex align-items-center">
                         <?php 
-            $foto_dosen_src = get_avatar_url($mhs['foto_dosen'] ?? null);
+            $foto_dosen_src = function_exists('get_avatar_url') ? get_avatar_url($mhs['foto_dosen'] ?? null) : null;
             ?>
             <div class="position-relative me-3">
                 <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#modalProfilDosen" title="Klik untuk melihat profil dosen">

@@ -1,4 +1,7 @@
 <?php
+if (!ob_get_level()) {
+    ob_start();
+}
 // templates/header.php
 if (!isset($pdo) && file_exists(__DIR__ . '/../config/database.php')) {
     require_once __DIR__ . '/../config/database.php';
@@ -99,6 +102,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
         $notif_list = [];
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -454,9 +458,9 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </ul>
             </div>
             <a href="profil.php" class="text-decoration-none d-inline-flex align-items-center gap-2 text-white px-2 py-1 rounded-pill navbar-user-pill" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); transition: all 0.2s ease;" title="Buka Profil & Pengaturan Akun">
-                <?php if ($cur_role === 'admin' && function_exists('render_avatar')): ?>
+                <?php if (function_exists('render_avatar')): ?>
                     <span class="d-inline-flex rounded-circle p-0" style="box-shadow: 0 0 0 2px rgba(255,255,255,0.4);">
-                        <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white shadow-sm', 'warning'); ?>
+                        <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white shadow-sm', ($cur_role === 'admin' ? 'warning' : 'primary')); ?>
                     </span>
                 <?php endif; ?>
                 <div class="pe-1">

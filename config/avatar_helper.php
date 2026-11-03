@@ -16,13 +16,15 @@ if (!function_exists('get_avatar_url')) {
         }
         // File lokal legacy
         $fname = basename($foto);
-        if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname)) {
+        $disk_profile = __DIR__ . '/../assets/uploads/profile/' . $fname;
+        if (file_exists($disk_profile)) {
             $prefix = file_exists('assets/uploads/profile/' . $fname) ? 'assets/uploads/profile/' : '../assets/uploads/profile/';
-            return $prefix . htmlspecialchars($fname);
+            return $prefix . htmlspecialchars($fname) . '?v=' . filemtime($disk_profile);
         }
-        if (file_exists(__DIR__ . '/../assets/uploads/' . $fname)) {
+        $disk_upload = __DIR__ . '/../assets/uploads/' . $fname;
+        if (file_exists($disk_upload)) {
             $prefix = file_exists('assets/uploads/' . $fname) ? 'assets/uploads/' : '../assets/uploads/';
-            return $prefix . htmlspecialchars($fname);
+            return $prefix . htmlspecialchars($fname) . '?v=' . filemtime($disk_upload);
         }
         return null;
     }
@@ -54,4 +56,3 @@ if (!function_exists('render_avatar')) {
         );
     }
 }
-

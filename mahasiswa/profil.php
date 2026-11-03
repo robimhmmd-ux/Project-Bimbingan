@@ -18,7 +18,7 @@ $error_msg   = '';
 // Ambil data profil mahasiswa saat ini beserta info dosen pembimbing
 $stmt_mhs = $pdo->prepare("
     SELECT m.*, u.username, 
-           d.id AS dosen_id, d.nama_dosen, d.nidn, d.email AS email_dosen, 
+           d.id AS dosen_id, d.user_id AS dosen_user_id, d.nama_dosen, d.nidn, d.email AS email_dosen, 
            d.no_whatsapp AS no_wa_dosen, d.foto_profil AS foto_dosen, d.kuota_bimbingan,
            u_dos.username AS username_dosen
     FROM mahasiswa m 
@@ -38,7 +38,7 @@ $mhs_id = $mhs['id'];
 
 // Path Foto Dosen Pembimbing Resmi
 $foto_dosen_src = null;
-$foto_dosen_src = get_avatar_url($mhs['foto_dosen'] ?? null);
+$foto_dosen_src = function_exists('get_avatar_url') ? get_avatar_url($mhs['foto_dosen'] ?? null) : null;
 
 // Jadwal Dosen Pembimbing untuk Modal Profil Dosen
 $jadwal_dosen_list = [];
@@ -62,6 +62,71 @@ if (!empty($mhs['dosen_id'])) {
 // ============================================================
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $action = $_POST['action'] ?? '';
+
+    // 0. AJAX INSTANT SAVE FOTO PROFIL SETELAH CROP / PENYESUAIAN
+    if ($action === 'ajax_simpan_foto') {
+        header('Content-Type: application/json; charset=utf-8');
+        $cropped_data = $_POST['cropped_photo'] ?? '';
+
+        if (empty($cropped_data) || strpos($cropped_data, 'data:image/') !== 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Data gambar tidak valid atau kosong.']);
+            exit;
+        }
+
+        if (!preg_match('/^data:image\/(\w+);base64,/', $cropped_data)) {
+            echo json_encode(['status' => 'error', 'message' => 'Format gambar base64 tidak valid.']);
+            exit;
+        }
+
+        $img_raw = substr($cropped_data, strpos($cropped_data, ',') + 1);
+        $decoded_img = base64_decode($img_raw);
+        if ($decoded_img === false) {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal menguraikan gambar base64.']);
+            exit;
+        }
+
+        $upload_dir = __DIR__ . '/../assets/uploads/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+
+        $foto_name = 'profil_' . $mhs_id . '_' . uniqid() . '.jpg';
+        $target_file = $upload_dir . $foto_name;
+
+        if (!file_put_contents($target_file, $decoded_img)) {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal menulis file foto ke server.']);
+            exit;
+        }
+
+        // Hapus foto profil lama jika ada file fisiknya dan bukan default.png
+        $foto_lama = $mhs['foto_profil'];
+        if (!empty($foto_lama) && $foto_lama !== 'default.png') {
+            $path_lama = $upload_dir . basename($foto_lama);
+            if (file_exists($path_lama)) {
+                @unlink($path_lama);
+            }
+        }
+
+        // Simpan langsung ke database
+        try {
+            $stmt_u = $pdo->prepare("UPDATE mahasiswa SET foto_profil = :foto WHERE id = :mid");
+            $stmt_u->execute([':foto' => $foto_name, ':mid' => $mhs_id]);
+
+            // Perbarui session aktif
+            $_SESSION['foto_profil'] = $foto_name;
+
+            echo json_encode([
+                'status'    => 'success',
+                'message'   => 'Foto profil berhasil disimpan dan diperbarui secara permanen!',
+                'foto_nama' => $foto_name,
+                'foto_url'  => '../assets/uploads/' . $foto_name . '?v=' . time()
+            ]);
+            exit;
+        } catch (PDOException $e) {
+            echo json_encode(['status' => 'error', 'message' => 'Gagal memperbarui database: ' . $e->getMessage()]);
+            exit;
+        }
+    }
 
     // 1. UPDATE DATA AKUN, BIODATA & FOTO PROFIL
     if ($action === 'update_profil') {
@@ -159,7 +224,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $pdo->commit();
 
                     // Perbarui session
-                    $_SESSION['username'] = $username;
+                    $_SESSION['username']     = $username;
                     $_SESSION['nama_lengkap'] = $nama_lengkap;
                     $_SESSION['foto_profil']  = $foto_baru;
                     $success_msg = "Data akun dan foto profil Anda berhasil diperbarui!";
@@ -320,8 +385,28 @@ require_once '../templates/sidebar_mahasiswa.php';
                         <span class="fw-semibold text-primary"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
                     </div>
                     <div class="mb-2">
-                        <span class="text-muted d-block">Dosen Pembimbing:</span>
-                        <span class="fw-semibold text-dark"><?= htmlspecialchars($mhs['nama_dosen'] ?? 'Belum Diplot'); ?></span>
+                        <span class="text-muted d-block mb-1">Dosen Pembimbing:</span>
+                        <?php if (!empty($mhs['nama_dosen'])): ?>
+                            <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-3 border">
+                                <?php if ($foto_dosen_src): ?>
+                                    <img src="<?= $foto_dosen_src; ?>" class="rounded-circle border shadow-xs flex-shrink-0" width="36" height="36" style="object-fit: cover;" alt="Dosen Pembimbing">
+                                <?php else: ?>
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0 shadow-xs" style="width: 36px; height: 36px; font-size: 0.95rem;">
+                                        <?= strtoupper(substr($mhs['nama_dosen'], 0, 1)); ?>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="min-w-0 flex-grow-1">
+                                    <div class="fw-bold text-dark small text-truncate" title="<?= htmlspecialchars($mhs['nama_dosen']); ?>">
+                                        <?= htmlspecialchars($mhs['nama_dosen']); ?>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">
+                                        NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Belum Diplot</span>
+                        <?php endif; ?>
                     </div>
                     <div class="mb-2">
                         <span class="text-muted d-block">Status Penetapan SK:</span>
@@ -463,7 +548,7 @@ require_once '../templates/sidebar_mahasiswa.php';
                                 <div id="cropPreviewAlert" class="alert alert-success py-2 px-3 small mt-2 d-none align-items-center justify-content-between rounded-3">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-check-circle-fill me-2 fs-6 text-success"></i>
-                                        <span><strong>Foto profil telah disesuaikan!</strong> Pratinjau tampil di kartu kiri. Klik <em>Simpan Perubahan Akun & Profil</em> di bawah untuk menyimpan permanen.</span>
+                                        <span><strong>Foto profil berhasil disimpan!</strong> Foto tetap ada saat halaman di-refresh dan muncul di pojok kanan atas sebelah ikon lonceng.</span>
                                     </div>
                                     <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill ms-2 text-nowrap" id="btnReAdjust" style="font-size: 0.72rem;">
                                         <i class="bi bi-sliders me-1"></i>Atur Ulang
@@ -569,7 +654,7 @@ require_once '../templates/sidebar_mahasiswa.php';
                     Batal
                 </button>
                 <button type="button" class="btn btn-primary px-4 fw-semibold shadow-xs" id="btnTerapkanCrop">
-                    <i class="bi bi-check2-circle me-1"></i>Terapkan Foto Ini
+                    <i class="bi bi-check2-circle me-1"></i>Terapkan & Simpan Foto
                 </button>
             </div>
         </div>
@@ -645,6 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Memuat Gambar ke dalam Viewport Modal
     function loadImageIntoCrop(src) {
         activeDataUrl = src;
+        cropImage.crossOrigin = 'anonymous';
         cropImage.onload = function() {
             naturalW = cropImage.naturalWidth || 300;
             naturalH = cropImage.naturalHeight || 300;
@@ -774,7 +860,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 5. Terapkan Foto Hasil Crop & Zoom
+    // 5. Terapkan Foto Hasil Crop & Zoom dan Langsung Simpan Permanen ke Server
     if (btnTerapkanCrop) {
         btnTerapkanCrop.addEventListener('click', function() {
             const outputSize = 500; // Resolusi tinggi 500x500px
@@ -806,31 +892,102 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const finalDataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
-            // Simpan ke input hidden untuk dikirim via form
+            // Simpan juga ke input hidden formulir
             if (croppedPhotoInput) {
                 croppedPhotoInput.value = finalDataUrl;
             }
 
-            // Perbarui tampilan preview di kartu kiri secara instan
-            if (fotoProfilPreview) {
-                if (fotoProfilPreview.tagName === 'IMG') {
-                    fotoProfilPreview.src = finalDataUrl;
+            // Tampilkan status loading pada tombol modal
+            const originalBtnHtml = btnTerapkanCrop.innerHTML;
+            btnTerapkanCrop.disabled = true;
+            btnTerapkanCrop.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Menyimpan Foto...';
+
+            // Simpan langsung ke backend via AJAX agar foto tersimpan di server & database
+            const formData = new FormData();
+            formData.append('action', 'ajax_simpan_foto');
+            formData.append('cropped_photo', finalDataUrl);
+
+            fetch('profil.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btnTerapkanCrop.disabled = false;
+                btnTerapkanCrop.innerHTML = originalBtnHtml;
+
+                if (data.status === 'success') {
+                    const freshUrl = data.foto_url;
+
+                    // 1. Perbarui tampilan preview di kartu kiri secara instan
+                    if (fotoProfilPreview) {
+                        if (fotoProfilPreview.tagName === 'IMG') {
+                            fotoProfilPreview.src = freshUrl;
+                        } else {
+                            const newImg = document.createElement('img');
+                            newImg.id = 'fotoProfilPreview';
+                            newImg.src = freshUrl;
+                            newImg.alt = 'Foto Profil';
+                            fotoProfilPreview.parentNode.replaceChild(newImg, fotoProfilPreview);
+                        }
+                    }
+
+                    // 2. Perbarui foto profil di header navbar kanan (sebelah ikon lonceng)
+                    const headerPhoto = document.getElementById('headerUserPhoto');
+                    if (headerPhoto) {
+                        if (headerPhoto.tagName === 'IMG') {
+                            headerPhoto.src = freshUrl;
+                        } else {
+                            const newHeaderImg = document.createElement('img');
+                            newHeaderImg.id = 'headerUserPhoto';
+                            newHeaderImg.src = freshUrl;
+                            newHeaderImg.alt = 'Foto Profil';
+                            newHeaderImg.className = 'rounded-circle border border-2 border-white shadow-sm flex-shrink-0';
+                            newHeaderImg.style.width = '34px';
+                            newHeaderImg.style.height = '34px';
+                            newHeaderImg.style.objectFit = 'cover';
+                            newHeaderImg.style.backgroundColor = '#ffffff';
+                            headerPhoto.parentNode.replaceChild(newHeaderImg, headerPhoto);
+                        }
+                    }
+
+                    // 3. Tampilkan tombol "Sesuaikan Foto Saat Ini" jika sebelumnya tersembunyi
+                    if (btnAdjustExistingPhoto) {
+                        btnAdjustExistingPhoto.classList.remove('d-none');
+                    }
+
+                    // 4. Tampilkan notifikasi keberhasilan di formulir
+                    if (cropPreviewAlert) {
+                        cropPreviewAlert.classList.remove('d-none');
+                        cropPreviewAlert.classList.add('d-flex');
+                    }
+
+                    // 5. Tutup modal penyesuaian foto
+                    modalSesuaikanFoto.hide();
                 } else {
-                    const newImg = document.createElement('img');
-                    newImg.id = 'fotoProfilPreview';
-                    newImg.src = finalDataUrl;
-                    newImg.alt = 'Foto Profil';
-                    fotoProfilPreview.parentNode.replaceChild(newImg, fotoProfilPreview);
+                    alert('Gagal menyimpan foto: ' + (data.message || 'Terjadi kendala sistem.'));
                 }
-            }
+            })
+            .catch(err => {
+                btnTerapkanCrop.disabled = false;
+                btnTerapkanCrop.innerHTML = originalBtnHtml;
+                console.error(err);
 
-            // Tampilkan notifikasi keberhasilan di formulir
-            if (cropPreviewAlert) {
-                cropPreviewAlert.classList.remove('d-none');
-                cropPreviewAlert.classList.add('d-flex');
-            }
-
-            modalSesuaikanFoto.hide();
+                // Fallback tampilan lokal jika fetch error
+                if (fotoProfilPreview) {
+                    if (fotoProfilPreview.tagName === 'IMG') {
+                        fotoProfilPreview.src = finalDataUrl;
+                    } else {
+                        const newImg = document.createElement('img');
+                        newImg.id = 'fotoProfilPreview';
+                        newImg.src = finalDataUrl;
+                        newImg.alt = 'Foto Profil';
+                        fotoProfilPreview.parentNode.replaceChild(newImg, fotoProfilPreview);
+                    }
+                }
+                modalSesuaikanFoto.hide();
+                alert('Foto disiapkan di formulir. Silakan klik tombol "Simpan Perubahan Akun & Profil" di bawah untuk menyimpan permanen.');
+            });
         });
     }
 });

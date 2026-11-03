@@ -210,7 +210,7 @@ function format_indo_date($date_str) {
                 </div>
                 <div class="card-body text-center p-4">
                     <?php 
-                    $foto_dosen_src = get_avatar_url($mhs['foto_dosen'] ?? null);
+                    $foto_dosen_src = function_exists('get_avatar_url') ? get_avatar_url($mhs['foto_dosen'] ?? null) : null;
                     ?>
                     <div class="mb-3">
                         <div class="position-relative d-inline-block">
