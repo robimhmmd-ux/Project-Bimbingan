@@ -279,14 +279,14 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 top: var(--navbar-height, 60px) !important;
                 left: 0 !important;
                 bottom: 0 !important;
-                width: 275px !important;
-                max-width: 84vw !important;
+width: 275px !important;
+                max-width: 85vw !important;
                 height: calc(100vh - var(--navbar-height, 60px)) !important;
                 z-index: 1070 !important;
                 transform: translateX(-100%) !important;
                 transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
                 box-shadow: none !important;
-                background-color: #ffffff !important;
+background-color: #ffffff !important;
                 overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch !important;
             }
@@ -306,7 +306,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 left: 0 !important;
                 right: 0 !important;
                 bottom: 0 !important;
-                background: rgba(15, 23, 42, 0.6) !important;
+background: rgba(15, 23, 42, 0.6) !important;
                 backdrop-filter: blur(3px) !important;
                 -webkit-backdrop-filter: blur(3px) !important;
                 z-index: 1065 !important;
@@ -323,7 +323,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 margin-left: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                padding: 1rem 0.75rem 2.5rem 0.75rem !important;
+padding: 1rem 0.75rem 2.5rem 0.75rem !important;
             }
 
             #topNavbar .dropdown-menu {
@@ -406,7 +406,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
 
 <!-- Topbar Navbar (Fixed Top - Solid High-Contrast Navy Blue) -->
 <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 60px; min-height: 60px; max-height: 60px; z-index: 1060 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
-    <div class="container-fluid px-md-4">
+    <div class="container-fluid px-2 px-sm-3 px-md-4">
         <!-- Tombol Buka/Tutup Sidebar & Brand Logo -->
         <div class="d-flex align-items-center gap-2">
             <button class="btn btn-outline-light border-0 p-1 px-2 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none me-1" 
@@ -419,18 +419,18 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 <i class="bi bi-list fs-3 text-white" id="sidebarToggleIcon"></i>
             </button>
             <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none m-0" href="#">
-                <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning">
+                <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning flex-shrink-0">
                     <i class="bi bi-mortarboard-fill"></i>
                 </span>
                 <div class="d-flex flex-column">
-                    <span class="fs-6 lh-1">Bimbingan Skripsi</span>
-                    <span class="text-white-50 small d-none d-sm-block" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
+<span class="fs-6 lh-1 text-truncate" style="max-width: 155px;">Bimbingan Skripsi</span>
+                    <span class="text-white-50 small d-none d-sm-inline" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
                 </div>
             </a>
         </div>
 
         <!-- Right Side User, Notifications & Status Pill -->
-        <div class="d-flex align-items-center gap-2 gap-sm-3 text-white">
+<div class="d-flex align-items-center gap-1 gap-sm-2 gap-md-3 text-white">
             <!-- Dropdown Notifikasi Sistem (UPDATE Robi: tabel notifikasi) -->
             <div class="dropdown">
                 <button class="btn btn-link text-white position-relative p-1 text-decoration-none shadow-none" 
@@ -446,7 +446,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                         </span>
                     <?php endif; ?>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-0" aria-labelledby="dropdownNotifikasi" style="min-width: 320px; max-width: 380px;">
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-0" aria-labelledby="dropdownNotifikasi" style="width: min(340px, 92vw); max-width: 380px;">
                     <li class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
                         <span class="fw-bold text-dark small"><i class="bi bi-bell me-1 text-primary"></i>Pemberitahuan Sistem</span>
                         <?php if ($notif_unread_count > 0): ?>
@@ -497,15 +497,15 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                         <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white shadow-sm', ($cur_role === 'admin' ? 'warning' : 'primary')); ?>
                     </span>
                 <?php endif; ?>
-                <div class="pe-1 d-none d-md-block">
+<div class="d-none d-md-block text-truncate pe-1" style="max-width: 150px;">
                     <span class="fw-bold text-white small"><?= ($cur_role === 'admin' && !str_starts_with(strtolower(trim($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? '')), 'admin') ? 'Admin ' : '') . htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
                 </div>
             </a>
             <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
                 <i class="bi bi-person-gear"></i><span class="d-none d-md-inline">Profil</span>
             </a>
-            <a href="../logout.php" class="btn btn-sm btn-outline-light px-2 px-sm-3 d-inline-flex align-items-center" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
-                <i class="bi bi-box-arrow-right"></i><span class="d-none d-sm-inline ms-1">Logout</span>
+<a href="../logout.php" class="btn btn-sm btn-outline-light px-2 px-sm-3 d-inline-flex align-items-center gap-1" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
+                <i class="bi bi-box-arrow-right"></i><span class="d-none d-sm-inline">Logout</span>
             </a>
         </div>
     </div>

@@ -204,7 +204,7 @@ require_once '../templates/sidebar_mahasiswa.php';
     <div class="row g-3">
         <!-- Area Chat Utama -->
         <div class="col-lg-8">
-            <div class="card shadow-sm border-0 d-flex flex-column chat-box-card">
+<div class="card shadow-sm border-0 d-flex flex-column chat-box-card chat-main-card">
                 <!-- Header Chat Box -->
                 <div class="card-header bg-white py-2.5 py-sm-3 px-3 px-sm-4 d-flex justify-content-between align-items-center border-bottom">
                     <div class="d-flex align-items-center">

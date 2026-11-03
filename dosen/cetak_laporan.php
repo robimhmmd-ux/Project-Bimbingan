@@ -196,6 +196,33 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
             font-weight: bold;
         }
 
+        @media (max-width: 767.98px) {
+            .report-sheet-container {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                padding-bottom: 25px;
+            }
+            .report-sheet {
+                min-width: 680px !important;
+                margin: 10px auto !important;
+                padding: 10mm 12mm !important;
+            }
+            .no-print .card-body {
+                padding: 0.85rem !important;
+            }
+            .no-print .d-flex.justify-content-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            .no-print form {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            .no-print select, .no-print button, .no-print a {
+                width: 100% !important;
+            }
+        }
+
         @media print {
             body {
                 background: none;
@@ -262,7 +289,7 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
 </div>
 
 <!-- Lembar Laporan Resmi (Print-Ready) -->
-<div class="container">
+<div class="container report-sheet-container">
     <div class="report-sheet">
         <!-- Kop Surat Akademik -->
         <div class="kop-surat text-center position-relative">
