@@ -376,7 +376,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
 
 <!-- Topbar Navbar (Fixed Top - Solid High-Contrast Navy Blue) -->
 <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 60px; min-height: 60px; max-height: 60px; z-index: 1060 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
-    <div class="container-fluid px-md-4">
+    <div class="container-fluid px-2 px-sm-3 px-md-4">
         <!-- Tombol Buka/Tutup Sidebar & Brand Logo -->
         <div class="d-flex align-items-center gap-2">
             <button class="btn btn-outline-light border-0 p-1 px-2 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none me-1" 
@@ -400,7 +400,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
         </div>
 
         <!-- Right Side User, Notifications & Status Pill -->
-        <div class="d-flex align-items-center gap-2 gap-sm-3 text-white">
+        <div class="d-flex align-items-center gap-1 gap-sm-2 gap-md-3 text-white">
             <!-- Dropdown Notifikasi Sistem (UPDATE Robi: tabel notifikasi) -->
             <div class="dropdown">
                 <button class="btn btn-link text-white position-relative p-1 text-decoration-none shadow-none" 
@@ -467,7 +467,6 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 <?php endif; ?>
                 <div class="d-none d-md-block text-truncate pe-1" style="max-width: 150px;">
                     <span class="fw-bold text-white small"><?= ($cur_role === 'admin' && !str_starts_with(strtolower(trim($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? '')), 'admin') ? 'Admin ' : '') . htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
-                </div>
                 </div>
             </a>
             <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
