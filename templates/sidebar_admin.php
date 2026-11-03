@@ -1,6 +1,15 @@
 <!-- templates/sidebar_admin.php -->
 <nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky d-flex flex-column h-100">
+        <!-- Header Drawer Khusus Mobile (d-md-none) -->
+        <div class="d-flex align-items-center justify-content-between pb-3 mb-2 border-bottom d-md-none">
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1.5 rounded-pill">
+                <i class="bi bi-shield-lock-fill me-1"></i>Portal Admin
+            </span>
+            <button type="button" class="btn btn-sm btn-light border rounded-circle d-flex align-items-center justify-content-center shadow-none p-0" style="width: 32px; height: 32px;" onclick="toggleSidebarMenu()" aria-label="Tutup Menu">
+                <i class="bi bi-x-lg text-secondary"></i>
+            </button>
+        </div>
         <!-- Section: Dashboard -->
         <div class="sidebar-category mb-2">
             <span class="sidebar-heading px-3 text-uppercase">Utama</span>

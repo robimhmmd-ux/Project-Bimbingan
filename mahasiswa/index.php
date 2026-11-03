@@ -491,7 +491,7 @@ $bab_list = [
 
         <!-- Sisi Kanan: Tombol Aksi Cepat Tertata Rapi & Tidak Terpotong -->
         <div class="col-lg-6 col-xl-5">
-            <div class="d-flex flex-wrap gap-2 justify-content-lg-end align-items-center">
+            <div class="d-flex flex-wrap gap-2 justify-content-lg-end align-items-center hero-action-buttons">
                 <?php if ($status_pembimbing === 'aktif'): ?>
                     <button type="button" class="btn btn-hero-action btn-hero-emerald shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAjukanProgres">
                         <i class="bi bi-send-check-fill"></i>Pengajuan Progres
@@ -740,43 +740,62 @@ $bab_list = [
         </div>
         <div class="list-group list-group-flush">
             <?php foreach ($daftar_notif as $notif): 
-                $icon_class = 'bi-info-circle-fill text-primary';
-                $badge_class = 'bg-primary-subtle text-primary';
+                $icon_name   = 'bi-info-circle-fill';
+                $color_class = 'text-primary';
+                $bg_icon     = 'bg-primary bg-opacity-10';
+                $badge_class = 'bg-primary-subtle text-primary border border-primary-subtle';
+
                 if ($notif['tipe'] === 'pembimbing') {
-                    $icon_class = 'bi-award-fill text-warning';
-                    $badge_class = 'bg-warning-subtle text-warning-emphasis';
+                    $icon_name   = 'bi-award-fill';
+                    $color_class = 'text-warning';
+                    $bg_icon     = 'bg-warning bg-opacity-10';
+                    $badge_class = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
                 } elseif ($notif['tipe'] === 'sidang') {
-                    $icon_class = 'bi-mortarboard-fill text-primary';
-                    $badge_class = 'bg-primary-subtle text-primary';
+                    $icon_name   = 'bi-mortarboard-fill';
+                    $color_class = 'text-primary';
+                    $bg_icon     = 'bg-primary bg-opacity-10';
+                    $badge_class = 'bg-primary-subtle text-primary border border-primary-subtle';
                 } elseif ($notif['tipe'] === 'revisi') {
-                    $icon_class = 'bi-arrow-repeat text-danger';
-                    $badge_class = 'bg-danger-subtle text-danger';
+                    $icon_name   = 'bi-arrow-repeat';
+                    $color_class = 'text-danger';
+                    $bg_icon     = 'bg-danger bg-opacity-10';
+                    $badge_class = 'bg-danger-subtle text-danger border border-danger-subtle';
                 } elseif ($notif['tipe'] === 'sukses') {
-                    $icon_class = 'bi-check-circle-fill text-success';
-                    $badge_class = 'bg-success-subtle text-success';
+                    $icon_name   = 'bi-check-circle-fill';
+                    $color_class = 'text-success';
+                    $bg_icon     = 'bg-success bg-opacity-10';
+                    $badge_class = 'bg-success-subtle text-success border border-success-subtle';
                 }
                 $notif_link = !empty($notif['link_tujuan']) ? '?open_nid=' . $notif['id'] . '&dest=' . urlencode($notif['link_tujuan']) : '#';
+                $is_unread  = empty($notif['is_read']);
             ?>
                 <a href="<?= $notif_link; ?>" 
-                   class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between <?= empty($notif['is_read']) ? 'bg-light bg-opacity-75' : ''; ?>">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="fs-4 <?= $icon_class; ?>">
-                            <i class="bi <?= $icon_class; ?>"></i>
+                   class="list-group-item list-group-item-action p-3 <?= $is_unread ? 'bg-light bg-opacity-75 border-start border-4 border-primary' : ''; ?>"
+                   style="transition: all 0.2s ease;">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 <?= $bg_icon; ?> mt-1 shadow-xs" style="width: 42px; height: 42px;">
+                            <i class="bi <?= $icon_name; ?> fs-5 <?= $color_class; ?>"></i>
                         </div>
-                        <div>
-                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                                <span class="fw-bold text-dark small"><?= htmlspecialchars($notif['judul']); ?></span>
-                                <span class="badge <?= $badge_class; ?> small" style="font-size: 0.68rem;"><?= ucfirst($notif['tipe']); ?></span>
-                                <?php if (empty($notif['is_read'])): ?>
-                                    <span class="badge bg-danger rounded-pill" style="font-size: 0.6rem;">Baru</span>
-                                <?php endif; ?>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="d-flex align-items-center justify-content-between gap-2 mb-1 flex-wrap">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="fw-bold text-dark" style="font-size: 0.95rem;"><?= htmlspecialchars($notif['judul']); ?></span>
+                                    <span class="badge <?= $badge_class; ?> rounded-pill px-2.5 py-1" style="font-size: 0.68rem; font-weight: 600; white-space: nowrap;">
+                                        <?= ucfirst($notif['tipe']); ?>
+                                    </span>
+                                    <?php if ($is_unread): ?>
+                                        <span class="badge bg-danger rounded-pill px-2 py-0.5" style="font-size: 0.6rem;">Baru</span>
+                                    <?php endif; ?>
+                                </div>
+                                <small class="text-muted flex-shrink-0 ms-auto" style="font-size: 0.74rem; white-space: nowrap;">
+                                    <i class="bi bi-clock me-1"></i><?= date('d M Y, H:i', strtotime($notif['created_at'])); ?>
+                                </small>
                             </div>
-                            <p class="mb-0 text-muted small"><?= htmlspecialchars($notif['pesan']); ?></p>
+                            <p class="mb-0 text-secondary" style="line-height: 1.5; font-size: 0.85rem; word-break: break-word;">
+                                <?= htmlspecialchars($notif['pesan']); ?>
+                            </p>
                         </div>
                     </div>
-                    <small class="text-muted flex-shrink-0 ms-3" style="font-size: 0.75rem;">
-                        <i class="bi bi-clock me-1"></i><?= date('d M Y, H:i', strtotime($notif['created_at'])); ?>
-                    </small>
                 </a>
             <?php endforeach; ?>
         </div>
@@ -986,16 +1005,16 @@ $bab_list = [
                                     <i class="bi bi-dash-circle"></i>
                                 <?php endif; ?>
                             </div>
-                            <h6 class="fw-bold mb-1 small text-dark"><?= htmlspecialchars($t_data['nama']); ?></h6>
-                            <p class="small text-muted mb-2" style="font-size: 0.72rem;"><?= htmlspecialchars($t_data['label']); ?></p>
+                            <h6 class="fw-bold mb-1 small text-dark bab-card-title"><?= htmlspecialchars($t_data['nama']); ?></h6>
+                            <div class="small text-muted mb-2 bab-card-desc"><?= htmlspecialchars($t_data['label']); ?></div>
                         </div>
-                        <div>
+                        <div class="bab-card-badge-wrapper">
                             <?php if ($t_data['status'] === 'acc'): ?>
                                 <span class="badge bg-success">ACC Selesai</span>
                             <?php elseif ($t_data['status'] === 'revisi'): ?>
-                                <span class="badge bg-warning text-dark">Perlu Revisi</span>
+                                <span class="badge bg-warning">Perlu Revisi</span>
                             <?php elseif ($t_data['status'] === 'proses'): ?>
-                                <span class="badge bg-info text-dark">Sedang Diproses</span>
+                                <span class="badge bg-info">Sedang Diproses</span>
                             <?php else: ?>
                                 <?php if ($is_step_unlocked): ?>
                                     <span class="badge bg-primary">Siap Diajukan</span>
@@ -1013,7 +1032,7 @@ $bab_list = [
 
 <!-- Statistik Ringkas Bimbingan (Modern & Berwarna) -->
 <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-md-6 col-xl-3">
         <div class="student-stat-card stat-blue">
             <div class="d-flex align-items-center">
                 <div class="stat-icon-pill bg-gradient-blue me-3">
@@ -1026,7 +1045,7 @@ $bab_list = [
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-md-6 col-xl-3">
         <div class="student-stat-card stat-emerald">
             <div class="d-flex align-items-center">
                 <div class="stat-icon-pill bg-gradient-emerald me-3">
@@ -1039,20 +1058,20 @@ $bab_list = [
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-md-6 col-xl-3">
         <div class="student-stat-card stat-amber">
             <div class="d-flex align-items-center">
                 <div class="stat-icon-pill bg-gradient-amber me-3">
                     <i class="bi bi-clock-history"></i>
                 </div>
                 <div>
-                    <span class="text-muted small fw-semibold d-block">Menunggu / Proses</span>
+                    <span class="text-muted small fw-semibold d-block text-nowrap">Proses</span>
                     <h3 class="fw-bold mb-0 text-dark"><?= $bimbingan_menunggu; ?></h3>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-md-6 col-xl-3">
         <div class="student-stat-card stat-purple">
             <div class="d-flex align-items-center">
                 <div class="stat-icon-pill bg-gradient-purple me-3">

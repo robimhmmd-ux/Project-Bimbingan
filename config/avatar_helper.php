@@ -7,7 +7,11 @@
 
 if (!function_exists('get_avatar_url')) {
     function get_avatar_url($foto) {
-        if (empty($foto) || $foto === 'default.png') {
+        if (empty($foto)) {
+            return null;
+        }
+        $foto = trim($foto);
+        if ($foto === 'default.png') {
             return null;
         }
         // Base64 Data URI atau External URL

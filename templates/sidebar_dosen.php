@@ -41,6 +41,15 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
 ?>
 <nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky">
+        <!-- Header Drawer Khusus Mobile (d-md-none) -->
+        <div class="d-flex align-items-center justify-content-between pb-3 mb-2 border-bottom d-md-none">
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill">
+                <i class="bi bi-person-workspace me-1"></i>Portal Dosen
+            </span>
+            <button type="button" class="btn btn-sm btn-light border rounded-circle d-flex align-items-center justify-content-center shadow-none p-0" style="width: 32px; height: 32px;" onclick="toggleSidebarMenu()" aria-label="Tutup Menu">
+                <i class="bi bi-x-lg text-secondary"></i>
+            </button>
+        </div>
         <h6 class="sidebar-heading px-3 mt-2 mb-3 text-muted text-uppercase small fw-bold">Menu Dosen</h6>
         <ul class="nav flex-column nav-pills">
             <li class="nav-item mb-1">

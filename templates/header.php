@@ -71,7 +71,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             $pdo->prepare("UPDATE notifikasi SET is_read = 1 WHERE user_id = :uid")->execute([':uid' => $cur_user_id]);
         } catch (PDOException $e) {}
         $clean_url = strtok($_SERVER['REQUEST_URI'], '?');
-        header("Location: " . $clean_url);
+        if (!headers_sent()) {
+            header("Location: " . $clean_url);
+        } else {
+            echo "<script>window.location.href='" . $clean_url . "';</script>";
+        }
         exit;
     }
 
@@ -85,7 +89,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
         if (empty($dest)) {
             $dest = 'index.php';
         }
-        header("Location: " . $dest);
+        if (!headers_sent()) {
+            header("Location: " . $dest);
+        } else {
+            echo "<script>window.location.href='" . $dest . "';</script>";
+        }
         exit;
     }
 
@@ -262,7 +270,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             }
         }
 
-        /* 4. Mobile (< 768px): Drawer Menu Melayang */
+        /* 4. Mobile (< 768px): Drawer Menu Melayang & Optimalisasi Layar HP */
         @media (max-width: 767.98px) {
             .sidebar,
             #sidebarMenu {
@@ -271,13 +279,16 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 top: var(--navbar-height, 60px) !important;
                 left: 0 !important;
                 bottom: 0 !important;
-                width: 260px !important;
-                max-width: 85vw !important;
+                width: 275px !important;
+                max-width: 84vw !important;
                 height: calc(100vh - var(--navbar-height, 60px)) !important;
-                z-index: 1045 !important;
+                z-index: 1070 !important;
                 transform: translateX(-100%) !important;
-                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
                 box-shadow: none !important;
+                background-color: #ffffff !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch !important;
             }
 
             body.sidebar-open-mobile .sidebar,
@@ -285,19 +296,20 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             body.sidebar-open-mobile #sidebarMenu,
             body.sidebar-mobile-open #sidebarMenu {
                 transform: translateX(0) !important;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+                box-shadow: 0 12px 40px rgba(15, 23, 42, 0.45) !important;
             }
 
             .sidebar-mobile-backdrop {
                 display: none;
                 position: fixed !important;
-                top: var(--navbar-height, 60px) !important;
+                top: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
                 bottom: 0 !important;
-                background: rgba(15, 23, 42, 0.55) !important;
-                backdrop-filter: blur(2px) !important;
-                z-index: 1040 !important;
+                background: rgba(15, 23, 42, 0.6) !important;
+                backdrop-filter: blur(3px) !important;
+                -webkit-backdrop-filter: blur(3px) !important;
+                z-index: 1065 !important;
             }
 
             body.sidebar-open-mobile .sidebar-mobile-backdrop,
@@ -311,7 +323,18 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 margin-left: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                padding: 1rem !important;
+                padding: 1rem 0.75rem 2.5rem 0.75rem !important;
+            }
+
+            #topNavbar .dropdown-menu {
+                position: fixed !important;
+                top: calc(var(--navbar-height, 60px) + 6px) !important;
+                left: 10px !important;
+                right: 10px !important;
+                width: auto !important;
+                max-width: calc(100vw - 20px) !important;
+                min-width: 0 !important;
+                border-radius: 14px !important;
             }
         }
 
@@ -360,13 +383,22 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             }
         };
 
-        // Sinkronisasi ikon saat DOM siap
+        // Sinkronisasi ikon & event listener penutupan otomatis drawer mobile saat link diklik
         document.addEventListener('DOMContentLoaded', function() {
             const isCollapsed = document.body.classList.contains('sidebar-collapsed') || document.documentElement.classList.contains('sidebar-collapsed');
             const icon = document.getElementById('sidebarToggleIcon');
             if (icon && window.innerWidth >= 768 && isCollapsed) {
                 icon.className = 'bi bi-list fs-3 text-warning';
             }
+
+            // Auto-close drawer saat klik nav-link pada smartphone
+            document.querySelectorAll('#sidebarMenu a.nav-link').forEach(function(link) {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 768 && document.body.classList.contains('sidebar-open-mobile')) {
+                        window.toggleSidebarMenu();
+                    }
+                });
+            });
         });
     </script>
 </head>
@@ -392,13 +424,13 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </span>
                 <div class="d-flex flex-column">
                     <span class="fs-6 lh-1">Bimbingan Skripsi</span>
-                    <span class="text-white-50 small" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
+                    <span class="text-white-50 small d-none d-sm-block" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
                 </div>
             </a>
         </div>
 
         <!-- Right Side User, Notifications & Status Pill -->
-        <div class="d-flex align-items-center gap-3 text-white">
+        <div class="d-flex align-items-center gap-2 gap-sm-3 text-white">
             <!-- Dropdown Notifikasi Sistem (UPDATE Robi: tabel notifikasi) -->
             <div class="dropdown">
                 <button class="btn btn-link text-white position-relative p-1 text-decoration-none shadow-none" 
@@ -439,9 +471,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                         ?>
                             <li>
                                 <a class="dropdown-item p-3 border-bottom <?= empty($n['is_read']) ? 'bg-light' : ''; ?> text-wrap" href="<?= $target_link; ?>">
-                                    <div class="d-flex align-items-start gap-2">
-                                        <i class="bi <?= $icon_n; ?> fs-5 mt-1 flex-shrink-0"></i>
-                                        <div>
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 bg-light mt-1" style="width: 32px; height: 32px;">
+                                            <i class="bi <?= $icon_n; ?> fs-6"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0">
                                             <div class="d-flex align-items-center justify-content-between gap-2">
                                                 <strong class="small text-dark"><?= htmlspecialchars($n['judul']); ?></strong>
                                                 <small class="text-muted" style="font-size: 0.68rem;"><?= date('d/m H:i', strtotime($n['created_at'])); ?></small>
@@ -463,15 +497,15 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                         <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white shadow-sm', ($cur_role === 'admin' ? 'warning' : 'primary')); ?>
                     </span>
                 <?php endif; ?>
-                <div class="pe-1">
-                    <span class="fw-bold text-white"><?= ($cur_role === 'admin' && !str_starts_with(strtolower(trim($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? '')), 'admin') ? 'Admin ' : '') . htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
+                <div class="pe-1 d-none d-md-block">
+                    <span class="fw-bold text-white small"><?= ($cur_role === 'admin' && !str_starts_with(strtolower(trim($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? '')), 'admin') ? 'Admin ' : '') . htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
                 </div>
             </a>
             <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
                 <i class="bi bi-person-gear"></i><span class="d-none d-md-inline">Profil</span>
             </a>
-            <a href="../logout.php" class="btn btn-sm btn-outline-light px-3" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
-                <i class="bi bi-box-arrow-right me-1"></i>Logout
+            <a href="../logout.php" class="btn btn-sm btn-outline-light px-2 px-sm-3 d-inline-flex align-items-center" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
+                <i class="bi bi-box-arrow-right"></i><span class="d-none d-sm-inline ms-1">Logout</span>
             </a>
         </div>
     </div>
