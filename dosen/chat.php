@@ -141,15 +141,28 @@ require_once '../templates/sidebar_dosen.php';
     <!-- Kolom Kiri: Daftar Kontak Mahasiswa (Card Terpisah) -->
     <div class="col-md-4 col-lg-4" id="chatContactsPane">
         <div class="card shadow-sm border rounded-4 overflow-hidden d-flex flex-column bg-white chat-contacts-col">
-            <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
+            <!-- Header Kontak (Fixed di Atas) -->
+            <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center flex-shrink-0">
                 <div>
-                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Mahasiswa Bimbingan</h6>
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Mahasiswa Bimbingan</h6>
                     <small class="text-muted"><?= count($daftar_mahasiswa); ?> Mahasiswa Terdaftar</small>
                 </div>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Online</span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5">Online</span>
             </div>
 
-            <div class="overflow-auto flex-grow-1 list-group list-group-flush p-2">
+            <!-- Input Pencarian Cepat Kontak Mahasiswa (Fixed) -->
+            <div class="p-2 border-bottom flex-shrink-0 bg-light bg-opacity-50">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0 rounded-start-pill text-muted ps-2.5">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="searchMhsInput" class="form-control bg-white border-start-0 rounded-end-pill pe-3 shadow-none" 
+                           placeholder="Cari mahasiswa atau NIM..." onkeyup="filterMahasiswaChat()">
+                </div>
+            </div>
+
+            <!-- Area Scroll Kontak Mandiri (WhatsApp Style) -->
+            <div class="overflow-y-auto flex-grow-1 list-group list-group-flush p-2 chat-scrollable-contacts" id="contactsListContainer">
                 <?php if (empty($daftar_mahasiswa)): ?>
                     <div class="text-center p-5 text-muted small">
                         <i class="bi bi-people fs-1 d-block mb-2 text-muted"></i>
@@ -183,8 +196,8 @@ require_once '../templates/sidebar_dosen.php';
                         $is_active = ($mhs['mhs_user_id'] == $active_mhs_user_id);
                         ?>
                         <a href="chat.php?uid=<?= $mhs['mhs_user_id']; ?>" 
-                           class="list-group-item list-group-item-action p-3 rounded-3 mb-1 border-0 <?= $is_active ? 'active shadow-sm' : ''; ?>"
-                           style="<?= $is_active ? 'background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%) !important; border-color: transparent !important;' : ''; ?>">
+                           class="list-group-item list-group-item-action p-3 rounded-3 mb-1 border-0 mhs-contact-item <?= $is_active ? 'active shadow-sm' : ''; ?>"
+                           style="<?= $is_active ? 'background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%) !important; color: white !important;' : ''; ?>">
                             <div class="d-flex align-items-center">
                                 <div class="position-relative me-3 flex-shrink-0">
                                     <div class="avatar-circle avatar-md <?= $is_active ? 'bg-white text-primary' : 'avatar-primary'; ?> shadow-sm">
@@ -225,8 +238,8 @@ require_once '../templates/sidebar_dosen.php';
     <div class="col-md-8 col-lg-8" id="chatMessagesPane">
         <div class="card shadow-sm border rounded-4 overflow-hidden d-flex flex-column bg-white chat-messages-col">
             <?php if ($active_mhs): ?>
-                <!-- Header Chat Aktif -->
-                <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white shadow-sm">
+                <!-- Header Chat Aktif (Fixed di Atas) -->
+                <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white shadow-xs flex-shrink-0">
                     <div class="d-flex align-items-center">
                         <button type="button" class="btn btn-sm btn-outline-secondary d-md-none me-2" onclick="switchMobileChatView('contacts')" title="Kembali ke Kontak Mahasiswa">
                             <i class="bi bi-arrow-left"></i>
@@ -249,8 +262,8 @@ require_once '../templates/sidebar_dosen.php';
                     </div>
                 </div>
 
-                <!-- Isi Percakapan (Messages Stream) -->
-                <div class="p-4 overflow-auto flex-grow-1 bg-light bg-opacity-50" id="chatContainer" style="scroll-behavior: smooth;">
+                <!-- Area Scroll Pesan Mandiri (WhatsApp Style) -->
+                <div class="p-4 overflow-y-auto flex-grow-1 bg-light bg-opacity-50 chat-scrollable-messages" id="chatContainer" style="scroll-behavior: smooth;">
                     <?php if (empty($pesan_list)): ?>
                         <div class="text-center py-5 text-muted">
                             <div class="avatar-circle avatar-lg avatar-primary mx-auto mb-3">
@@ -279,8 +292,8 @@ require_once '../templates/sidebar_dosen.php';
                     <?php endif; ?>
                 </div>
 
-                <!-- Input Pengiriman Pesan -->
-                <div class="p-3 border-top bg-white">
+                <!-- Input Pengiriman Pesan (Fixed di Bawah) -->
+                <div class="p-3 border-top bg-white flex-shrink-0">
                     <form action="chat.php?uid=<?= $active_mhs_user_id; ?>" method="POST" id="formChat" class="d-flex gap-2">
                         <input type="hidden" name="kirim_pesan" value="1">
                         <input type="hidden" name="penerima_id" value="<?= $active_mhs_user_id; ?>">
@@ -310,6 +323,16 @@ require_once '../templates/sidebar_dosen.php';
 </div>
 
 <script>
+    // Pencarian instan kontak mahasiswa di panel kiri
+    function filterMahasiswaChat() {
+        const query = (document.getElementById('searchMhsInput')?.value || '').toLowerCase().trim();
+        const items = document.querySelectorAll('#contactsListContainer .mhs-contact-item');
+        items.forEach(function(item) {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+
     function switchMobileChatView(view) {
         if (window.innerWidth >= 768) return;
         const contactsPane = document.getElementById('chatContactsPane');
