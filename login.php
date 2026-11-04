@@ -234,7 +234,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Masuk — Bimbingan Skripsi</title>
     <!-- Favicon Web -->
-    <link rel="icon" type="image/png" href="assets/img/logo.png">
+    <link rel="icon" type="image/png" href="assets/img/favicon.png">
+    <link rel="shortcut icon" href="favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -888,7 +889,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Logo Topi Toga + Nama Web di Sampingnya -->
         <div class="web-logo-area">
-            <img src="assets/img/logo.png" alt="Logo" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0 border" style="width: 52px; height: 52px; object-fit: contain;" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='/assets/img/logo.png';}">
+            <svg viewBox="0 0 110 80" width="58" height="46" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Logo Toga">
+                <path d="M28 44 L28 62 C28 67 40 71 55 71 C70 71 82 67 82 62 L82 44 Z" fill="#141c2e"/>
+                <path d="M28 58 C35 63 45 65 55 65 C65 65 75 63 82 58 L82 62 C82 67 70 71 55 71 C40 71 28 67 28 62 Z" fill="#d97706"/>
+                <path d="M6 34 L55 18 L104 34 L55 48 Z" fill="#1e293b"/>
+                <path d="M6 34 L55 48 L55 53 L6 39 Z" fill="#0f172a"/>
+                <path d="M104 34 L55 48 L55 53 L104 39 Z" fill="#090d16"/>
+                <polygon points="9,34 55,20 101,34 55,46" fill="#293548"/>
+                <ellipse cx="55" cy="34" rx="5" ry="3.5" fill="#d97706"/>
+                <ellipse cx="55" cy="34" rx="3.5" ry="2.2" fill="#f59e0b"/>
+                <circle cx="55" cy="33.5" r="1.2" fill="#fef08a"/>
+                <path d="M51 34 Q32 32 20 38 Q13 42 10 50" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+                <ellipse cx="9.5" cy="52" rx="3.5" ry="2" fill="#b45309"/>
+                <path d="M7 53 L4 72 M9 53 L7 74 M11 53 L10 74 M13 53 L13 72" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+
             <div>
                 <h1 class="site-name">Bimbingan Skripsi</h1>
                 <p class="site-tagline">Sistem Informasi Akademik</p>

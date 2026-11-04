@@ -15,6 +15,10 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/favicon.ico",
+      "dest": "/assets/img/favicon.ico"
+    },
+    {
       "src": "/(.*)",
       "dest": "/api/index.php"
     }
