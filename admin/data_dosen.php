@@ -23,6 +23,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $nama_dosen      = trim($_POST['nama_dosen'] ?? '');
         $email           = trim($_POST['email'] ?? '');
         $no_whatsapp     = trim($_POST['no_whatsapp'] ?? '');
+        $prodi           = sanitize_prodi($_POST['prodi'] ?? 'Teknik Informatika');
         $kuota_bimbingan = (int)($_POST['kuota_bimbingan'] ?? 10);
         $username        = trim($_POST['username'] ?? '');
         $password        = trim($_POST['password'] ?? '');
@@ -65,13 +66,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                 // 2. Tambah profil dosen
                 $stmtDosen = $pdo->prepare("
-                    INSERT INTO dosen (user_id, nidn, nama_dosen, email, no_whatsapp, kuota_bimbingan) 
-                    VALUES (:user_id, :nidn, :nama_dosen, :email, :no_whatsapp, :kuota_bimbingan)
+                    INSERT INTO dosen (user_id, nidn, nama_dosen, prodi, email, no_whatsapp, kuota_bimbingan) 
+                    VALUES (:user_id, :nidn, :nama_dosen, :prodi, :email, :no_whatsapp, :kuota_bimbingan)
                 ");
                 $stmtDosen->execute([
                     ':user_id'         => $user_id,
                     ':nidn'            => $nidn,
                     ':nama_dosen'      => $nama_dosen,
+                    ':prodi'           => $prodi,
                     ':email'           => $email,
                     ':no_whatsapp'     => $no_whatsapp,
                     ':kuota_bimbingan' => $kuota_bimbingan
@@ -96,6 +98,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $nama_dosen      = trim($_POST['nama_dosen'] ?? '');
         $email           = trim($_POST['email'] ?? '');
         $no_whatsapp     = trim($_POST['no_whatsapp'] ?? '');
+        $prodi           = sanitize_prodi($_POST['prodi'] ?? 'Teknik Informatika');
         $kuota_bimbingan = (int)($_POST['kuota_bimbingan'] ?? 10);
         $username        = trim($_POST['username'] ?? '');
         $password        = trim($_POST['password'] ?? '');
@@ -135,12 +138,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 // Update dosen
                 $stmtUpDosen = $pdo->prepare("
                     UPDATE dosen 
-                    SET nidn = :nidn, nama_dosen = :nama, email = :email, no_whatsapp = :wa, kuota_bimbingan = :kuota
+                    SET nidn = :nidn, nama_dosen = :nama, prodi = :prodi, email = :email, no_whatsapp = :wa, kuota_bimbingan = :kuota
                     WHERE id = :did
                 ");
                 $stmtUpDosen->execute([
                     ':nidn'  => $nidn,
                     ':nama'  => $nama_dosen,
+                    ':prodi' => $prodi,
                     ':email' => $email,
                     ':wa'    => $no_whatsapp,
                     ':kuota' => $kuota_bimbingan,
@@ -182,6 +186,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 // =========================================================================
 // AMBIL DATA DOSEN DENGAN STATISTIK BEBAN BIMBINGAN
 // =========================================================================
+$filter_prodi = $_GET['prodi'] ?? 'all';
+$search_q     = trim($_GET['q'] ?? '');
+
+$where_dsn = ["1=1"];
+$params_dsn = [];
+
+if ($filter_prodi !== 'all' && array_key_exists($filter_prodi, get_daftar_prodi())) {
+    $where_dsn[] = "d.prodi = :prodi";
+    $params_dsn[':prodi'] = $filter_prodi;
+}
+
+if (!empty($search_q)) {
+    $where_dsn[] = "(d.nama_dosen LIKE :sq1 OR d.nidn LIKE :sq2 OR d.email LIKE :sq3 OR u.username LIKE :sq4)";
+    $params_dsn[':sq1'] = "%{$search_q}%";
+    $params_dsn[':sq2'] = "%{$search_q}%";
+    $params_dsn[':sq3'] = "%{$search_q}%";
+    $params_dsn[':sq4'] = "%{$search_q}%";
+}
+
+$where_dsn_sql = implode(" AND ", $where_dsn);
+
 $query = "
     SELECT 
         d.*,
@@ -191,10 +216,13 @@ $query = "
     FROM dosen d
     INNER JOIN users u ON d.user_id = u.id
     LEFT JOIN mahasiswa m ON d.id = m.dosen_pembimbing_id
+    WHERE {$where_dsn_sql}
     GROUP BY d.id, u.username, u.password_plain
     ORDER BY d.nama_dosen ASC
 ";
-$dosen_list = $pdo->query($query)->fetchAll();
+$stmt_dsn = $pdo->prepare($query);
+$stmt_dsn->execute($params_dsn);
+$dosen_list = $stmt_dsn->fetchAll();
 
 // Total akumulasi kuota
 $total_kapasitas = 0;
@@ -245,6 +273,39 @@ require_once '../templates/sidebar_admin.php';
         <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
+
+<!-- Filter Pencarian & Program Studi Dosen -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-3">
+        <form method="GET" action="data_dosen.php" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" name="q" value="<?= htmlspecialchars($search_q ?? ''); ?>" placeholder="Cari Nama Dosen, NIDN, atau Email...">
+                    <?php if (!empty($search_q)): ?>
+                        <a href="data_dosen.php<?= ($filter_prodi !== 'all') ? '?prodi=' . urlencode($filter_prodi) : ''; ?>" class="input-group-text bg-white border-start-0 text-muted"><i class="bi bi-x-circle-fill"></i></a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select name="prodi" class="form-select" onchange="this.form.submit()">
+                    <option value="all" <?= ($filter_prodi === 'all') ? 'selected' : ''; ?>>-- Semua Program Studi --</option>
+                    <?php foreach (get_daftar_prodi() as $p_name => $p_data): ?>
+                        <option value="<?= htmlspecialchars($p_name); ?>" <?= ($filter_prodi === $p_name) ? 'selected' : ''; ?>>
+                            <?= htmlspecialchars($p_name); ?> (<?= $p_data['jenjang']; ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-filter me-1"></i>Filter</button>
+                <?php if ($filter_prodi !== 'all' || !empty($search_q)): ?>
+                    <a href="data_dosen.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
+                <?php endif; ?>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Stat Bar Kapasitas Kuota -->
 <div class="row g-3 mb-4">
@@ -340,7 +401,10 @@ require_once '../templates/sidebar_admin.php';
                                         <?= function_exists('render_avatar') ? render_avatar($row['foto_profil'] ?? '', $row['nama_dosen'] ?? 'D', 38, '', 'success') : '<div class="avatar-initial bg-success-subtle text-success">' . $initial . '</div>'; ?>
                                         <div>
                                             <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_dosen']); ?></div>
-                                            <span class="font-monospace text-muted small">NIDN: <?= htmlspecialchars($row['nidn']); ?></span>
+                                            <div class="d-flex align-items-center gap-1 mt-1">
+                                                <span class="font-monospace text-muted small">NIDN: <?= htmlspecialchars($row['nidn']); ?></span>
+                                                <?= function_exists('render_badge_prodi') ? render_badge_prodi($row['prodi'] ?? 'Teknik Informatika') : ''; ?>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -387,6 +451,7 @@ require_once '../templates/sidebar_admin.php';
                                                 data-id="<?= $row['id']; ?>"
                                                 data-userid="<?= $row['user_id']; ?>"
                                                 data-nidn="<?= htmlspecialchars($row['nidn']); ?>"
+                                                data-prodi="<?= htmlspecialchars($row['prodi'] ?? 'Teknik Informatika'); ?>"
                                                 data-nama="<?= htmlspecialchars($row['nama_dosen']); ?>"
                                                 data-email="<?= htmlspecialchars($row['email']); ?>"
                                                 data-wa="<?= htmlspecialchars($row['no_whatsapp']); ?>"
@@ -436,6 +501,16 @@ require_once '../templates/sidebar_admin.php';
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Nama Lengkap & Gelar <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_dosen" placeholder="Contoh: Dr. Budi Santoso, M.Kom." required>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold">Program Studi (Homebase) <span class="text-danger">*</span></label>
+                        <select name="prodi" class="form-select" required>
+                            <?php foreach (get_daftar_prodi() as $prodi_name => $p_data): ?>
+                                <option value="<?= htmlspecialchars($prodi_name); ?>" <?= ($prodi_name === 'Teknik Informatika') ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($prodi_name); ?> (<?= $p_data['jenjang']; ?> - <?= $p_data['fakultas']; ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Email Akademik <span class="text-danger">*</span></label>
@@ -503,6 +578,26 @@ require_once '../templates/sidebar_admin.php';
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Nama Lengkap & Gelar <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_dosen" id="edit_nama_dosen" required>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold">Program Studi (Homebase) <span class="text-danger">*</span></label>
+                        <select name="prodi" class="form-select" required>
+                            <?php foreach (get_daftar_prodi() as $prodi_name => $p_data): ?>
+                                <option value="<?= htmlspecialchars($prodi_name); ?>" <?= ($prodi_name === 'Teknik Informatika') ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($prodi_name); ?> (<?= $p_data['jenjang']; ?> - <?= $p_data['fakultas']; ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold">Program Studi (Homebase) <span class="text-danger">*</span></label>
+                        <select name="prodi" id="edit_dsn_prodi" class="form-select" required>
+                            <?php foreach (get_daftar_prodi() as $prodi_name => $p_data): ?>
+                                <option value="<?= htmlspecialchars($prodi_name); ?>">
+                                    <?= htmlspecialchars($prodi_name); ?> (<?= $p_data['jenjang']; ?> - <?= $p_data['fakultas']; ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Email Akademik <span class="text-danger">*</span></label>

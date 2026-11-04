@@ -22,7 +22,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $nim                  = trim($_POST['nim'] ?? '');
         $nama_lengkap         = trim($_POST['nama_lengkap'] ?? '');
         $kelas                = trim($_POST['kelas'] ?? 'TI-1A-2025');
-        $judul_skripsi        = 'Belum Ditentukan';
+        $prodi                = sanitize_prodi($_POST['prodi'] ?? 'Teknik Informatika');
+        $judul_skripsi        = !empty($_POST['judul_skripsi']) ? trim($_POST['judul_skripsi']) : 'Belum Ditentukan';
         $dosen_pembimbing_id  = !empty($_POST['dosen_pembimbing_id']) ? (int)$_POST['dosen_pembimbing_id'] : null;
         $status_kelulusan     = $_POST['status_kelulusan'] ?? 'proses_bimbingan';
         $username             = trim($_POST['username'] ?? '');
@@ -60,14 +61,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
                 // 2. Tambah profil mahasiswa
                 $stmtMhs = $pdo->prepare("
-                    INSERT INTO mahasiswa (user_id, nim, nama_lengkap, kelas, judul_skripsi, dosen_pembimbing_id, status_pembimbing, status_kelulusan)
-                    VALUES (:uid, :nim, :nama, :kelas, :judul, :did, :spemb, :status)
+                    INSERT INTO mahasiswa (user_id, nim, nama_lengkap, kelas, prodi, judul_skripsi, dosen_pembimbing_id, status_pembimbing, status_kelulusan)
+                    VALUES (:uid, :nim, :nama, :kelas, :prodi, :judul, :did, :spemb, :status)
                 ");
                 $stmtMhs->execute([
                     ':uid'    => $user_id,
                     ':nim'    => $nim,
                     ':nama'   => $nama_lengkap,
                     ':kelas'  => $kelas,
+                    ':prodi'  => $prodi,
                     ':judul'  => !empty($judul_skripsi) ? $judul_skripsi : 'Belum Ditentukan',
                     ':did'    => $dosen_pembimbing_id,
                     ':spemb'  => $status_pembimbing,
@@ -108,6 +110,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $nim                 = trim($_POST['nim'] ?? '');
         $nama_lengkap        = trim($_POST['nama_lengkap'] ?? '');
         $kelas               = trim($_POST['kelas'] ?? 'TI-1A-2025');
+        $prodi               = sanitize_prodi($_POST['prodi'] ?? 'Teknik Informatika');
         $judul_skripsi       = trim($_POST['judul_skripsi'] ?? 'Belum Ditentukan');
         $dosen_pembimbing_id = !empty($_POST['dosen_pembimbing_id']) ? (int)$_POST['dosen_pembimbing_id'] : null;
         $status_kelulusan    = $_POST['status_kelulusan'] ?? 'proses_bimbingan';
@@ -157,7 +160,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 // Update mahasiswa
                 $stmtUpM = $pdo->prepare("
                     UPDATE mahasiswa 
-                    SET nim = :nim, nama_lengkap = :nama, kelas = :kelas, judul_skripsi = :judul, 
+                    SET nim = :nim, nama_lengkap = :nama, kelas = :kelas, prodi = :prodi, judul_skripsi = :judul, 
                         dosen_pembimbing_id = :did, status_pembimbing = :spemb, status_kelulusan = :status 
                     WHERE id = :mid
                 ");
@@ -165,6 +168,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     ':nim'    => $nim,
                     ':nama'   => $nama_lengkap,
                     ':kelas'  => $kelas,
+                    ':prodi'  => $prodi,
                     ':judul'  => !empty($judul_skripsi) ? $judul_skripsi : 'Belum Ditentukan',
                     ':did'    => $dosen_pembimbing_id,
                     ':spemb'  => $spemb_baru,
@@ -257,6 +261,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 // =========================================================================
 $filter_status = $_GET['status'] ?? 'all';
 $filter_kelas  = $_GET['kelas'] ?? 'all';
+$filter_prodi  = $_GET['prodi'] ?? 'all';
 
 // Ambil seluruh daftar kelas unik dari database (dinamis)
 $all_kelas_db = $pdo->query("SELECT DISTINCT kelas FROM mahasiswa WHERE kelas IS NOT NULL AND TRIM(kelas) != '' ORDER BY kelas ASC")->fetchAll(PDO::FETCH_COLUMN);
@@ -278,6 +283,11 @@ if ($filter_kelas !== 'all' && !empty($filter_kelas)) {
     $params[':kelas'] = $filter_kelas;
 }
 
+if ($filter_prodi !== 'all' && array_key_exists($filter_prodi, get_daftar_prodi())) {
+    $where[] = "m.prodi = :prodi";
+    $params[':prodi'] = $filter_prodi;
+}
+
 if (!empty($search_query)) {
     $search_tokens = array_filter(explode(' ', preg_replace('/\s+/', ' ', $search_query)), function($t) {
         return strlen(trim($t)) > 0;
@@ -291,15 +301,17 @@ if (!empty($search_query)) {
             $k_nama  = ":q_nama_{$t_idx}";
             $k_judul = ":q_judul_{$t_idx}";
             $k_kelas = ":q_kelas_{$t_idx}";
+            $k_prodi = ":q_prodi_{$t_idx}";
             $k_user  = ":q_user_{$t_idx}";
 
-            $token_clauses[] = "(m.nim LIKE {$k_nim} OR m.nama_lengkap LIKE {$k_nama} OR m.judul_skripsi LIKE {$k_judul} OR m.kelas LIKE {$k_kelas} OR u.username LIKE {$k_user})";
+            $token_clauses[] = "(m.nim LIKE {$k_nim} OR m.nama_lengkap LIKE {$k_nama} OR m.judul_skripsi LIKE {$k_judul} OR m.kelas LIKE {$k_kelas} OR m.prodi LIKE {$k_prodi} OR u.username LIKE {$k_user})";
             
             $val = "%{$token}%";
             $params[$k_nim]   = $val;
             $params[$k_nama]  = $val;
             $params[$k_judul] = $val;
             $params[$k_kelas] = $val;
+            $params[$k_prodi] = $val;
             $params[$k_user]  = $val;
         }
         $where[] = "(" . implode(" AND ", $token_clauses) . ")";
@@ -447,43 +459,51 @@ require_once '../templates/sidebar_admin.php';
     </div>
 </div>
 
-<!-- Filter & Pencarian Modern dengan Filter Kelas -->
+<!-- Filter & Pencarian Modern dengan Filter Prodi & Kelas -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-3">
         <form method="GET" action="data_mahasiswa.php" class="row g-2 align-items-center">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" class="form-control border-start-0 ps-0" name="q" id="inputSearchMhs" value="<?= htmlspecialchars($search_query); ?>" placeholder="Cari Nama, NIM, atau Judul..." autocomplete="off">
                     <?php if (!empty($search_query)): ?>
-                        <a href="data_mahasiswa.php<?= ($filter_kelas !== 'all' || $filter_status !== 'all') ? '?kelas=' . urlencode($filter_kelas) . '&status=' . urlencode($filter_status) : ''; ?>" class="input-group-text bg-white border-start-0 text-muted" title="Bersihkan pencarian"><i class="bi bi-x-circle-fill"></i></a>
+                        <a href="data_mahasiswa.php<?= ($filter_prodi !== 'all' || $filter_kelas !== 'all' || $filter_status !== 'all') ? '?prodi=' . urlencode($filter_prodi) . '&kelas=' . urlencode($filter_kelas) . '&status=' . urlencode($filter_status) : ''; ?>" class="input-group-text bg-white border-start-0 text-muted" title="Bersihkan pencarian"><i class="bi bi-x-circle-fill"></i></a>
                     <?php endif; ?>
                 </div>
             </div>
-            <!-- Filter Kelas -->
+            <!-- Filter Program Studi -->
             <div class="col-md-3">
+                <select name="prodi" class="form-select" onchange="this.form.submit()">
+                    <option value="all" <?= ($filter_prodi === 'all') ? 'selected' : ''; ?>>-- Semua Program Studi --</option>
+                    <?php foreach (get_daftar_prodi() as $p_name => $p_data): ?>
+                        <option value="<?= htmlspecialchars($p_name); ?>" <?= ($filter_prodi === $p_name) ? 'selected' : ''; ?>>
+                            <?= htmlspecialchars($p_name); ?> (<?= $p_data['jenjang']; ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <!-- Filter Kelas -->
+            <div class="col-md-2">
                 <select name="kelas" class="form-select" onchange="this.form.submit()">
                     <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Semua Kelas --</option>
                     <?php foreach ($kelas_options as $k): ?>
                         <option value="<?= htmlspecialchars($k); ?>" <?= ($filter_kelas === $k) ? 'selected' : ''; ?>>Kelas <?= htmlspecialchars($k); ?></option>
                     <?php endforeach; ?>
-
-
-
                 </select>
             </div>
             <!-- Filter Status Kelulusan -->
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <select name="status" class="form-select" onchange="this.form.submit()">
-                    <option value="all" <?= ($filter_status === 'all') ? 'selected' : ''; ?>>-- Semua Status Kelulusan --</option>
-                    <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Proses Bimbingan (Aktif)</option>
+                    <option value="all" <?= ($filter_status === 'all') ? 'selected' : ''; ?>>-- Status Kelulusan --</option>
+                    <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Proses Bimbingan</option>
                     <option value="siap_sidang" <?= ($filter_status === 'siap_sidang') ? 'selected' : ''; ?>>Siap Sidang</option>
                     <option value="lulus" <?= ($filter_status === 'lulus') ? 'selected' : ''; ?>>Telah Lulus</option>
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Cari</button>
-                <?php if ($filter_status !== 'all' || $filter_kelas !== 'all' || !empty($search_query)): ?>
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Filter</button>
+                <?php if ($filter_prodi !== 'all' || $filter_status !== 'all' || $filter_kelas !== 'all' || !empty($search_query)): ?>
                     <a href="data_mahasiswa.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
                 <?php endif; ?>
             </div>
@@ -561,9 +581,12 @@ require_once '../templates/sidebar_admin.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fw-semibold">
-                                        <i class="bi bi-building me-1"></i><?= $kelas_clean; ?>
-                                    </span>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fw-semibold" style="width: fit-content;">
+                                            <i class="bi bi-building me-1"></i><?= $kelas_clean; ?>
+                                        </span>
+                                        <?= function_exists('render_badge_prodi') ? render_badge_prodi($row['prodi'] ?? 'Teknik Informatika') : ''; ?>
+                                    </div>
                                 </td>
                                 <td>
                                     <small class="text-dark fw-medium d-block text-truncate" style="max-width: 250px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
@@ -634,6 +657,7 @@ require_once '../templates/sidebar_admin.php';
                                                 data-nim="<?= htmlspecialchars($row['nim']); ?>"
                                                 data-nama="<?= htmlspecialchars($row['nama_lengkap']); ?>"
                                                 data-kelas="<?= htmlspecialchars($row['kelas'] ?? 'TI-1A-2025'); ?>"
+                                                data-prodi="<?= htmlspecialchars($row['prodi'] ?? 'Teknik Informatika'); ?>"
                                                 data-judul="<?= htmlspecialchars($row['judul_skripsi']); ?>"
                                                 data-dosenid="<?= $row['dosen_pembimbing_id']; ?>"
                                                 data-status="<?= $row['status_kelulusan']; ?>"
@@ -682,6 +706,16 @@ require_once '../templates/sidebar_admin.php';
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Nama Lengkap Mahasiswa <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_lengkap" placeholder="Nama mahasiswa sesuai KRS" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Program Studi (Prodi) <span class="text-danger">*</span></label>
+                        <select name="prodi" class="form-select" required>
+                            <?php foreach (get_daftar_prodi() as $prodi_name => $p_data): ?>
+                                <option value="<?= htmlspecialchars($prodi_name); ?>" <?= ($prodi_name === 'Teknik Informatika') ? 'selected' : ''; ?>>
+                                    <?= htmlspecialchars($prodi_name); ?> (<?= $p_data['jenjang']; ?> - <?= $p_data['fakultas']; ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Kelas Mahasiswa <span class="text-danger">*</span></label>
@@ -763,6 +797,16 @@ require_once '../templates/sidebar_admin.php';
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Nama Lengkap Mahasiswa <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_lengkap" id="edit_nama_lengkap" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Program Studi (Prodi) <span class="text-danger">*</span></label>
+                        <select name="prodi" id="edit_prodi" class="form-select" required>
+                            <?php foreach (get_daftar_prodi() as $prodi_name => $p_data): ?>
+                                <option value="<?= htmlspecialchars($prodi_name); ?>">
+                                    <?= htmlspecialchars($prodi_name); ?> (<?= $p_data['jenjang']; ?> - <?= $p_data['fakultas']; ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Kelas Mahasiswa <span class="text-danger">*</span></label>
@@ -911,6 +955,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_nim').value              = this.dataset.nim;
             document.getElementById('edit_nama_lengkap').value     = this.dataset.nama;
             document.getElementById('edit_kelas').value            = this.dataset.kelas || 'TI-1A-2025';
+            document.getElementById('edit_prodi').value            = this.dataset.prodi || 'Teknik Informatika';
             document.getElementById('edit_judul_skripsi').value    = this.dataset.judul;
             document.getElementById('edit_dosen_id').value         = this.dataset.dosenid;
             document.getElementById('edit_status_kelulusan').value = this.dataset.status;

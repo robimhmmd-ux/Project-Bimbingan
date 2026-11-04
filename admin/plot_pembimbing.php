@@ -113,6 +113,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 // FILTER KELAS
 // =========================================================================
 $filter_kelas = $_GET['kelas'] ?? 'all';
+$filter_prodi = $_GET['prodi'] ?? 'all';
 $where_kelas_belum = "";
 $where_kelas_sudah = "";
 $params_belum = [];
@@ -125,6 +126,14 @@ if ($filter_kelas !== 'all' && !empty($filter_kelas)) {
 
     $where_kelas_sudah = " AND m.kelas = :k_sudah ";
     $params_sudah[':k_sudah'] = $filter_kelas;
+}
+
+if ($filter_prodi !== 'all' && array_key_exists($filter_prodi, get_daftar_prodi())) {
+    $where_kelas_belum .= " AND m.prodi = :p_belum ";
+    $params_belum[':p_belum'] = $filter_prodi;
+
+    $where_kelas_sudah .= " AND m.prodi = :p_sudah ";
+    $params_sudah[':p_sudah'] = $filter_prodi;
 }
 
 // =========================================================================
@@ -219,22 +228,29 @@ require_once '../templates/sidebar_admin.php';
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body p-3">
         <form method="GET" action="plot_pembimbing.php" class="row g-2 align-items-center">
-            <div class="col-md-5">
-                <div class="d-flex align-items-center gap-2">
-                    <span class="text-muted small fw-semibold"><i class="bi bi-filter me-1"></i>Saring Kelas:</span>
-                    <select name="kelas" class="form-select form-select-sm" onchange="this.form.submit()">
-                        <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Tampilkan Semua Kelas --</option>
-                        <?php foreach ($all_kelas_plot as $kls): ?>
-                            <option value="<?= htmlspecialchars($kls); ?>" <?= ($filter_kelas === $kls) ? 'selected' : ''; ?>>Kelas <?= htmlspecialchars($kls); ?></option>
-                        <?php endforeach; ?>
-
-
-
-                    </select>
-                </div>
+            <div class="col-md-3">
+                <select name="prodi" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="all" <?= ($filter_prodi === 'all') ? 'selected' : ''; ?>>-- Semua Program Studi --</option>
+                    <?php foreach (get_daftar_prodi() as $p_name => $p_data): ?>
+                        <option value="<?= htmlspecialchars($p_name); ?>" <?= ($filter_prodi === $p_name) ? 'selected' : ''; ?>>
+                            <?= htmlspecialchars($p_name); ?> (<?= $p_data['jenjang']; ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-            <div class="col-md-7 text-md-end text-muted small">
+            <div class="col-md-3">
+                <select name="kelas" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Semua Kelas --</option>
+                    <?php foreach ($all_kelas_plot as $kls): ?>
+                        <option value="<?= htmlspecialchars($kls); ?>" <?= ($filter_kelas === $kls) ? 'selected' : ''; ?>>Kelas <?= htmlspecialchars($kls); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-6 text-md-end text-muted small d-flex justify-content-md-end align-items-center gap-2">
                 <span>Belum Diplot: <strong class="text-warning-emphasis"><?= count($mhs_belum_plot); ?></strong> | Sudah Diplot: <strong class="text-success"><?= count($mhs_sudah_plot); ?></strong></span>
+                <?php if ($filter_prodi !== 'all' || $filter_kelas !== 'all'): ?>
+                    <a href="plot_pembimbing.php" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
+                <?php endif; ?>
             </div>
         </form>
     </div>
@@ -333,9 +349,12 @@ require_once '../templates/sidebar_admin.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                                        <?= htmlspecialchars($m['kelas'] ?? 'TI-1A-2025'); ?>
-                                    </span>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="width: fit-content;">
+                                            <?= htmlspecialchars($m['kelas'] ?? 'TI-1A-2025'); ?>
+                                        </span>
+                                        <?= function_exists('render_badge_prodi') ? render_badge_prodi($m['prodi'] ?? 'Teknik Informatika') : ''; ?>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="text-muted small d-block text-truncate" style="max-width: 320px;" title="<?= htmlspecialchars($m['judul_skripsi']); ?>">
@@ -429,9 +448,12 @@ require_once '../templates/sidebar_admin.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                                        <?= htmlspecialchars($m['kelas'] ?? 'TI-1A-2025'); ?>
-                                    </span>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="width: fit-content;">
+                                            <?= htmlspecialchars($m['kelas'] ?? 'TI-1A-2025'); ?>
+                                        </span>
+                                        <?= function_exists('render_badge_prodi') ? render_badge_prodi($m['prodi'] ?? 'Teknik Informatika') : ''; ?>
+                                    </div>
                                 </td>
                                 <td>
                                     <small class="text-muted d-block text-truncate" style="max-width: 250px;" title="<?= htmlspecialchars($m['judul_skripsi']); ?>">

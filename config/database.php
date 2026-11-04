@@ -80,6 +80,9 @@ if (!$pdo) {
 // Muat fungsi pembantu progres dan deteksi judul
 require_once __DIR__ . '/progres_helper.php';
 
+// Muat fungsi pembantu kategori Program Studi (Prodi)
+require_once __DIR__ . '/prodi_helper.php';
+
 // Inisialisasi sesi aplikasi terpusat (TiDB Cloud) secara otomatis
 if (file_exists(__DIR__ . '/session_helper.php')) {
     require_once __DIR__ . '/session_helper.php';

@@ -323,7 +323,7 @@ margin: 0 !important;
                             Dosen Pembimbing: <?= htmlspecialchars($dosen['nama_dosen']); ?>
                         </span>
                         <span style="font-size: 10pt; margin-left: 10px;">
-                            (NIDN: <?= htmlspecialchars($dosen['nidn']); ?> • Email: <?= htmlspecialchars($dosen['email']); ?>)
+                            (NIDN: <?= htmlspecialchars($dosen['nidn']); ?> • <?= htmlspecialchars($dosen['prodi'] ?? 'Teknik Informatika'); ?> • <?= htmlspecialchars($dosen['email']); ?>)
                         </span>
                     </div>
                     <div class="text-end" style="font-size: 10pt;">
@@ -344,7 +344,7 @@ margin: 0 !important;
                                     <th style="width: 35px;" class="text-center">No</th>
                                     <th style="width: 110px;" class="text-center">NIM</th>
                                     <th style="width: 200px;">Nama Mahasiswa</th>
-                                    <th style="width: 80px;" class="text-center">Kelas</th>
+                                    <th style="width: 100px;" class="text-center">Kelas & Prodi</th>
                                     <th>Judul Penelitian Skripsi</th>
                                     <th style="width: 70px;" class="text-center">Progres</th>
                                     <th style="width: 110px;" class="text-center">Status</th>
@@ -359,7 +359,10 @@ margin: 0 !important;
                                         <td class="text-center"><?= $no++; ?></td>
                                         <td class="text-center"><?= htmlspecialchars($m['nim']); ?></td>
                                         <td><?= htmlspecialchars($m['nama_lengkap']); ?></td>
-                                        <td class="text-center"><?= htmlspecialchars($m['kelas'] ?? '-'); ?></td>
+                                        <td class="text-center">
+                                            <div><?= htmlspecialchars($m['kelas'] ?? '-'); ?></div>
+                                            <div style="font-size: 8pt; color: #555;"><?= htmlspecialchars($m['prodi'] ?? 'Teknik Informatika'); ?></div>
+                                        </td>
                                         <td><?= htmlspecialchars($m['judul_skripsi']); ?></td>
                                         <td class="text-center">
                                             <?= (int)$m['nilai_terakhir']; ?>%
@@ -398,7 +401,7 @@ margin: 0 !important;
                             <th style="width: 35px;" class="text-center">No</th>
                             <th style="width: 110px;" class="text-center">NIM</th>
                             <th style="width: 200px;">Nama Mahasiswa</th>
-                            <th style="width: 80px;" class="text-center">Kelas</th>
+                            <th style="width: 100px;" class="text-center">Kelas & Prodi</th>
                             <th>Rencana Judul Skripsi</th>
                             <th style="width: 110px;" class="text-center">Status</th>
                         </tr>

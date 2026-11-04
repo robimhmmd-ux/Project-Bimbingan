@@ -134,6 +134,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $nama_lengkap  = trim($_POST['nama_lengkap'] ?? '');
         $nim           = trim($_POST['nim'] ?? '');
         $kelas         = trim($_POST['kelas'] ?? 'TI-1A-2025');
+        $prodi         = sanitize_prodi($_POST['prodi'] ?? ($mhs['prodi'] ?? 'Teknik Informatika'));
         $judul_skripsi = trim($_POST['judul_skripsi'] ?? '');
         $foto_baru     = $mhs['foto_profil'];
 
@@ -208,6 +209,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         SET nama_lengkap = :nama, 
                             nim = :nim, 
                             kelas = :kelas, 
+                            prodi = :prodi, 
                             judul_skripsi = :judul, 
                             foto_profil = :foto 
                         WHERE id = :mid
@@ -216,6 +218,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         ':nama'  => $nama_lengkap,
                         ':nim'   => $nim,
                         ':kelas' => $kelas,
+                        ':prodi' => $prodi,
                         ':judul' => $judul_skripsi,
                         ':foto'  => $foto_baru,
                         ':mid'   => $mhs_id
@@ -381,8 +384,11 @@ require_once '../templates/sidebar_mahasiswa.php';
                         <span class="fw-semibold text-dark"><i class="bi bi-at text-primary"></i><?= htmlspecialchars($mhs['username']); ?></span>
                     </div>
                     <div class="mb-2">
-                        <span class="text-muted d-block">Kelas Mahasiswa:</span>
-                        <span class="fw-semibold text-primary"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
+                        <span class="text-muted d-block">Kelas & Program Studi:</span>
+                        <div class="d-flex flex-column gap-1 mt-1">
+                            <span class="fw-semibold text-primary"><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?></span>
+                            <?= function_exists('render_badge_prodi') ? render_badge_prodi($mhs['prodi'] ?? 'Teknik Informatika') : ''; ?>
+                        </div>
                     </div>
                     <div class="mb-2">
                         <span class="text-muted d-block mb-1">Dosen Pembimbing:</span>
@@ -510,6 +516,22 @@ require_once '../templates/sidebar_mahasiswa.php';
                                     </select>
                                     <div class="form-text small" style="font-size: 0.75rem;">Pilih rombel / kelas perkuliahan Anda.</div>
                                 </div>
+                            </div>
+
+                            <!-- Program Studi Mahasiswa -->
+                            <div class="mb-3">
+                                <label for="prodi" class="form-label small fw-semibold text-secondary">
+                                    Program Studi (Jurusan) <span class="text-danger">*</span>
+                                </label>
+                                <?php $current_prodi = $mhs['prodi'] ?? 'Teknik Informatika'; ?>
+                                <select class="form-select" id="prodi" name="prodi" required>
+                                    <?php foreach (get_daftar_prodi() as $prodi_name => $p_data): ?>
+                                        <option value="<?= htmlspecialchars($prodi_name); ?>" <?= ($current_prodi === $prodi_name) ? 'selected' : ''; ?>>
+                                            <?= htmlspecialchars($prodi_name); ?> (<?= $p_data['jenjang']; ?> - <?= $p_data['fakultas']; ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text small" style="font-size: 0.75rem;">Program studi yang sedang Anda tempuh.</div>
                             </div>
 
                             <!-- Judul Skripsi -->

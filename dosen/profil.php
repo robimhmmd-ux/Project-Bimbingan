@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
     $username     = trim($_POST['username'] ?? '');
     $nidn         = trim($_POST['nidn'] ?? '');
     $nama_dosen   = trim($_POST['nama_dosen'] ?? '');
+    $prodi        = sanitize_prodi($_POST['prodi'] ?? ($dosen['prodi'] ?? 'Teknik Informatika'));
     $email        = trim($_POST['email'] ?? '');
     $no_whatsapp  = trim($_POST['no_whatsapp'] ?? '');
     $kuota        = (int)($_POST['kuota_bimbingan'] ?? 5);
@@ -103,6 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
                     UPDATE dosen 
                     SET nidn = :nidn,
                         nama_dosen = :nama, 
+                        prodi = :prodi, 
                         email = :email, 
                         no_whatsapp = :wa, 
                         kuota_bimbingan = :kuota,
@@ -112,6 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profil'])) {
                 $stmt_up->execute([
                     ':nidn'  => $nidn,
                     ':nama'  => $nama_dosen,
+                    ':prodi' => $prodi,
                     ':email' => $email,
                     ':wa'    => $no_whatsapp,
                     ':kuota' => $kuota,
@@ -221,6 +224,9 @@ $has_foto = !empty($foto_url);
             
             <h5 class="fw-bold mb-1 text-dark"><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Nama Dosen'); ?></h5>
             <p class="text-muted small mb-2">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
+            <div class="mb-2">
+                <?= function_exists('render_badge_prodi') ? render_badge_prodi($dosen['prodi'] ?? 'Teknik Informatika') : ''; ?>
+            </div>
             <div>
                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 mb-3">
                     <span class="status-dot active"></span> Dosen Pembimbing Skripsi
@@ -294,6 +300,19 @@ $has_foto = !empty($foto_url);
                                 <div class="col-md-12">
                                     <label for="nama_dosen" class="form-label fw-semibold">Nama Lengkap & Gelar <span class="text-danger">*</span></label>
                                     <input type="text" name="nama_dosen" id="nama_dosen" class="form-control" value="<?= htmlspecialchars($dosen['nama_dosen'] ?? ''); ?>" placeholder="Contoh: Dr. Hendra Gunawan, M.T." required>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label for="prodi" class="form-label fw-semibold">Program Studi (Homebase) <span class="text-danger">*</span></label>
+                                    <?php $current_dsn_prodi = $dosen['prodi'] ?? 'Teknik Informatika'; ?>
+                                    <select class="form-select" id="prodi" name="prodi" required>
+                                        <?php foreach (get_daftar_prodi() as $p_name => $p_data): ?>
+                                            <option value="<?= htmlspecialchars($p_name); ?>" <?= ($current_dsn_prodi === $p_name) ? 'selected' : ''; ?>>
+                                                <?= htmlspecialchars($p_name); ?> (<?= $p_data['jenjang']; ?> - <?= $p_data['fakultas']; ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="form-text small">Homebase program studi tempat Anda mengajar dan membimbing.</div>
                                 </div>
 
                                 <div class="col-md-6">

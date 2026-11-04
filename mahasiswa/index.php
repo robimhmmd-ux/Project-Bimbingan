@@ -478,6 +478,9 @@ $bab_list = [
                     <i class="bi bi-mortarboard-fill"></i><?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>
                 </span>
                 <span class="badge bg-white bg-opacity-25 text-white border border-white border-opacity-25 px-2.5 py-1 small rounded-pill">
+                    <i class="bi bi-bookmark-star-fill me-1"></i><?= htmlspecialchars($mhs['prodi'] ?? 'Teknik Informatika'); ?>
+                </span>
+                <span class="badge bg-white bg-opacity-25 text-white border border-white border-opacity-25 px-2.5 py-1 small rounded-pill">
                     <i class="bi bi-person-fill me-1"></i>Portal Mahasiswa
                 </span>
             </div>

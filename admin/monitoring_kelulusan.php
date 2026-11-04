@@ -286,6 +286,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 // =========================================================================
 $filter_status = $_GET['status'] ?? 'all';
 $filter_kelas  = $_GET['kelas'] ?? 'all';
+$filter_prodi  = $_GET['prodi'] ?? 'all';
 $filter_dosen  = (int)($_GET['dosen_id'] ?? 0);
 $search_q      = trim($_GET['q'] ?? '');
 
@@ -300,6 +301,11 @@ if ($filter_status !== 'all' && in_array($filter_status, ['proses_bimbingan', 's
 if ($filter_kelas !== 'all' && !empty($filter_kelas)) {
     $where[] = "m.kelas = :kelas";
     $params[':kelas'] = $filter_kelas;
+}
+
+if ($filter_prodi !== 'all' && array_key_exists($filter_prodi, get_daftar_prodi())) {
+    $where[] = "m.prodi = :prodi";
+    $params[':prodi'] = $filter_prodi;
 }
 
 if ($filter_dosen > 0) {
@@ -320,15 +326,17 @@ if (!empty($search_q)) {
             $k_nama  = ":q_nama_{$t_idx}";
             $k_judul = ":q_judul_{$t_idx}";
             $k_kelas = ":q_kelas_{$t_idx}";
+            $k_prodi = ":q_prodi_{$t_idx}";
             $k_user  = ":q_user_{$t_idx}";
 
-            $token_clauses[] = "(m.nim LIKE {$k_nim} OR m.nama_lengkap LIKE {$k_nama} OR m.judul_skripsi LIKE {$k_judul} OR m.kelas LIKE {$k_kelas} OR u.username LIKE {$k_user})";
+            $token_clauses[] = "(m.nim LIKE {$k_nim} OR m.nama_lengkap LIKE {$k_nama} OR m.judul_skripsi LIKE {$k_judul} OR m.kelas LIKE {$k_kelas} OR m.prodi LIKE {$k_prodi} OR u.username LIKE {$k_user})";
             
             $val = "%{$token}%";
             $params[$k_nim]   = $val;
             $params[$k_nama]  = $val;
             $params[$k_judul] = $val;
             $params[$k_kelas] = $val;
+            $params[$k_prodi] = $val;
             $params[$k_user]  = $val;
         }
         $where[] = "(" . implode(" AND ", $token_clauses) . ")";
@@ -534,6 +542,17 @@ require_once '../templates/sidebar_admin.php';
                     <input type="text" class="form-control border-start-0 ps-0" name="q" value="<?= htmlspecialchars($search_q); ?>" placeholder="Cari Mahasiswa...">
                 </div>
             </div>
+            <!-- Filter Program Studi -->
+            <div class="col-md-2">
+                <select name="prodi" class="form-select" onchange="this.form.submit()">
+                    <option value="all" <?= ($filter_prodi === 'all') ? 'selected' : ''; ?>>-- Semua Prodi --</option>
+                    <?php foreach (get_daftar_prodi() as $p_name => $p_data): ?>
+                        <option value="<?= htmlspecialchars($p_name); ?>" <?= ($filter_prodi === $p_name) ? 'selected' : ''; ?>>
+                            <?= htmlspecialchars($p_name); ?> (<?= $p_data['jenjang']; ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
             <!-- Filter Kelas -->
             <div class="col-md-2">
                 <select name="kelas" class="form-select" onchange="this.form.submit()">
@@ -548,16 +567,16 @@ require_once '../templates/sidebar_admin.php';
             <!-- Filter Status -->
             <div class="col-md-2">
                 <select name="status" class="form-select" onchange="this.form.submit()">
-                    <option value="all" <?= ($filter_status === 'all') ? 'selected' : ''; ?>>-- Semua Status --</option>
+                    <option value="all" <?= ($filter_status === 'all') ? 'selected' : ''; ?>>-- Status --</option>
                     <option value="siap_sidang" <?= ($filter_status === 'siap_sidang') ? 'selected' : ''; ?>>Siap Sidang</option>
                     <option value="proses_bimbingan" <?= ($filter_status === 'proses_bimbingan') ? 'selected' : ''; ?>>Bimbingan</option>
                     <option value="lulus" <?= ($filter_status === 'lulus') ? 'selected' : ''; ?>>Lulus</option>
                 </select>
             </div>
             <!-- Filter Dosen -->
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <select name="dosen_id" class="form-select" onchange="this.form.submit()">
-                    <option value="0">-- Semua Dosen Pembimbing --</option>
+                    <option value="0">-- Dosen --</option>
                     <?php foreach ($dosen_filter as $df): ?>
                         <option value="<?= $df['id']; ?>" <?= ($filter_dosen == $df['id']) ? 'selected' : ''; ?>>
                             <?= htmlspecialchars($df['nama_dosen']); ?>
@@ -565,9 +584,9 @@ require_once '../templates/sidebar_admin.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
-                <?php if ($filter_status !== 'all' || $filter_kelas !== 'all' || $filter_dosen > 0 || !empty($search_q)): ?>
+            <div class="col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-primary w-100" title="Terapkan Filter"><i class="bi bi-funnel"></i></button>
+                <?php if ($filter_prodi !== 'all' || $filter_status !== 'all' || $filter_kelas !== 'all' || $filter_dosen > 0 || !empty($search_q)): ?>
                     <a href="monitoring_kelulusan.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
                 <?php endif; ?>
             </div>
@@ -633,9 +652,12 @@ require_once '../templates/sidebar_admin.php';
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                                        <?= htmlspecialchars($row['kelas'] ?? '-'); ?>
-                                    </span>
+                                    <div class="d-flex flex-column gap-1">
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="width: fit-content;">
+                                            <?= htmlspecialchars($row['kelas'] ?? '-'); ?>
+                                        </span>
+                                        <?= function_exists('render_badge_prodi') ? render_badge_prodi($row['prodi'] ?? 'Teknik Informatika') : ''; ?>
+                                    </div>
                                 </td>
                                 <td>
                                     <small class="text-muted d-block text-truncate" style="max-width: 260px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">

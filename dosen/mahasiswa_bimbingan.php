@@ -567,6 +567,7 @@ thead th.sticky-action-col {
                                             <?php if (!empty($mhs['kelas'])): ?>
                                                 <span class="badge bg-light text-primary border border-primary-subtle"><?= htmlspecialchars($mhs['kelas']); ?></span>
                                             <?php endif; ?>
+                                            <?= function_exists('render_badge_prodi') ? render_badge_prodi($mhs['prodi'] ?? 'Teknik Informatika') : ''; ?>
                                             <?php if (($mhs['status_pembimbing'] ?? '') === 'menunggu_konfirmasi'): ?>
                                                 <span class="badge bg-warning-subtle text-dark border border-warning-subtle" title="Menunggu mahasiswa konfirmasi SK">SK: Menunggu</span>
                                             <?php elseif (($mhs['status_pembimbing'] ?? '') === 'aktif'): ?>
@@ -728,7 +729,7 @@ thead th.sticky-action-col {
                                                                 <div class="col-md-6">
                                                                     <span class="text-muted d-block">Mahasiswa:</span>
                                                                     <strong class="text-dark fs-6"><?= htmlspecialchars($mhs['nama_lengkap']); ?></strong>
-                                                                    <span class="text-muted d-block">NIM: <?= htmlspecialchars($mhs['nim']); ?> (<?= htmlspecialchars($mhs['kelas'] ?? 'TI'); ?>)</span>
+                                                                    <span class="text-muted d-block">NIM: <?= htmlspecialchars($mhs['nim']); ?> (<?= htmlspecialchars($mhs['kelas'] ?? 'TI'); ?> &bull; <?= htmlspecialchars($mhs['prodi'] ?? 'Teknik Informatika'); ?>)</span>
                                                                 </div>
                                                                 <div class="col-md-6">
                                                                     <span class="text-muted d-block">Capaian Progres Saat Ini:</span>
