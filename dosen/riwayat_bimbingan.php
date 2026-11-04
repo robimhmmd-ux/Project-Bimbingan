@@ -583,7 +583,7 @@ require_once '../templates/sidebar_dosen.php';
                                                                             <div class="fw-bold text-success mb-1 fs-6">
                                                                                 <i class="bi bi-check-circle-fill me-1"></i> ACC <?= htmlspecialchars($tahap_saat_ini['singkat'] ?? 'Tahap Ini'); ?>
                                                                             </div>
-                                                                            <small class="text-dark d-block mb-1">
+                                                                            <small class="d-block mb-1">
                                                                                 Mengesahkan <strong><?= htmlspecialchars($tahap_saat_ini['label'] ?? ''); ?></strong>.
                                                                             </small>
                                                                             <span class="badge bg-success-subtle text-success border border-success-subtle">
@@ -605,10 +605,10 @@ require_once '../templates/sidebar_dosen.php';
                                                                             <div class="fw-bold text-warning-emphasis mb-1 fs-6">
                                                                                 <i class="bi bi-exclamation-triangle-fill me-1 text-warning"></i> Perlu Revisi Naskah
                                                                             </div>
-                                                                            <small class="text-dark d-block mb-1">
+                                                                            <small class="d-block mb-1">
                                                                                 Mahasiswa wajib memperbaiki naskah sesuai catatan dosen.
                                                                             </small>
-                                                                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                                                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
                                                                                 Progres Tetap: <?= $progres_persen; ?>%
                                                                             </span>
                                                                         </div>
@@ -651,23 +651,7 @@ require_once '../templates/sidebar_dosen.php';
     </div>
 </div>
 
-<style>
-.decision-card {
-    cursor: pointer;
-    border: 2px solid #e2e8f0;
-    transition: all 0.2s ease;
-    background: #ffffff;
-}
-.decision-card:hover {
-    border-color: #3b82f6;
-    background-color: #f8fafc;
-}
-input[type="radio"]:checked + .decision-card {
-    border-color: #2563eb !important;
-    background-color: #eff6ff !important;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25) !important;
-}
-</style>
+
 
 <?php
 require_once '../templates/footer.php';

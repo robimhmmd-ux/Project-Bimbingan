@@ -165,9 +165,9 @@ require_once '../templates/sidebar_dosen.php';
                                         <span class="badge bg-<?= $rekomendasi['status']; ?> text-uppercase px-2 py-1">
                                             <?= $rekomendasi['badge']; ?>
                                         </span>
-                                        <span class="fw-bold text-dark">Skor Kemiripan Tertinggi: <?= $skor_tertinggi; ?>%</span>
+                                        <span class="fw-bold">Skor Kemiripan Tertinggi: <?= $skor_tertinggi; ?>%</span>
                                     </div>
-                                    <div class="small text-dark mb-0">
+                                    <div class="small mb-0">
                                         <?= $rekomendasi['pesan']; ?>
                                     </div>
                                 </div>

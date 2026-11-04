@@ -70,10 +70,10 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'persetujuan') ? 'active' : ''; ?>" href="persetujuan" title="Lihat Jadwal & Pengajuan">
-                    <span><i class="bi bi-calendar-event me-2"></i><span class="menu-text">Lihat Jadwal</span></span>
+                <a class="nav-link d-flex align-items-center <?= ($current_page == 'persetujuan') ? 'active' : ''; ?>" href="persetujuan" title="Lihat Jadwal & Pengajuan">
+                    <i class="bi bi-calendar-event me-2"></i><span class="menu-text">Lihat Jadwal</span>
                     <?php if ($badge_menunggu > 0): ?>
-                        <span class="badge bg-danger rounded-pill"><?= $badge_menunggu; ?></span>
+                        <span class="badge bg-danger rounded-pill ms-auto"><?= $badge_menunggu; ?></span>
                     <?php endif; ?>
                 </a>
             </li>
@@ -83,10 +83,10 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'sidang') ? 'active' : ''; ?>" href="sidang" title="Jadwal & Penguji Sidang">
-                    <span><i class="bi bi-mortarboard-fill me-2 text-warning"></i><span class="menu-text">Jadwal & Penguji Sidang</span></span>
+                <a class="nav-link d-flex align-items-center <?= ($current_page == 'sidang') ? 'active' : ''; ?>" href="sidang" title="Jadwal & Penguji Sidang">
+                    <i class="bi bi-mortarboard-fill me-2 text-warning"></i><span class="menu-text">Jadwal & Penguji Sidang</span>
                     <?php if ($badge_sidang > 0): ?>
-                        <span class="badge bg-success rounded-pill"><?= $badge_sidang; ?></span>
+                        <span class="badge bg-success rounded-pill ms-auto"><?= $badge_sidang; ?></span>
                     <?php endif; ?>
                 </a>
             </li>
@@ -96,10 +96,10 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'chat') ? 'active' : ''; ?>" href="chat" title="Konsultasi Chat">
-                    <span><i class="bi bi-chat-dots me-2"></i><span class="menu-text">Konsultasi Chat</span></span>
+                <a class="nav-link d-flex align-items-center <?= ($current_page == 'chat') ? 'active' : ''; ?>" href="chat" title="Konsultasi Chat">
+                    <i class="bi bi-chat-dots me-2"></i><span class="menu-text">Konsultasi Chat</span>
                     <?php if ($badge_chat > 0): ?>
-                        <span class="badge bg-primary rounded-pill"><?= $badge_chat; ?></span>
+                        <span class="badge bg-primary rounded-pill ms-auto"><?= $badge_chat; ?></span>
                     <?php endif; ?>
                 </a>
             </li>

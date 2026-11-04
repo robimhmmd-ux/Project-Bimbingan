@@ -274,8 +274,8 @@ $has_foto = !empty($foto_url);
 
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <label for="username" class="form-label fw-semibold text-primary">
-                                        <i class="bi bi-pencil-square me-1"></i>ID Login / Username <span class="text-danger">*</span>
+                                    <label for="username" class="form-label fw-semibold">
+                                        <i class="bi bi-pencil-square me-1 text-primary"></i>ID Login / Username <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text bg-light fw-bold">@</span>

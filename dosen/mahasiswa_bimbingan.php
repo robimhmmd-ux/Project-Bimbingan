@@ -862,7 +862,7 @@ thead th.sticky-action-col {
                                                                             <div class="fw-bold text-success mb-1 fs-6">
                                                                                 <i class="bi bi-check-circle-fill me-1"></i> ACC <?= htmlspecialchars($tahap_current['singkat'] ?? 'Tahap Ini'); ?>
                                                                             </div>
-                                                                            <small class="text-dark d-block mb-1">
+                                                                            <small class="d-block mb-1">
                                                                                 Mengesahkan <strong><?= htmlspecialchars($tahap_current['label'] ?? ''); ?></strong>.
                                                                             </small>
                                                                             <span class="badge bg-success-subtle text-success border border-success-subtle">
@@ -882,10 +882,10 @@ thead th.sticky-action-col {
                                                                             <div class="fw-bold text-warning-emphasis mb-1 fs-6">
                                                                                 <i class="bi bi-exclamation-triangle-fill me-1 text-warning"></i> Perlu Revisi Naskah
                                                                             </div>
-                                                                            <small class="text-dark d-block mb-1">
+                                                                            <small class="d-block mb-1">
                                                                                 Mahasiswa wajib memperbaiki naskah sesuai catatan dosen.
                                                                             </small>
-                                                                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                                                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
                                                                                 Progres Tetap: <?= $progres; ?>%
                                                                             </span>
                                                                         </div>

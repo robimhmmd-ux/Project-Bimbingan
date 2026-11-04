@@ -265,9 +265,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             html.sidebar-collapsed .sidebar .sidebar-system-card,
             body.sidebar-collapsed .sidebar .sidebar-system-card,
             html.sidebar-collapsed .sidebar .lock-icon,
-            body.sidebar-collapsed .sidebar .lock-icon,
-            html.sidebar-collapsed .sidebar .nav-link > span,
-            body.sidebar-collapsed .sidebar .nav-link > span {
+            body.sidebar-collapsed .sidebar .lock-icon {
                 display: none !important;
             }
 
@@ -417,6 +415,39 @@ padding: 1rem 0.75rem 2.5rem 0.75rem !important;
             color: #f1f5f9 !important;
             border-color: rgba(255, 255, 255, 0.08) !important;
         }
+
+        /* Sidebar Dark Mode Nav-Links & Icons */
+        [data-theme="dark"] #sidebarMenu .nav-link,
+        [data-theme="dark"] .sidebar .nav-link,
+        [data-theme="dark"] .sidebar .nav-link span,
+        [data-theme="dark"] .sidebar .nav-link .menu-text {
+            color: #cbd5e1 !important;
+        }
+        [data-theme="dark"] #sidebarMenu .nav-link i,
+        [data-theme="dark"] .sidebar .nav-link i {
+            color: #94a3b8 !important;
+        }
+        [data-theme="dark"] #sidebarMenu .nav-link:hover,
+        [data-theme="dark"] .sidebar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+        }
+        [data-theme="dark"] #sidebarMenu .nav-link:hover i,
+        [data-theme="dark"] #sidebarMenu .nav-link:hover span,
+        [data-theme="dark"] #sidebarMenu .nav-link:hover .menu-text {
+            color: #ffffff !important;
+        }
+        [data-theme="dark"] #sidebarMenu .nav-link.active,
+        [data-theme="dark"] .sidebar .nav-link.active,
+        [data-theme="dark"] .sidebar .nav-pills .nav-link.active {
+            background: #00D056 !important;
+            color: #0A0E17 !important;
+            font-weight: 800 !important;
+        }
+        [data-theme="dark"] #sidebarMenu .nav-link.active i,
+        [data-theme="dark"] #sidebarMenu .nav-link.active span,
+        [data-theme="dark"] #sidebarMenu .nav-link.active .menu-text {
+            color: #0A0E17 !important;
         }
     </style>
     <script>
