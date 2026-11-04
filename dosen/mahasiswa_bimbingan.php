@@ -1,24 +1,3 @@
-<style>
-/* CSS Sticky Column untuk Kolom Aksi agar tidak terpotong */
-.sticky-action-col {
-    position: sticky !important;
-    right: 0 !important;
-    background: #ffffff !important;
-    z-index: 2 !important;
-    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.06) !important;
-}
-thead th.sticky-action-col {
-    background: #f8fafc !important;
-    z-index: 3 !important;
-}
-[data-theme="dark"] .sticky-action-col {
-    background: #111827 !important;
-    box-shadow: -6px 0 14px rgba(0, 0, 0, 0.45) !important;
-}
-[data-theme="dark"] thead th.sticky-action-col {
-    background: #1f2937 !important;
-}
-</style>
 <?php
 // dosen/mahasiswa_bimbingan.php - Monitoring & Pengelolaan Catatan Progres Mahasiswa (Salsa)
 $page_title   = "Mahasiswa Bimbingan & Progres";
@@ -412,6 +391,28 @@ foreach ($daftar_mahasiswa as $row) {
 $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
 ?>
 
+<style>
+/* CSS Sticky Column untuk Kolom Aksi agar tidak terpotong */
+.sticky-action-col {
+    position: sticky !important;
+    right: 0 !important;
+    background: #ffffff !important;
+    z-index: 2 !important;
+    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.06) !important;
+}
+thead th.sticky-action-col {
+    background: #f8fafc !important;
+    z-index: 3 !important;
+}
+[data-theme="dark"] .sticky-action-col {
+    background: #111827 !important;
+    box-shadow: -6px 0 14px rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme="dark"] thead th.sticky-action-col {
+    background: #1f2937 !important;
+}
+</style>
+
 <!-- Header Halaman -->
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-2 pb-2 mb-4 border-bottom">
     <div>
@@ -773,10 +774,18 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                                                             </div>
                                                                         <?php endif; ?>
                                                                         <div class="d-flex flex-wrap gap-2 mt-2">
-                                                                            <?php if (!empty($p_info['pengajuan_judul']['file_draft'])): ?>
-                                                                                <a href="../unduh_berkas.php?id=<?= $p_info['pengajuan_judul']['id']; ?>" 
-                                                                                   class="btn btn-sm btn-outline-danger shadow-sm" target="_blank" download>
-                                                                                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Dokumen Judul
+                                                                            <?php if (!empty($p_info['pengajuan_judul']['file_draft'])): 
+                                                                                $pdf_judul_url = "../unduh_berkas.php?id=" . (int)$p_info['pengajuan_judul']['id'];
+                                                                                $pdf_judul_name = htmlspecialchars($p_info['judul_diajukan'] ?: 'Dokumen Usulan Judul Skripsi', ENT_QUOTES);
+                                                                            ?>
+                                                                                <button type="button" class="btn btn-sm btn-danger shadow-sm d-inline-flex align-items-center gap-1"
+                                                                                        onclick="bukaPreviewPdf('<?= $pdf_judul_url; ?>', '<?= $pdf_judul_name; ?>')">
+                                                                                    <i class="bi bi-eye-fill"></i> Preview Dokumen Judul
+                                                                                </button>
+                                                                                <a href="<?= $pdf_judul_url; ?>&download=1" 
+                                                                                   class="btn btn-sm btn-outline-danger shadow-sm d-inline-flex align-items-center gap-1" 
+                                                                                   target="_blank" download>
+                                                                                    <i class="bi bi-download"></i> Unduh PDF
                                                                                 </a>
                                                                             <?php endif; ?>
                                                                             <?php if (!empty($p_info['pengajuan_judul']['link_drive'])): ?>

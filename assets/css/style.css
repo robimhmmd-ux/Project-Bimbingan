@@ -3686,3 +3686,23 @@ padding: 0.42rem 0.65rem !important;
         padding: 0 !important;
     }
 }
+
+/* Sticky Action Column across Tables */
+.sticky-action-col {
+    position: sticky !important;
+    right: 0 !important;
+    background: #ffffff !important;
+    z-index: 2 !important;
+    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.06) !important;
+}
+thead th.sticky-action-col {
+    background: #f8fafc !important;
+    z-index: 3 !important;
+}
+[data-theme="dark"] .sticky-action-col {
+    background: #111827 !important;
+    box-shadow: -6px 0 14px rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme="dark"] thead th.sticky-action-col {
+    background: #1f2937 !important;
+}

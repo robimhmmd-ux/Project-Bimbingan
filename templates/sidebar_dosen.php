@@ -1,5 +1,5 @@
-<!-- templates/sidebar_dosen.php -->
 <?php
+// templates/sidebar_dosen.php
 // Hitung notifikasi untuk menu dosen jika koneksi pdo tersedia
 $badge_menunggu = 0;
 $badge_chat     = 0;

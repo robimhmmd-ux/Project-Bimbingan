@@ -1,4 +1,7 @@
 <?php
+if (!ob_get_level()) {
+    ob_start();
+}
 // config/session_helper.php - Manajemen Sesi Terpusat & Persisten untuk Serverless & Cloud (TiDB Cloud)
 
 class TiDBSessionHandler implements SessionHandlerInterface {
@@ -85,22 +88,28 @@ function init_app_session(?PDO $pdo = null): void {
         return;
     }
 
-    $is_secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
-    
-    session_set_cookie_params([
-        'lifetime' => 86400 * 30, // 30 hari
-        'path'     => '/',
-        'domain'   => '',
-        'secure'   => $is_secure,
-        'httponly' => true,
-        'samesite' => 'Lax'
-    ]);
+    if (!headers_sent()) {
+        $is_secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+        
+        session_set_cookie_params([
+            'lifetime' => 86400 * 30, // 30 hari
+            'path'     => '/',
+            'domain'   => '',
+            'secure'   => $is_secure,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
 
-    // Pasang session handler database jika koneksi PDO tersedia
-    if ($pdo instanceof PDO) {
-        $handler = new TiDBSessionHandler($pdo);
-        session_set_save_handler($handler, true);
+        // Pasang session handler database jika koneksi PDO tersedia
+        if ($pdo instanceof PDO) {
+            $handler = new TiDBSessionHandler($pdo);
+            session_set_save_handler($handler, true);
+        }
+
+        session_start();
+    } else {
+        if (session_status() === PHP_SESSION_NONE) {
+            @session_start();
+        }
     }
-
-    session_start();
 }

@@ -494,10 +494,18 @@ require_once '../templates/sidebar_dosen.php';
                                                                             </div>
                                                                         <?php endif; ?>
                                                                         <div class="d-flex flex-wrap gap-2 mt-2">
-                                                                            <?php if (!empty($p_info['pengajuan_judul']['file_draft'])): ?>
-                                                                                <a href="../unduh_berkas.php?id=<?= $p_info['pengajuan_judul']['id']; ?>" 
-                                                                                   class="btn btn-sm btn-outline-danger shadow-sm" target="_blank" download>
-                                                                                    <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Dokumen Judul (PDF)
+                                                                            <?php if (!empty($p_info['pengajuan_judul']['file_draft'])): 
+                                                                                $pdf_judul_rw_url = "../unduh_berkas.php?id=" . (int)$p_info['pengajuan_judul']['id'];
+                                                                                $pdf_judul_rw_name = htmlspecialchars($p_info['judul_diajukan'] ?: 'Dokumen Usulan Judul Skripsi', ENT_QUOTES);
+                                                                            ?>
+                                                                                <button type="button" class="btn btn-sm btn-danger shadow-sm d-inline-flex align-items-center gap-1"
+                                                                                        onclick="bukaPreviewPdf('<?= $pdf_judul_rw_url; ?>', '<?= $pdf_judul_rw_name; ?>')">
+                                                                                    <i class="bi bi-eye-fill"></i> Preview Dokumen Judul
+                                                                                </button>
+                                                                                <a href="<?= $pdf_judul_rw_url; ?>&download=1" 
+                                                                                   class="btn btn-sm btn-outline-danger shadow-sm d-inline-flex align-items-center gap-1" 
+                                                                                   target="_blank" download>
+                                                                                    <i class="bi bi-download"></i> Unduh PDF
                                                                                 </a>
                                                                             <?php endif; ?>
                                                                             <?php if (!empty($p_info['pengajuan_judul']['link_drive'])): ?>

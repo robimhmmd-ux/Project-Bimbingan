@@ -1,5 +1,5 @@
-<!-- templates/sidebar_mahasiswa.php -->
 <?php
+// templates/sidebar_mahasiswa.php
 // Hitung notifikasi unread chat dan status pembimbing mahasiswa
 $badge_chat_mhs = 0;
 $status_pembimbing_mhs = 'belum_diplot';
