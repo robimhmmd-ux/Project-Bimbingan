@@ -197,7 +197,7 @@ $mhs_terbaru = $pdo->query("
                                                 </div>
                                                 <div>
                                                     <div class="fw-bold text-dark"><?= htmlspecialchars($m['nama_lengkap']); ?></div>
-                                                    <div class="d-flex align-items-center gap-1">
+                                                    <div class="d-flex align-items-center gap-1 text-nowrap">
                                                         <span class="font-monospace text-muted small">NIM: <?= htmlspecialchars($m['nim']); ?></span>
                                                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 0.65rem;"><?= htmlspecialchars($m['kelas'] ?? '-Self'); ?></span>
                                                     </div>

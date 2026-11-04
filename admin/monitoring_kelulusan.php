@@ -308,8 +308,32 @@ if ($filter_dosen > 0) {
 }
 
 if (!empty($search_q)) {
-    $where[] = "(m.nim LIKE :q OR m.nama_lengkap LIKE :q OR m.judul_skripsi LIKE :q OR m.kelas LIKE :q)";
-    $params[':q'] = "%{$search_q}%";
+    $search_tokens = array_filter(explode(' ', preg_replace('/\s+/', ' ', $search_q)), function($t) {
+        return strlen(trim($t)) > 0;
+    });
+    if (!empty($search_tokens)) {
+        $token_clauses = [];
+        $t_idx = 0;
+        foreach ($search_tokens as $token) {
+            $t_idx++;
+            $k_nim   = ":q_nim_{$t_idx}";
+            $k_nama  = ":q_nama_{$t_idx}";
+            $k_judul = ":q_judul_{$t_idx}";
+            $k_kelas = ":q_kelas_{$t_idx}";
+            $k_user  = ":q_user_{$t_idx}";
+
+            $token_clauses[] = "(m.nim LIKE {$k_nim} OR m.nama_lengkap LIKE {$k_nama} OR m.judul_skripsi LIKE {$k_judul} OR m.kelas LIKE {$k_kelas} OR u.username LIKE {$k_user})";
+            
+            $val = "%{$token}%";
+            $params[$k_nim]   = $val;
+            $params[$k_nama]  = $val;
+            $params[$k_judul] = $val;
+            $params[$k_kelas] = $val;
+            $params[$k_user]  = $val;
+        }
+        $where[] = "(" . implode(" AND ", $token_clauses) . ")";
+    }
+
 }
 
 $where_sql = implode(" AND ", $where);

@@ -99,7 +99,7 @@
                 <li class="nav-item mb-1">
                     <a class="nav-link <?= ($current_page == 'profil') ? 'active' : ''; ?>" href="profil">
                         <i class="bi bi-person-gear me-2 text-secondary"></i>
-                        <span>Profil & Pengaturan Akun</span>
+                        <span>Profil & Kelola Admin</span>
                     </a>
                 </li>
             </ul>

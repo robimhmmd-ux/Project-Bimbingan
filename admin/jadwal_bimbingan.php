@@ -277,8 +277,30 @@ if ($filter_dosen > 0) {
     $params[':did'] = $filter_dosen;
 }
 if (!empty($search_query)) {
-    $where[] = "(m.nama_lengkap LIKE :q OR m.nim LIKE :q OR d.nama_dosen LIKE :q OR pb.bab_pembahasan LIKE :q)";
-    $params[':q'] = "%{$search_query}%";
+    $search_tokens = array_filter(explode(' ', preg_replace('/\s+/', ' ', $search_query)), function($t) {
+        return strlen(trim($t)) > 0;
+    });
+    if (!empty($search_tokens)) {
+        $token_clauses = [];
+        $t_idx = 0;
+        foreach ($search_tokens as $token) {
+            $t_idx++;
+            $k_nama  = ":q_nama_{$t_idx}";
+            $k_nim   = ":q_nim_{$t_idx}";
+            $k_dosen = ":q_dsn_{$t_idx}";
+            $k_bab   = ":q_bab_{$t_idx}";
+
+            $token_clauses[] = "(m.nama_lengkap LIKE {$k_nama} OR m.nim LIKE {$k_nim} OR d.nama_dosen LIKE {$k_dosen} OR pb.bab_pembahasan LIKE {$k_bab})";
+            
+            $val = "%{$token}%";
+            $params[$k_nama]  = $val;
+            $params[$k_nim]   = $val;
+            $params[$k_dosen] = $val;
+            $params[$k_bab]   = $val;
+        }
+        $where[] = "(" . implode(" AND ", $token_clauses) . ")";
+    }
+
 }
 
 $where_sql = implode(" AND ", $where);

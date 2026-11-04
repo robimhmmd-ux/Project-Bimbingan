@@ -282,8 +282,30 @@ if ($filter_status_sidang !== 'all') {
 }
 
 if (!empty($search_sidang)) {
-    $where_sidang[] = "(m.nim LIKE :q OR m.nama_lengkap LIKE :q OR s.ruangan LIKE :q OR s.judul_final LIKE :q)";
-    $params_sidang[':q'] = "%{$search_sidang}%";
+    $search_tokens = array_filter(explode(' ', preg_replace('/\s+/', ' ', $search_sidang)), function($t) {
+        return strlen(trim($t)) > 0;
+    });
+    if (!empty($search_tokens)) {
+        $token_clauses = [];
+        $t_idx = 0;
+        foreach ($search_tokens as $token) {
+            $t_idx++;
+            $k_nim   = ":q_nim_{$t_idx}";
+            $k_nama  = ":q_nama_{$t_idx}";
+            $k_ruang = ":q_rng_{$t_idx}";
+            $k_judul = ":q_jdl_{$t_idx}";
+
+            $token_clauses[] = "(m.nim LIKE {$k_nim} OR m.nama_lengkap LIKE {$k_nama} OR s.ruangan LIKE {$k_ruang} OR s.judul_final LIKE {$k_judul})";
+            
+            $val = "%{$token}%";
+            $params_sidang[$k_nim]   = $val;
+            $params_sidang[$k_nama]  = $val;
+            $params_sidang[$k_ruang] = $val;
+            $params_sidang[$k_judul] = $val;
+        }
+        $where_sidang[] = "(" . implode(" AND ", $token_clauses) . ")";
+    }
+
 }
 
 $where_sidang_clause = implode(" AND ", $where_sidang);

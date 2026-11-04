@@ -273,8 +273,33 @@ if ($filter_kelas !== 'all' && in_array($filter_kelas, ['TI-1A-2025', 'TI-1B-202
 }
 
 if (!empty($search_query)) {
-    $where[] = "(m.nim LIKE :q OR m.nama_lengkap LIKE :q OR m.judul_skripsi LIKE :q OR m.kelas LIKE :q)";
-    $params[':q'] = "%{$search_query}%";
+    $search_tokens = array_filter(explode(' ', preg_replace('/\s+/', ' ', $search_query)), function($t) {
+        return strlen(trim($t)) > 0;
+    });
+    if (!empty($search_tokens)) {
+        $token_clauses = [];
+        $t_idx = 0;
+        foreach ($search_tokens as $token) {
+            $t_idx++;
+            $k_nim   = ":q_nim_{$t_idx}";
+            $k_nama  = ":q_nama_{$t_idx}";
+            $k_judul = ":q_judul_{$t_idx}";
+            $k_kelas = ":q_kelas_{$t_idx}";
+            $k_user  = ":q_user_{$t_idx}";
+
+            $token_clauses[] = "(m.nim LIKE {$k_nim} OR m.nama_lengkap LIKE {$k_nama} OR m.judul_skripsi LIKE {$k_judul} OR m.kelas LIKE {$k_kelas} OR u.username LIKE {$k_user})";
+            
+            $val = "%{$token}%";
+            $params[$k_nim]   = $val;
+            $params[$k_nama]  = $val;
+            $params[$k_judul] = $val;
+            $params[$k_kelas] = $val;
+            $params[$k_user]  = $val;
+        }
+        $where[] = "(" . implode(" AND ", $token_clauses) . ")";
+    }
+
+
 }
 
 $where_clause = implode(" AND ", $where);
@@ -423,7 +448,10 @@ require_once '../templates/sidebar_admin.php';
             <div class="col-md-4">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" class="form-control border-start-0 ps-0" name="q" value="<?= htmlspecialchars($search_query); ?>" placeholder="Cari NIM, Nama, atau Judul...">
+                    <input type="text" class="form-control border-start-0 ps-0" name="q" id="inputSearchMhs" value="<?= htmlspecialchars($search_query); ?>" placeholder="Cari Nama, NIM, atau Judul..." autocomplete="off">
+                    <?php if (!empty($search_query)): ?>
+                        <a href="data_mahasiswa.php<?= ($filter_kelas !== 'all' || $filter_status !== 'all') ? '?kelas=' . urlencode($filter_kelas) . '&status=' . urlencode($filter_status) : ''; ?>" class="input-group-text bg-white border-start-0 text-muted" title="Bersihkan pencarian"><i class="bi bi-x-circle-fill"></i></a>
+                    <?php endif; ?>
                 </div>
             </div>
             <!-- Filter Kelas -->
@@ -445,7 +473,7 @@ require_once '../templates/sidebar_admin.php';
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Cari</button>
                 <?php if ($filter_status !== 'all' || $filter_kelas !== 'all' || !empty($search_query)): ?>
                     <a href="data_mahasiswa.php" class="btn btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-counterclockwise"></i></a>
                 <?php endif; ?>
@@ -463,7 +491,7 @@ require_once '../templates/sidebar_admin.php';
             </span>
             <div>
                 <h6 class="fw-bold mb-0 text-dark">Daftar Mahasiswa Tugas Akhir</h6>
-                <small class="text-muted">Total <?= count($mahasiswa_list); ?> mahasiswa ditampilkan</small>
+                <small class="text-muted">Total <span id="mhsTotalCount"><?= count($mahasiswa_list); ?></span> mahasiswa ditampilkan<?= !empty($search_query) ? ' · Hasil pencarian "<strong>' . htmlspecialchars($search_query) . '</strong>"' : ''; ?></small>
             </div>
         </div>
     </div>
@@ -482,12 +510,24 @@ require_once '../templates/sidebar_admin.php';
                         <th class="text-center" style="width: 150px;">Aksi</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="mhsTableBody">
                     <?php if (empty($mahasiswa_list)): ?>
                         <tr>
                             <td colspan="8" class="text-center text-muted py-5">
                                 <i class="bi bi-search fs-2 d-block text-secondary mb-2"></i>
                                 Tidak ada data mahasiswa yang sesuai dengan filter pencarian.
+                                <?php if (!empty($search_query)): ?>
+                                    <div class="mt-2">
+                                        <span class="small">Kata kunci: "<strong><?= htmlspecialchars($search_query); ?></strong>"</span>
+                                        <?php if ($filter_kelas !== 'all' || $filter_status !== 'all'): ?>
+                                            <div class="mt-2">
+                                                <a href="data_mahasiswa.php?q=<?= urlencode($search_query); ?>" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-globe me-1"></i>Cari "<?= htmlspecialchars($search_query); ?>" di Semua Kelas & Status
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php else: ?>
@@ -499,7 +539,7 @@ require_once '../templates/sidebar_admin.php';
                             $kelas_clean = htmlspecialchars($row['kelas'] ?? 'TI-1A-2025');
                             $spemb = $row['status_pembimbing'] ?? 'belum_diplot';
                         ?>
-                            <tr>
+                            <tr class="mhs-row">
                                 <td class="ps-3 text-muted"><?= $no++; ?></td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
@@ -918,6 +958,64 @@ function togglePass(inputId, btn) {
         }
     }
 }
+// Live Search Realtime cerdas dengan Token Multi-Kata & Pembaruan Nomor Urut
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('inputSearchMhs');
+    const tableBody   = document.getElementById('mhsTableBody');
+    const totalCountEl= document.getElementById('mhsTotalCount');
+    
+    if (searchInput && tableBody) {
+        function runLiveSearch() {
+            const rawVal = searchInput.value.trim().toLowerCase();
+            const tokens = rawVal.split(/\s+/).filter(t => t.length > 0);
+            const rows   = tableBody.querySelectorAll('.mhs-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const isMatch = tokens.length === 0 || tokens.every(tok => text.includes(tok));
+                if (isMatch) {
+                    row.style.display = '';
+                    visibleCount++;
+                    const numCell = row.querySelector('td.text-muted');
+                    if (numCell) {
+                        numCell.textContent = visibleCount;
+                    }
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            let noMatchRow = document.getElementById('liveSearchNoMatch');
+            if (visibleCount === 0 && rows.length > 0) {
+                if (!noMatchRow) {
+                    noMatchRow = document.createElement('tr');
+                    noMatchRow.id = 'liveSearchNoMatch';
+                    noMatchRow.innerHTML = `
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="bi bi-search fs-3 d-block text-secondary mb-2"></i>
+                            <div>Tidak ada mahasiswa yang cocok dengan kata kunci "<strong>${searchInput.value}</strong>" di tampilan tabel ini.</div>
+                            <div class="small text-muted mt-1">Tekan tombol <strong>Cari</strong> atau tombol <strong>Enter</strong> untuk mencari ke seluruh data server.</div>
+                        </td>
+                    `;
+                    tableBody.appendChild(noMatchRow);
+                } else {
+                    noMatchRow.style.display = '';
+                    const strong = noMatchRow.querySelector('strong');
+                    if (strong) strong.textContent = searchInput.value;
+                }
+            } else if (noMatchRow) {
+                noMatchRow.style.display = 'none';
+            }
+
+            if (totalCountEl) {
+                totalCountEl.textContent = visibleCount;
+            }
+        }
+
+        searchInput.addEventListener('input', runLiveSearch);
+    }
+});
 </script>
 
 <?php
