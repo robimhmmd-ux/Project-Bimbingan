@@ -520,7 +520,7 @@ padding: 1rem 0.75rem 2.5rem 0.75rem !important;
                     <i class="bi bi-mortarboard-fill"></i>
                 </span>
                 <div class="d-flex flex-column overflow-hidden">
-                    <span class="fs-6 lh-1 text-truncate brand-text-title" style="max-width: 130px;">Bimbingan Skripsi</span>
+                    <span class="fs-6 lh-1 brand-text-title text-nowrap">Bimbingan Skripsi</span>
                     <span class="text-white-50 small d-none d-md-inline" style="font-size: 0.7rem; font-weight: normal;">Sistem Informasi Akademik</span>
                 </div>
             </a>
@@ -594,7 +594,7 @@ padding: 1rem 0.75rem 2.5rem 0.75rem !important;
                         <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 30, 'border-2 border-white shadow-sm', ($cur_role === 'admin' ? 'warning' : 'primary')); ?>
                     </span>
                 <?php endif; ?>
-                <div class="d-none d-lg-block text-truncate pe-1" style="max-width: 140px;">
+                <div class="d-none d-lg-block text-truncate pe-1" style="max-width: 180px;">
                     <span class="fw-bold text-white small"><?= ($cur_role === 'admin' && !str_starts_with(strtolower(trim($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? '')), 'admin') ? 'Admin ' : '') . htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
                 </div>
             </a>

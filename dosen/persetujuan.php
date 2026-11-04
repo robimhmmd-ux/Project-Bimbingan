@@ -237,8 +237,8 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
 </div>
 
 <!-- Card Tabel Pengajuan -->
-<div class="table-card-wrapper mb-4 shadow-sm border rounded-3 bg-white overflow-hidden">
-    <div class="p-3 border-bottom bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
             <h6 class="mb-0 fw-bold text-dark">
                 <i class="bi bi-inbox-fill text-primary me-2"></i>Daftar Pengajuan (<?= ucfirst($filter_status); ?>)
@@ -247,19 +247,20 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
         </div>
         <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><?= count($daftar_pengajuan); ?> Data Ditemukan</span>
     </div>
-    <div class="table-responsive">
-        <table class="table table-modern table-hover align-middle mb-0">
-            <thead>
-                <tr>
-                    <th style="width: 45px;" class="text-center">No</th>
-                    <th>Mahasiswa & Judul Skripsi</th>
-                    <th>Bab Pembahasan</th>
-                    <th>Jadwal Diajukan</th>
-                    <th>Draft Naskah</th>
-                    <th>Status</th>
-                    <th style="width: 250px;" class="text-center">Keputusan / Aksi</th>
-                </tr>
-            </thead>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-compact align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 35px;" class="text-center">No</th>
+                        <th style="min-width: 170px;">Mahasiswa & Judul</th>
+                        <th style="min-width: 130px;">Bab Pembahasan</th>
+                        <th style="width: 110px;">Jadwal Diajukan</th>
+                        <th style="width: 105px;" class="text-center">Draft Naskah</th>
+                        <th style="width: 90px;" class="text-center">Status</th>
+                        <th style="width: 220px;" class="text-center sticky-action-col">Keputusan / Aksi</th>
+                    </tr>
+                </thead>
             <tbody>
                 <?php if (empty($daftar_pengajuan)): ?>
                     <tr>
@@ -274,19 +275,19 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                             <td class="text-center fw-semibold text-muted"><?= $index + 1; ?></td>
                             <td>
                                 <div class="d-flex align-items-start gap-2">
-                                    <div class="avatar-circle avatar-sm avatar-primary mt-1">
+                                    <div class="avatar-circle avatar-sm avatar-primary mt-1 flex-shrink-0">
                                         <?= strtoupper(substr($row['nama_lengkap'], 0, 1)); ?>
                                     </div>
-                                    <div>
-                                        <div class="fw-bold text-dark"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
-                                        <div class="small text-muted">
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-dark text-truncate" style="max-width: 230px;"><?= htmlspecialchars($row['nama_lengkap']); ?></div>
+                                        <div class="small text-muted d-flex align-items-center gap-1">
                                             <span>NIM: <?= htmlspecialchars($row['nim']); ?></span>
                                             <?php if (!empty($row['kelas'])): ?>
-                                                <span class="badge bg-light text-primary border border-primary-subtle ms-1"><?= htmlspecialchars($row['kelas']); ?></span>
+                                                <span class="badge bg-light text-primary border border-primary-subtle"><?= htmlspecialchars($row['kelas']); ?></span>
                                             <?php endif; ?>
                                         </div>
-                                        <div class="text-truncate small text-secondary mt-1" style="max-width: 230px;" title="<?= htmlspecialchars($row['judul_skripsi']); ?>">
-                                            <i class="bi bi-journal-text me-1 text-primary"></i><?= htmlspecialchars($row['judul_skripsi']); ?>
+                                        <div class="text-truncate small text-secondary mt-1" style="max-width: 190px;" title="<?= htmlspecialchars($row['judul_skripsi'] ?: 'Belum ada judul'); ?>">
+                                            <i class="bi bi-journal-text me-1 text-primary"></i><?= htmlspecialchars($row['judul_skripsi'] ?: 'Belum mengajukan judul skripsi'); ?>
                                         </div>
                                     </div>
                                 </div>
@@ -295,35 +296,39 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
                                     <?= htmlspecialchars($row['bab_pembahasan']); ?>
                                 </span>
-                                <?php if (!empty($row['catatan_mahasiswa'])): ?>
-                                    <div class="small text-muted mt-1 fst-italic" style="max-width: 180px;">
-                                        "<?= htmlspecialchars($row['catatan_mahasiswa']); ?>"
+                                <?php 
+                                $catatan_raw = trim($row['catatan_mahasiswa'] ?? '');
+                                $is_duplikat_judul = (strpos($catatan_raw, 'Pengajuan Usulan Judul Skripsi:') !== false);
+                                if (!empty($catatan_raw) && !$is_duplikat_judul): 
+                                ?>
+                                    <div class="small text-muted mt-1" style="max-width: 190px;" title="<?= htmlspecialchars($catatan_raw); ?>">
+                                        <i class="bi bi-chat-left-text me-1 text-secondary"></i>"<?= htmlspecialchars($catatan_raw); ?>"
                                     </div>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <div class="fw-semibold text-dark">
+                                <div class="fw-semibold text-dark text-nowrap">
                                     <i class="bi bi-calendar-event me-1 text-primary"></i>
                                     <?= date('d M Y', strtotime($row['tanggal_bimbingan'])); ?>
                                 </div>
-                                <small class="text-muted">
+                                <div class="small text-muted text-nowrap mt-1">
                                     <i class="bi bi-clock me-1"></i>
                                     <?= htmlspecialchars(substr($row['jam_bimbingan'], 0, 5)); ?> WIB
-                                </small>
+                                </div>
                             </td>
-                            <td>
-                                <div class="d-flex flex-column gap-1">
+                            <td class="text-center">
+                                <div class="d-inline-flex flex-column align-items-center gap-1">
                                     <?php if (!empty($row['file_draft'])): 
                                         $pst_pdf_url = "../unduh_berkas.php?id=" . (int)$row['id'];
                                         $pst_pdf_title = htmlspecialchars($row['judul_skripsi'] ?: ($row['bab_pembahasan'] ?? 'Dokumen Bimbingan'), ENT_QUOTES);
                                     ?>
-                                        <div class="d-flex flex-wrap gap-1">
-                                            <button type="button" class="btn btn-sm btn-danger fw-semibold shadow-sm d-inline-flex align-items-center gap-1"
+                                        <div class="btn-group btn-group-sm shadow-sm" role="group">
+                                            <button type="button" class="btn btn-danger fw-semibold d-inline-flex align-items-center gap-1 px-2"
                                                     onclick="bukaPreviewPdf('<?= $pst_pdf_url; ?>', '<?= $pst_pdf_title; ?>')" title="Lihat Pratinjau Dokumen">
-                                                <i class="bi bi-eye-fill"></i> Preview PDF
+                                                <i class="bi bi-file-earmark-pdf-fill"></i> Preview
                                             </button>
                                             <a href="<?= $pst_pdf_url; ?>&download=1" 
-                                               class="btn btn-sm btn-outline-danger fw-semibold shadow-sm d-inline-flex align-items-center gap-1" 
+                                               class="btn btn-outline-danger fw-semibold d-inline-flex align-items-center px-2" 
                                                target="_blank" download title="Unduh Berkas PDF">
                                                 <i class="bi bi-download"></i>
                                             </a>
@@ -331,9 +336,9 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                                     <?php endif; ?>
                                     <?php if (!empty($row['link_drive'])): ?>
                                         <a href="<?= htmlspecialchars($row['link_drive']); ?>" 
-                                           class="btn btn-sm btn-outline-success fw-semibold shadow-sm" 
-                                           target="_blank" rel="noopener noreferrer">
-                                            <i class="bi bi-google me-1"></i>Buka Drive
+                                           class="btn btn-sm btn-outline-success fw-semibold shadow-sm d-inline-flex align-items-center gap-1 px-2 py-0 mt-1" 
+                                           target="_blank" rel="noopener noreferrer" style="font-size: 0.75rem;">
+                                            <i class="bi bi-google"></i> Drive
                                         </a>
                                     <?php endif; ?>
                                     <?php if (empty($row['file_draft']) && empty($row['link_drive'])): ?>
@@ -341,7 +346,7 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <?php
                                 $st = $row['status'];
                                 if ($st === 'menunggu') {
@@ -357,35 +362,35 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                                 }
                                 ?>
                             </td>
-                            <td class="text-center">
+                            <td class="text-center sticky-action-col">
                                 <?php if ($row['status'] === 'menunggu'): ?>
-                                    <div class="d-flex flex-wrap justify-content-center gap-1">
+                                    <div class="d-inline-flex align-items-center justify-content-center gap-1 flex-nowrap">
                                         <!-- Tombol 1: TERIMA / SETUJUI -->
-                                        <form action="persetujuan.php?status=<?= $filter_status; ?>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin MENERIMA / MENYETUJUI jadwal bimbingan ini?');">
+                                        <form action="persetujuan.php?status=<?= $filter_status; ?>" method="POST" class="d-inline m-0" onsubmit="return confirm('Apakah Anda yakin ingin MENERIMA / MENYETUJUI jadwal bimbingan ini?');">
                                             <input type="hidden" name="proses_keputusan" value="1">
                                             <input type="hidden" name="id_pengajuan" value="<?= $row['id']; ?>">
                                             <input type="hidden" name="status_baru" value="disetujui">
-                                            <button type="submit" class="btn btn-sm btn-success shadow-sm" title="Terima Jadwal">
-                                                <i class="bi bi-check-circle me-1"></i>Terima
+                                            <button type="submit" class="btn btn-sm btn-success fw-semibold px-2 py-1 shadow-sm d-inline-flex align-items-center gap-1 text-nowrap" title="Terima Jadwal">
+                                                <i class="bi bi-check-lg"></i> Terima
                                             </button>
                                         </form>
 
                                         <!-- Tombol 2: RESCHEDULE (Jadwalkan Ulang) -->
                                         <button type="button" 
-                                                class="btn btn-sm btn-warning text-dark fw-semibold shadow-sm" 
+                                                class="btn btn-sm btn-warning text-dark fw-semibold px-2 py-1 shadow-sm d-inline-flex align-items-center gap-1 text-nowrap" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#modalReschedule<?= $row['id']; ?>"
                                                 title="Jadwalkan Ulang / Ganti Jam">
-                                            <i class="bi bi-clock-history me-1"></i>Reschedule
+                                            <i class="bi bi-calendar2-range"></i> Reschedule
                                         </button>
 
                                         <!-- Tombol 3: TOLAK -->
                                         <button type="button" 
-                                                class="btn btn-sm btn-outline-danger" 
+                                                class="btn btn-sm btn-outline-danger fw-semibold px-2 py-1 shadow-sm d-inline-flex align-items-center gap-1 text-nowrap" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#modalTolak<?= $row['id']; ?>"
                                                 title="Tolak Permohonan">
-                                            <i class="bi bi-x-circle me-1"></i>Tolak
+                                            <i class="bi bi-x-lg"></i> Tolak
                                         </button>
                                     </div>
 
@@ -397,9 +402,9 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                                                     <input type="hidden" name="proses_reschedule" value="1">
                                                     <input type="hidden" name="id_pengajuan" value="<?= $row['id']; ?>">
                                                     
-                                                    <div class="modal-header bg-warning">
-                                                        <h5 class="modal-title fw-bold text-dark">
-                                                            <i class="bi bi-calendar2-range-fill me-2"></i>Jadwalkan Ulang (Reschedule)
+                                                    <div class="modal-header border-bottom">
+                                                        <h5 class="modal-title fw-bold">
+                                                            <i class="bi bi-calendar2-range-fill text-warning me-2"></i>Jadwalkan Ulang (Reschedule)
                                                         </h5>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
@@ -445,11 +450,11 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                                                     <input type="hidden" name="id_pengajuan" value="<?= $row['id']; ?>">
                                                     <input type="hidden" name="status_baru" value="ditolak">
 
-                                                    <div class="modal-header bg-danger text-white">
-                                                        <h5 class="modal-title fw-bold">
+                                                    <div class="modal-header border-bottom">
+                                                        <h5 class="modal-title fw-bold text-danger">
                                                             <i class="bi bi-x-circle-fill me-2"></i>Tolak Permohonan Bimbingan
                                                         </h5>
-                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
                                                     <div class="modal-body p-4">
                                                         <p class="mb-2">Anda akan menolak pengajuan bimbingan dari <strong><?= htmlspecialchars($row['nama_lengkap']); ?></strong>.</p>
@@ -469,10 +474,10 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
 
                                 <?php else: ?>
                                     <button type="button" 
-                                            class="btn btn-sm btn-outline-secondary" 
+                                            class="btn btn-sm btn-outline-secondary fw-semibold px-2 py-1 shadow-sm d-inline-flex align-items-center gap-1 text-nowrap" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#modalDetail<?= $row['id']; ?>">
-                                        <i class="bi bi-eye me-1"></i>Detail Catatan
+                                        <i class="bi bi-eye"></i> Detail Catatan
                                     </button>
 
                                     <!-- Modal Detail Catatan -->
@@ -507,6 +512,7 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 

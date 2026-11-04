@@ -660,6 +660,23 @@ main {
     vertical-align: middle;
 }
 
+/* Compact Table Utility for Multi-Column Data Views */
+.table-compact th {
+    padding: 0.65rem 0.6rem !important;
+    font-size: 0.76rem !important;
+    letter-spacing: 0.04em;
+}
+
+.table-compact td {
+    padding: 0.65rem 0.6rem !important;
+    font-size: 0.82rem !important;
+}
+
+.table-compact .btn-sm {
+    padding: 0.25rem 0.45rem !important;
+    font-size: 0.75rem !important;
+}
+
 .table-hover tbody tr {
     transition: background-color 0.15s ease, transform 0.1s ease;
 }
@@ -4593,4 +4610,20 @@ thead th.sticky-action-col {
     color: #92400e !important;
     border: 1px solid #fcd34d !important;
     font-weight: 700 !important;
+}
+
+/* Modal Warning Header Contrast Guarantee */
+[data-theme="dark"] .modal-header.bg-warning {
+    background-color: #b45309 !important;
+}
+[data-theme="dark"] .modal-header.bg-warning .modal-title,
+[data-theme="dark"] .modal-header.bg-warning .modal-title i {
+    color: #ffffff !important;
+}
+[data-theme="dark"] .modal-header.bg-warning .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+[data-theme="light"] .modal-header.bg-warning .modal-title,
+[data-theme="light"] .modal-header.bg-warning .modal-title i {
+    color: #1e293b !important;
 }
