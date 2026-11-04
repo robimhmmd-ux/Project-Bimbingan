@@ -43,6 +43,7 @@ try {
         if ($binary !== false && strlen($binary) > 0) {
             $display_name = !empty($row['file_draft']) ? basename($row['file_draft']) : 'dokumen_bimbingan.pdf';
             header('Content-Type: application/pdf');
+            header('X-Frame-Options: SAMEORIGIN');
             header('Content-Disposition: ' . $disposition . '; filename="' . $display_name . '"');
             header('Content-Length: ' . strlen($binary));
             header('Cache-Control: private, max-age=86400');
@@ -59,6 +60,7 @@ try {
         if (file_exists($local_path)) {
             $display_name = basename($target_file);
             header('Content-Type: application/pdf');
+            header('X-Frame-Options: SAMEORIGIN');
             header('Content-Disposition: ' . $disposition . '; filename="' . $display_name . '"');
             header('Content-Length: ' . filesize($local_path));
             header('Cache-Control: private, max-age=86400');

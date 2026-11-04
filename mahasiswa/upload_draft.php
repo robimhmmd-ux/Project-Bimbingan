@@ -401,9 +401,15 @@ $daftar_drafts = $stmt_drafts->fetchAll();
                             <h6 class="fw-bold text-dark mb-2">"<?= htmlspecialchars($judul_terdaftar ?: $pengajuan_judul['catatan_mahasiswa']); ?>"</h6>
                             
                             <div class="d-flex flex-wrap gap-2 mb-2">
-                                <?php if (!empty($pengajuan_judul['file_draft'])): ?>
-                                    <a href="../unduh_berkas.php?id=<?= $pengajuan_judul['id']; ?>" target="_blank" download class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh Dokumen Usulan Judul
+                                <?php if (!empty($pengajuan_judul['file_draft'])): 
+                                    $mhs_jd_url = "../unduh_berkas.php?id=" . (int)$pengajuan_judul['id'];
+                                ?>
+                                    <button type="button" class="btn btn-sm btn-danger shadow-sm d-inline-flex align-items-center gap-1"
+                                            onclick="bukaPreviewPdf('<?= $mhs_jd_url; ?>', 'Dokumen Usulan Judul Skripsi')">
+                                        <i class="bi bi-eye-fill"></i> Preview Dokumen Judul
+                                    </button>
+                                    <a href="<?= $mhs_jd_url; ?>&download=1" target="_blank" download class="btn btn-sm btn-outline-danger shadow-sm d-inline-flex align-items-center gap-1">
+                                        <i class="bi bi-download"></i> Unduh PDF
                                     </a>
                                 <?php endif; ?>
                                 <?php if (!empty($pengajuan_judul['link_drive'])): ?>

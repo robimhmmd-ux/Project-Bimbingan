@@ -313,12 +313,21 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
                             </td>
                             <td>
                                 <div class="d-flex flex-column gap-1">
-                                    <?php if (!empty($row['file_draft'])): ?>
-                                        <a href="../unduh_berkas.php?id=<?= $row['id']; ?>" 
-                                           class="btn btn-sm btn-outline-danger fw-semibold shadow-sm" 
-                                           target="_blank" download>
-                                            <i class="bi bi-file-earmark-pdf-fill me-1"></i>Unduh PDF
-                                        </a>
+                                    <?php if (!empty($row['file_draft'])): 
+                                        $pst_pdf_url = "../unduh_berkas.php?id=" . (int)$row['id'];
+                                        $pst_pdf_title = htmlspecialchars($row['judul_skripsi'] ?: ($row['bab_pembahasan'] ?? 'Dokumen Bimbingan'), ENT_QUOTES);
+                                    ?>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="btn btn-sm btn-danger fw-semibold shadow-sm d-inline-flex align-items-center gap-1"
+                                                    onclick="bukaPreviewPdf('<?= $pst_pdf_url; ?>', '<?= $pst_pdf_title; ?>')" title="Lihat Pratinjau Dokumen">
+                                                <i class="bi bi-eye-fill"></i> Preview PDF
+                                            </button>
+                                            <a href="<?= $pst_pdf_url; ?>&download=1" 
+                                               class="btn btn-sm btn-outline-danger fw-semibold shadow-sm d-inline-flex align-items-center gap-1" 
+                                               target="_blank" download title="Unduh Berkas PDF">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
                                     <?php endif; ?>
                                     <?php if (!empty($row['link_drive'])): ?>
                                         <a href="<?= htmlspecialchars($row['link_drive']); ?>" 
