@@ -708,7 +708,7 @@ thead th.sticky-action-col {
         ?>
                                     <!-- MODAL 1: ATUR CATATAN PROGRES MAHASISWA OLEH DOSEN (ALUR BERURUTAN OTOMATIS) -->
                                     <div class="modal fade" id="modalAturProgres<?= $mhs['id']; ?>" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-lg text-start">
+                                        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable text-start">
                                             <div class="modal-content border-0 shadow rounded-4">
                                                 <form method="POST" action="mahasiswa_bimbingan.php">
                                                     <input type="hidden" name="simpan_catatan_progres" value="1">
@@ -929,7 +929,7 @@ thead th.sticky-action-col {
 
                                     <!-- MODAL 2: DETAIL TIMELINE RIWAYAT & EDIT CATATAN SESI -->
                                     <div class="modal fade" id="modalRiwayatMhs<?= $mhs['id']; ?>" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-lg text-start">
+                                        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable text-start">
                                             <div class="modal-content">
                                                 <div class="modal-header bg-primary text-white">
                                                     <h5 class="modal-title fw-bold">

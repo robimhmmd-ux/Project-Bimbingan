@@ -4627,3 +4627,138 @@ thead th.sticky-action-col {
 [data-theme="light"] .modal-header.bg-warning .modal-title i {
     color: #1e293b !important;
 }
+
+/* =========================================================================
+   MODAL SCROLLABLE FORM & SOLID BACKGROUND GUARANTEES
+   ========================================================================= */
+.modal-dialog-scrollable .modal-content {
+    max-height: calc(100vh - 3.5rem);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-dialog-scrollable .modal-content > form,
+.modal-dialog-scrollable form {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    height: 100%;
+    margin-bottom: 0;
+}
+
+.modal-dialog-scrollable .modal-body {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+.modal-content {
+    background-color: #ffffff;
+}
+
+[data-theme="light"] .modal-content,
+html:not([data-theme="dark"]) .modal-content {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .modal-body,
+html:not([data-theme="dark"]) .modal-body {
+    background-color: #ffffff !important;
+}
+
+[data-theme="dark"] .modal-content {
+    background-color: #111827 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .modal-body {
+    background-color: #111827 !important;
+}
+
+/* =========================================================================
+   CHAT SYSTEM - THEME & BUBBLE CONTRAST HARDENING
+   ========================================================================= */
+
+/* Incoming / Peer Chat Bubbles - Dark Mode */
+[data-theme="dark"] .chat-bubble-peer,
+[data-theme="dark"] .chat-bubble-dosen {
+    background-color: #1e293b !important;
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .chat-bubble-peer p,
+[data-theme="dark"] .chat-bubble-peer div,
+[data-theme="dark"] .chat-bubble-peer span:not(.text-muted),
+[data-theme="dark"] .chat-bubble-dosen p,
+[data-theme="dark"] .chat-bubble-dosen div,
+[data-theme="dark"] .chat-bubble-dosen span:not(.text-muted) {
+    color: #f8fafc !important;
+}
+
+[data-theme="dark"] .chat-bubble-peer .text-muted,
+[data-theme="dark"] .chat-bubble-dosen .text-muted {
+    color: #94a3b8 !important;
+}
+
+/* Outgoing / Me Chat Bubbles - Dark Mode */
+[data-theme="dark"] .chat-bubble-me,
+[data-theme="dark"] .chat-bubble-mhs {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .chat-bubble-me p,
+[data-theme="dark"] .chat-bubble-mhs p {
+    color: #ffffff !important;
+}
+
+/* Chat Container & Panel Backgrounds - Dark Mode */
+[data-theme="dark"] #chatContainer,
+[data-theme="dark"] .chat-scrollable-messages {
+    background-color: #0b1120 !important;
+}
+
+[data-theme="dark"] .chat-messages-col > div:first-child,
+[data-theme="dark"] .chat-messages-col > div:last-child {
+    background-color: #111827 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] #inputPesan {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+[data-theme="dark"] #inputPesan::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Incoming / Peer Chat Bubbles - Light Mode */
+[data-theme="light"] .chat-bubble-peer,
+[data-theme="light"] .chat-bubble-dosen {
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .chat-bubble-peer p,
+[data-theme="light"] .chat-bubble-dosen p {
+    color: #0f172a !important;
+}
+
+[data-theme="light"] .chat-bubble-peer .text-muted,
+[data-theme="light"] .chat-bubble-dosen .text-muted {
+    color: #64748b !important;
+}
+
+[data-theme="light"] #chatContainer,
+[data-theme="light"] .chat-scrollable-messages {
+    background-color: #f8fafc !important;
+}
