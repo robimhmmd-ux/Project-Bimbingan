@@ -71,7 +71,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             $pdo->prepare("UPDATE notifikasi SET is_read = 1 WHERE user_id = :uid")->execute([':uid' => $cur_user_id]);
         } catch (PDOException $e) {}
         $clean_url = strtok($_SERVER['REQUEST_URI'], '?');
-        header("Location: " . $clean_url);
+        if (!headers_sent()) {
+            header("Location: " . $clean_url);
+        } else {
+            echo "<script>window.location.href='" . $clean_url . "';</script>";
+        }
         exit;
     }
 
@@ -85,7 +89,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
         if (empty($dest)) {
             $dest = 'index.php';
         }
-        header("Location: " . $dest);
+        if (!headers_sent()) {
+            header("Location: " . $dest);
+        } else {
+            echo "<script>window.location.href='" . $dest . "';</script>";
+        }
         exit;
     }
 
@@ -120,6 +128,31 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Custom CSS with Cache Buster -->
     <link href="../assets/css/style.css?v=<?= $css_ver; ?>" rel="stylesheet">
+    <!-- SweetAlert2 Modern Alerts & Modals via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Script Deteksi & Pengalih Tema Terang / Gelap (Anti-Flicker & Instant) -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+
+        function toggleAppTheme(e) {
+            if (e) {
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                if (typeof e.preventDefault === 'function') e.preventDefault();
+            }
+            var html = document.documentElement;
+            var cur = html.getAttribute('data-theme') || 'light';
+            var next = (cur === 'dark') ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            try {
+                localStorage.setItem('theme', next);
+            } catch (err) {}
+        }
+    </script>
+
     <style>
         /* =========================================================================
            JAMINAN MUTLAK: TOPBAR TETAP FIX DI ATAS & SIDEBAR TIDAK IKUT SCROLL
@@ -147,7 +180,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             height: var(--navbar-height, 60px) !important;
             min-height: var(--navbar-height, 60px) !important;
             max-height: var(--navbar-height, 60px) !important;
-            z-index: 1060 !important;
+            z-index: 1030 !important;
             background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
             box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2) !important;
@@ -156,6 +189,14 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             display: flex !important;
             align-items: center !important;
             margin: 0 !important;
+        }
+
+        /* Modal Stacking & Overlay: Pastikan modal dan backdrop selalu berada di atas navbar & sidebar */
+        .modal {
+            z-index: 1065 !important;
+        }
+        .modal-backdrop {
+            z-index: 1060 !important;
         }
 
         /* 3. Sidebar Desktop (>= 768px): Stationary (Fixed di Kiri di Bawah Navbar) */
@@ -170,8 +211,8 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 height: calc(100vh - var(--navbar-height, 60px)) !important;
                 max-height: calc(100vh - var(--navbar-height, 60px)) !important;
                 z-index: 1020 !important;
-                background-color: #ffffff !important;
-                border-right: 1px solid #e2e8f0 !important;
+                background-color: var(--surface, #ffffff) !important;
+                border-right: 1px solid var(--border-color, #e2e8f0) !important;
                 border-top: none !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
@@ -262,7 +303,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             }
         }
 
-        /* 4. Mobile (< 768px): Drawer Menu Melayang */
+        /* 4. Mobile (< 768px): Drawer Menu Melayang & Optimalisasi Layar HP */
         @media (max-width: 767.98px) {
             .sidebar,
             #sidebarMenu {
@@ -271,13 +312,15 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 top: var(--navbar-height, 60px) !important;
                 left: 0 !important;
                 bottom: 0 !important;
-                width: 270px !important;
+width: 275px !important;
                 max-width: 85vw !important;
                 height: calc(100vh - var(--navbar-height, 60px)) !important;
-                z-index: 1050 !important;
+                z-index: 1070 !important;
                 transform: translateX(-100%) !important;
-                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
                 box-shadow: none !important;
+background-color: #ffffff !important;
+                overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch !important;
             }
 
@@ -286,20 +329,20 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             body.sidebar-open-mobile #sidebarMenu,
             body.sidebar-mobile-open #sidebarMenu {
                 transform: translateX(0) !important;
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+                box-shadow: 0 12px 40px rgba(15, 23, 42, 0.45) !important;
             }
 
             .sidebar-mobile-backdrop {
                 display: none;
                 position: fixed !important;
-                top: var(--navbar-height, 60px) !important;
+                top: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
                 bottom: 0 !important;
-                background: rgba(15, 23, 42, 0.55) !important;
+background: rgba(15, 23, 42, 0.6) !important;
                 backdrop-filter: blur(3px) !important;
                 -webkit-backdrop-filter: blur(3px) !important;
-                z-index: 1040 !important;
+                z-index: 1065 !important;
             }
 
             body.sidebar-open-mobile .sidebar-mobile-backdrop,
@@ -313,7 +356,18 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 margin-left: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                padding: 1rem 0.75rem !important;
+padding: 1rem 0.75rem 2.5rem 0.75rem !important;
+            }
+
+            #topNavbar .dropdown-menu {
+                position: fixed !important;
+                top: calc(var(--navbar-height, 60px) + 6px) !important;
+                left: 10px !important;
+                right: 10px !important;
+                width: auto !important;
+                max-width: calc(100vw - 20px) !important;
+                min-width: 0 !important;
+                border-radius: 14px !important;
             }
         }
 
@@ -330,6 +384,39 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             background: rgba(255, 255, 255, 0.2) !important;
             border-color: rgba(255, 255, 255, 0.4) !important;
             transform: scale(1.02);
+        }
+
+        /* =========================================================================
+           DUKUNGAN TEMA GELAP (DARK MODE) TOPBAR, SIDEBAR & MAIN CONTENT
+           ========================================================================= */
+        [data-theme="dark"] .sidebar,
+        [data-theme="dark"] #sidebarMenu {
+            background-color: #131b2a !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+
+        [data-theme="dark"] .sidebar::-webkit-scrollbar-thumb {
+            background: #334155 !important;
+        }
+
+        [data-theme="dark"] body {
+            background-color: #0a0e17 !important;
+            color: #f1f5f9 !important;
+        }
+
+        [data-theme="dark"] main,
+        [data-theme="dark"] .main-content-wrapper,
+        [data-theme="dark"] #mainContent {
+            background-color: #0a0e17 !important;
+            color: #f1f5f9 !important;
+        }
+
+        [data-theme="dark"] .card,
+        [data-theme="dark"] .bg-white {
+            background-color: #131b2a !important;
+            color: #f1f5f9 !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
         }
     </style>
     <script>
@@ -362,21 +449,30 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             }
         };
 
-        // Sinkronisasi ikon saat DOM siap
+        // Sinkronisasi ikon & event listener penutupan otomatis drawer mobile saat link diklik
         document.addEventListener('DOMContentLoaded', function() {
             const isCollapsed = document.body.classList.contains('sidebar-collapsed') || document.documentElement.classList.contains('sidebar-collapsed');
             const icon = document.getElementById('sidebarToggleIcon');
             if (icon && window.innerWidth >= 768 && isCollapsed) {
                 icon.className = 'bi bi-list fs-3 text-warning';
             }
+
+            // Auto-close drawer saat klik nav-link pada smartphone
+            document.querySelectorAll('#sidebarMenu a.nav-link').forEach(function(link) {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth < 768 && document.body.classList.contains('sidebar-open-mobile')) {
+                        window.toggleSidebarMenu();
+                    }
+                });
+            });
         });
     </script>
 </head>
-<body class="bg-light">
+<body>
 
 <!-- Topbar Navbar (Fixed Top - Solid High-Contrast Navy Blue) -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 60px; min-height: 60px; max-height: 60px; z-index: 1060 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
-    <div class="container-fluid px-md-4">
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 60px; min-height: 60px; max-height: 60px; z-index: 1030 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
+    <div class="container-fluid px-2 px-sm-3 px-md-4">
         <!-- Tombol Buka/Tutup Sidebar & Brand Logo -->
         <div class="d-flex align-items-center gap-2">
             <button class="btn btn-outline-light border-0 p-1 px-2 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none me-1" 
@@ -389,18 +485,18 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 <i class="bi bi-list fs-3 text-white" id="sidebarToggleIcon"></i>
             </button>
             <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none m-0" href="#">
-                <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning flex-shrink-0">
+<span class="brand-icon-academic d-inline-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #00AA13 0%, #00880C 100%);">
                     <i class="bi bi-mortarboard-fill"></i>
                 </span>
                 <div class="d-flex flex-column">
-                    <span class="fs-6 lh-1 text-truncate" style="max-width: 155px;">Bimbingan Skripsi</span>
+<span class="fs-6 lh-1 text-truncate" style="max-width: 155px;">Bimbingan Skripsi</span>
                     <span class="text-white-50 small d-none d-sm-inline" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
                 </div>
             </a>
         </div>
 
         <!-- Right Side User, Notifications & Status Pill -->
-        <div class="d-flex align-items-center gap-2 gap-sm-3 text-white">
+<div class="d-flex align-items-center gap-1 gap-sm-2 gap-md-3 text-white">
             <!-- Dropdown Notifikasi Sistem (UPDATE Robi: tabel notifikasi) -->
             <div class="dropdown">
                 <button class="btn btn-link text-white position-relative p-1 text-decoration-none shadow-none" 
@@ -441,9 +537,11 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                         ?>
                             <li>
                                 <a class="dropdown-item p-3 border-bottom <?= empty($n['is_read']) ? 'bg-light' : ''; ?> text-wrap" href="<?= $target_link; ?>">
-                                    <div class="d-flex align-items-start gap-2">
-                                        <i class="bi <?= $icon_n; ?> fs-5 mt-1 flex-shrink-0"></i>
-                                        <div>
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 bg-light mt-1" style="width: 32px; height: 32px;">
+                                            <i class="bi <?= $icon_n; ?> fs-6"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0">
                                             <div class="d-flex align-items-center justify-content-between gap-2">
                                                 <strong class="small text-dark"><?= htmlspecialchars($n['judul']); ?></strong>
                                                 <small class="text-muted" style="font-size: 0.68rem;"><?= date('d/m H:i', strtotime($n['created_at'])); ?></small>
@@ -465,23 +563,77 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                         <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white shadow-sm', ($cur_role === 'admin' ? 'warning' : 'primary')); ?>
                     </span>
                 <?php endif; ?>
-                <div class="d-none d-md-block text-truncate pe-1" style="max-width: 150px;">
+<div class="d-none d-md-block text-truncate pe-1" style="max-width: 150px;">
                     <span class="fw-bold text-white small"><?= ($cur_role === 'admin' && !str_starts_with(strtolower(trim($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? '')), 'admin') ? 'Admin ' : '') . htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
-                </div>
                 </div>
             </a>
             <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
                 <i class="bi bi-person-gear"></i><span class="d-none d-md-inline">Profil</span>
             </a>
-            <a href="../logout.php" class="btn btn-sm btn-outline-light px-2 px-sm-3 d-inline-flex align-items-center gap-1" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
-                <i class="bi bi-box-arrow-right"></i><span class="d-none d-sm-inline">Keluar</span>
-            </a>
+            <button type="button" class="btn btn-sm btn-outline-light px-2 px-sm-3 btn-logout-navbar" data-bs-toggle="modal" data-bs-target="#modalLogoutConfirm" title="Keluar dari Sistem">
+                <i class="bi bi-box-arrow-right me-1"></i><span class="d-none d-sm-inline">Logout</span>
+            </button>
+            <!-- Switcher Mode Terang / Gelap (Light / Dark Mode Toggle) -->
+            <button id="themeToggle" class="btn-theme-toggle ms-1" type="button" onclick="toggleAppTheme(event)" aria-label="Ganti Tema (Terang / Gelap)" title="Ganti Mode Tampilan (Terang / Gelap)">
+                <i class="bi bi-sun-fill theme-icon-light"></i>
+                <i class="bi bi-moon-stars-fill theme-icon-dark"></i>
+            </button>
         </div>
     </div>
 </nav>
 
+<!-- MODAL MODERN KONFIRMASI LOGOUT -->
+<div class="modal fade modal-modern-confirm" id="modalLogoutConfirm" tabindex="-1" aria-labelledby="modalLogoutConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content shadow-lg border-0 text-center p-4">
+            <div class="modal-body p-0">
+                <div class="confirm-icon-box logout-icon-box mx-auto mb-3">
+                    <i class="bi bi-box-arrow-right fs-1"></i>
+                </div>
+                <h5 class="fw-bold mb-2 confirm-title" id="modalLogoutConfirmLabel">Konfirmasi Keluar Akun</h5>
+                <p class="confirm-desc mb-4 px-2">
+                    Apakah Anda yakin ingin mengakhiri sesi saat ini? Seluruh progres bimbingan dan perubahan data Anda telah tersimpan dengan aman di sistem.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-confirm-cancel px-4 py-2" data-bs-dismiss="modal">
+                        Batal
+                    </button>
+                    <a href="../logout.php" class="btn btn-confirm-logout px-4 py-2">
+                        <i class="bi bi-box-arrow-right me-1"></i> Ya, Keluar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL UNIVERSAL KONFIRMASI MODERN (FALLBACK OFFLINE) -->
+<div class="modal fade modal-modern-confirm" id="modalModernConfirm" tabindex="-1" aria-labelledby="modalModernConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content shadow-lg border-0 text-center p-4">
+            <div class="modal-body p-0">
+                <div class="confirm-icon-box default-icon-box mx-auto mb-3" id="modernConfirmIconBox">
+                    <i class="bi bi-question-circle fs-1" id="modernConfirmIcon"></i>
+                </div>
+                <h5 class="fw-bold mb-2 confirm-title" id="modalModernConfirmLabel">Konfirmasi Tindakan</h5>
+                <p class="confirm-desc mb-4 px-2" id="modernConfirmText">
+                    Apakah Anda yakin ingin melanjutkan tindakan ini?
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-confirm-cancel px-4 py-2" data-bs-dismiss="modal" id="modernConfirmCancelBtn">
+                        Batal
+                    </button>
+                    <button type="button" class="btn btn-confirm-action px-4 py-2" id="modernConfirmOkBtn">
+                        <i class="bi bi-check2-circle me-1"></i> Ya, Lanjutkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Backdrop untuk mobile saat sidebar dibuka -->
 <div class="sidebar-mobile-backdrop" id="sidebarBackdrop" onclick="toggleSidebarMenu()"></div>
-
+<!--  -->
 <div class="container-fluid">
     <div class="row">

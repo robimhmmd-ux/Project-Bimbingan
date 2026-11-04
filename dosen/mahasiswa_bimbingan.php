@@ -1,3 +1,24 @@
+<style>
+/* CSS Sticky Column untuk Kolom Aksi agar tidak terpotong */
+.sticky-action-col {
+    position: sticky !important;
+    right: 0 !important;
+    background: #ffffff !important;
+    z-index: 2 !important;
+    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.06) !important;
+}
+thead th.sticky-action-col {
+    background: #f8fafc !important;
+    z-index: 3 !important;
+}
+[data-theme="dark"] .sticky-action-col {
+    background: #111827 !important;
+    box-shadow: -6px 0 14px rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme="dark"] thead th.sticky-action-col {
+    background: #1f2937 !important;
+}
+</style>
 <?php
 // dosen/mahasiswa_bimbingan.php - Monitoring & Pengelolaan Catatan Progres Mahasiswa (Salsa)
 $page_title   = "Mahasiswa Bimbingan & Progres";
@@ -508,19 +529,18 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width: 40px;" class="text-center">No</th>
-                        <th style="min-width: 200px;">Mahasiswa & Judul Skripsi</th>
-                        <th style="min-width: 130px;">Progres Skripsi</th>
-                        <th style="min-width: 170px;">Bab & Catatan Dosen Terakhir</th>
-                        <th style="width: 90px;" class="text-center">Total Sesi</th>
-                        <th style="width: 130px;" class="text-center">Status</th>
-                        <th style="width: 220px;" class="text-center">Aksi / Tindakan</th>
+                        <th style="width: 35px;" class="text-center">No</th>
+                        <th style="min-width: 170px;">Mahasiswa & Judul</th>
+                        <th style="width: 115px;">Progres & Sesi</th>
+                        <th style="min-width: 160px;">Bab & Catatan Terakhir</th>
+                        <th style="width: 95px;" class="text-center">Status</th>
+                        <th style="width: 115px;" class="text-center sticky-action-col">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($daftar_mahasiswa)): ?>
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <i class="bi bi-people fs-1 d-block mb-2 text-muted"></i>
                                 Tidak ada mahasiswa bimbingan yang sesuai dengan kriteria pencarian.
                             </td>
@@ -533,14 +553,6 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                             $tahap_current = $p_info['tahap_saat_ini'];
                             $bar_color = ($progres >= 75) ? 'bg-success' : (($progres >= 30) ? 'bg-info' : 'bg-warning');
                             
-                            // Query riwayat bimbingan lengkap untuk modal mahasiswa ini
-                            $stmt_hist = $pdo->prepare("
-                                SELECT * FROM pengajuan_bimbingan 
-                                WHERE mahasiswa_id = :mid AND dosen_id = :did 
-                                ORDER BY tanggal_bimbingan DESC, jam_bimbingan DESC
-                            ");
-                            $stmt_hist->execute([':mid' => $mhs['id'], ':did' => $dosen_id]);
-                            $hist_list = $stmt_hist->fetchAll();
                             ?>
                             <tr>
                                 <td class="text-center fw-semibold text-muted"><?= $idx + 1; ?></td>
@@ -569,12 +581,15 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                 <td>
                                     <div class="d-flex justify-content-between align-items-center mb-1">
                                         <small class="fw-bold text-dark"><?= $progres; ?>%</small>
-                                        <small class="text-muted" style="font-size: 0.75rem;">
+                                        <small class="text-muted" style="font-size: 0.72rem;">
                                             <?= ($progres >= 100) ? 'Tuntas' : (($progres >= 50) ? 'Lanjut' : 'Awal'); ?>
                                         </small>
                                     </div>
-                                    <div class="progress" style="height: 8px;">
+                                    <div class="progress" style="height: 6px;">
                                         <div class="progress-bar <?= $bar_color; ?>" role="progressbar" style="width: <?= $progres; ?>%;" aria-valuenow="<?= $progres; ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <div class="small text-muted mt-1" style="font-size: 0.72rem;">
+                                        <i class="bi bi-calendar-check me-1 text-primary"></i><span class="fw-semibold text-dark"><?= (int)$mhs['total_sesi']; ?></span> Sesi
                                     </div>
                                 </td>
                                 <td>
@@ -586,16 +601,13 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                             </small>
                                         <?php endif; ?>
                                         <?php if (!empty($mhs['catatan_terakhir'])): ?>
-                                            <div class="text-truncate text-secondary small mt-1" style="max-width: 220px;" title="<?= htmlspecialchars($mhs['catatan_terakhir']); ?>">
+                                            <div class="text-truncate text-secondary small mt-1" style="max-width: 180px;" title="<?= htmlspecialchars($mhs['catatan_terakhir']); ?>">
                                                 <i class="bi bi-chat-left-quote me-1 text-primary"></i><?= htmlspecialchars($mhs['catatan_terakhir']); ?>
                                             </div>
                                         <?php endif; ?>
                                     <?php else: ?>
                                         <span class="text-muted small fst-italic">Belum ada catatan progres</span>
                                     <?php endif; ?>
-                                </td>
-                                <td class="text-center">
-                                    <span class="fw-bold text-dark"><?= (int)$mhs['total_sesi']; ?></span> <small class="text-muted">Sesi</small>
                                 </td>
                                 <td class="text-center">
                                     <?php
@@ -605,54 +617,94 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                     } elseif ($stk === 'lulus') {
                                         echo '<span class="badge bg-primary"><i class="bi bi-mortarboard-fill me-1"></i>Lulus</span>';
                                     } else {
-                                        echo '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Proses</span>';
+                                        echo '<span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="bi bi-hourglass-split me-1"></i>Proses</span>';
                                     }
                                     ?>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center sticky-action-col">
                                     <div class="d-flex justify-content-center align-items-center gap-1">
                                         <!-- Tombol Utama: Atur Catatan Progres & Penilaian -->
                                         <button type="button" 
-                                                class="btn btn-sm btn-primary" 
+                                                class="btn btn-sm btn-primary py-1 px-2 d-inline-flex align-items-center gap-1" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#modalAturProgres<?= $mhs['id']; ?>"
                                                 title="Atur Catatan Progres, Nilai, dan Status Mahasiswa">
-                                            <i class="bi bi-pencil-square me-1"></i>Atur Progres
+                                            <i class="bi bi-pencil-square"></i>
+                                            <span class="small fw-semibold">Atur</span>
                                         </button>
 
                                         <!-- Tombol 2: Detail Timeline Riwayat Bimbingan -->
                                         <button type="button" 
-                                                class="btn btn-sm btn-outline-secondary" 
+                                                class="btn btn-sm btn-outline-secondary py-1 px-2" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#modalRiwayatMhs<?= $mhs['id']; ?>"
                                                 title="Lihat Timeline Riwayat & Logbook">
                                             <i class="bi bi-clock-history"></i>
                                         </button>
 
-                                        <!-- Tombol 3: Chat Langsung -->
-                                        <a href="chat.php?uid=<?= $mhs['mhs_user_id']; ?>" 
-                                           class="btn btn-sm btn-outline-success" 
-                                           title="Kirim Pesan Konsultasi">
-                                            <i class="bi bi-chat-dots-fill"></i>
-                                        </a>
-
-                                        <!-- Tombol 4: Cetak Laporan Mahasiswa Ini -->
-                                        <a href="cetak_laporan.php?mahasiswa_id=<?= $mhs['id']; ?>" 
-                                           class="btn btn-sm btn-outline-secondary" 
-                                           title="Cetak Lembar Rekapan Mahasiswa Ini">
-                                            <i class="bi bi-printer"></i>
-                                        </a>
-
-                                        <!-- Tombol 5: Reset & Lepas Mahasiswa -->
-                                        <button type="button" 
-                                                class="btn btn-sm btn-outline-danger" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalResetDosen<?= $mhs['id']; ?>" 
-                                                title="Reset & Lepas Mahasiswa dari Bimbingan">
-                                            <i class="bi bi-arrow-counterclockwise"></i>
-                                        </button>
+                                        <!-- Dropdown Menu Tindakan Lainnya -->
+                                        <div class="dropdown d-inline-block">
+                                            <button class="btn btn-sm btn-outline-secondary py-1 px-1.5" 
+                                                    type="button" 
+                                                    data-bs-toggle="dropdown" 
+                                                    aria-expanded="false" 
+                                                    title="Menu Lainnya">
+                                                <i class="bi bi-three-dots-vertical"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="font-size: 0.85rem;">
+                                                <li>
+                                                    <a class="dropdown-item py-1.5 d-flex align-items-center gap-2" href="chat.php?uid=<?= $mhs['mhs_user_id']; ?>">
+                                                        <i class="bi bi-chat-dots-fill text-success"></i>
+                                                        <span>Kirim Pesan Chat</span>
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-1.5 d-flex align-items-center gap-2" href="cetak_laporan.php?mahasiswa_id=<?= $mhs['id']; ?>" target="_blank">
+                                                        <i class="bi bi-printer text-primary"></i>
+                                                        <span>Cetak Lembar Rekapan</span>
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider my-1"></li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item py-1.5 d-flex align-items-center gap-2 text-danger" data-bs-toggle="modal" data-bs-target="#modalResetDosen<?= $mhs['id']; ?>">
+                                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                                        <span>Lepas dari Bimbingan</span>
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
 
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================================
+     MODAL SECTIONS (DITEMPATKAN DI LUAR TABLE & KONTENER AGAR TIDAK TERJEBAK STACKING CONTEXT)
+     ========================================================================= -->
+<?php if (!empty($daftar_mahasiswa)): ?>
+    <?php foreach ($daftar_mahasiswa as $mhs): ?>
+        <?php
+        $p_info = get_progres_mahasiswa($pdo, $mhs['id']);
+        $progres = $p_info['progres_persen'];
+        $tahap_current = $p_info['tahap_saat_ini'];
+        $bar_color = ($progres >= 75) ? 'bg-success' : (($progres >= 30) ? 'bg-info' : 'bg-warning');
+        
+        // Query riwayat bimbingan untuk Modal 2
+        $stmt_hist = $pdo->prepare("
+            SELECT * FROM pengajuan_bimbingan 
+            WHERE mahasiswa_id = :mid AND dosen_id = :did 
+            ORDER BY tanggal_bimbingan DESC, jam_bimbingan DESC
+        ");
+        $stmt_hist->execute([':mid' => $mhs['id'], ':did' => $dosen_id]);
+        $hist_list = $stmt_hist->fetchAll();
+        ?>
                                     <!-- MODAL 1: ATUR CATATAN PROGRES MAHASISWA OLEH DOSEN (ALUR BERURUTAN OTOMATIS) -->
                                     <div class="modal fade" id="modalAturProgres<?= $mhs['id']; ?>" tabindex="-1" aria-hidden="true">
                                         <div class="modal-dialog modal-lg text-start">
@@ -1048,15 +1100,8 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
                                             </form>
                                         </div>
                                     </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+    <?php endforeach; ?>
+<?php endif; ?>
 
 <?php
 require_once '../templates/footer.php';

@@ -65,12 +65,14 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
             <p class="text-muted small mb-0 d-sm-none" style="font-size: 0.75rem;">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
         </div>
     </div>
-    <div class="btn-toolbar w-100 w-md-auto d-flex gap-2">
-        <a href="mahasiswa_bimbingan.php" class="btn btn-sm btn-outline-primary flex-fill flex-md-grow-0 text-center">
-            <i class="bi bi-people me-1"></i> Mahasiswa
+    <div class="btn-toolbar w-100 w-md-auto d-flex gap-2 mb-2 mb-md-0">
+        <a href="mahasiswa_bimbingan.php" class="btn btn-sm btn-outline-primary rounded-pill px-3 flex-fill flex-md-grow-0 d-inline-flex align-items-center justify-content-center gap-1">
+            <i class="bi bi-people-fill"></i> Mahasiswa Bimbingan
         </a>
-        <a href="persetujuan.php" class="btn btn-sm btn-primary flex-fill flex-md-grow-0 text-center">
-            <i class="bi bi-calendar-event me-1"></i> Jadwal
+        <a href="persetujuan.php" class="btn btn-sm btn-primary rounded-pill px-3 flex-fill flex-md-grow-0 d-inline-flex align-items-center justify-content-center gap-1">
+            <i class="bi bi-calendar-event"></i> Lihat Jadwal
+        </a>
+    </div>
         </a>
     </div>
 </div>
@@ -89,8 +91,8 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
 <!-- 4 Kartu Metrik Bersih & Tegas -->
 <div class="row g-2 g-md-3 mb-4">
     <!-- Profil & Kuota Bimbingan -->
-    <div class="col-6 col-xl-3">
-        <div class="card p-3 shadow-sm border-0 border-start border-primary border-4 h-100 bg-white">
+<div class="col-6 col-xl-3">
+        <div class="card p-3 shadow-sm border-0 border-start rounded-3 border-primary border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Mahasiswa Bimbingan</h6>
             <h3 class="fw-bold text-dark mb-1"><?= $count_mhs; ?> <span class="fs-6 text-muted fw-normal">/ <?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?> Kuota</span></h3>
             <p class="text-muted small mb-2">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
@@ -101,8 +103,8 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
     </div>
 
     <!-- Permintaan Menunggu Respon -->
-    <div class="col-6 col-xl-3">
-        <div class="card p-3 shadow-sm border-0 border-start border-warning border-4 h-100 bg-white">
+<div class="col-6 col-xl-3">
+        <div class="card p-3 shadow-sm border-0 border-start rounded-3 border-warning border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Menunggu Respon</h6>
             <h3 class="fw-bold text-warning mb-1"><?= $count_menunggu; ?> <span class="fs-6 text-muted fw-normal">Permintaan</span></h3>
             <p class="text-muted small mb-2">Perlu ditindaklanjuti dosen</p>
@@ -113,8 +115,8 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
     </div>
 
     <!-- Jadwal Bimbingan Disetujui -->
-    <div class="col-6 col-xl-3">
-        <div class="card p-3 shadow-sm border-0 border-start border-success border-4 h-100 bg-white">
+<div class="col-6 col-xl-3">
+        <div class="card p-3 shadow-sm border-0 border-start rounded-3 border-success border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Jadwal Disetujui</h6>
             <h3 class="fw-bold text-success mb-1"><?= $count_aktif; ?> <span class="fs-6 text-muted fw-normal">Sesi</span></h3>
             <p class="text-muted small mb-2">Siap untuk evaluasi naskah</p>
@@ -125,8 +127,8 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
     </div>
 
     <!-- Jadwal Masuk & Antrean -->
-    <div class="col-6 col-xl-3">
-        <div class="card p-3 shadow-sm border-0 border-start border-info border-4 h-100 bg-white">
+<div class="col-6 col-xl-3">
+        <div class="card p-3 shadow-sm border-0 border-start rounded-3 border-info border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Jadwal Bimbingan</h6>
             <h3 class="fw-bold text-info mb-1"><?= ($count_aktif + $count_menunggu); ?> <span class="fs-6 text-muted fw-normal">Sesi</span></h3>
             <p class="text-muted small mb-2">Permohonan & sesi aktif</p>
@@ -141,7 +143,7 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
 <div class="row g-4">
     <!-- Tabel Pengajuan Terbaru -->
     <div class="col-lg-8">
-        <div class="card shadow-sm border-0 bg-white">
+        <div class="card shadow-sm border-0 bg-white rounded-3">
             <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold text-dark">
                     <i class="bi bi-clock-history me-2 text-primary"></i>Aktivitas Pengajuan Bimbingan Terbaru
@@ -216,7 +218,7 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
 
     <!-- Panel Menu Cepat -->
     <div class="col-lg-4">
-        <div class="card shadow-sm border-0 mb-4 bg-white">
+        <div class="card shadow-sm border-0 mb-4 bg-white rounded-3">
             <div class="card-header bg-white py-3 border-bottom">
                 <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-lightning-charge me-2 text-warning"></i>Aksi Cepat Dosen</h6>
             </div>
@@ -279,7 +281,7 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
             </div>
         </div>
 
-        <div class="card shadow-sm border-0 bg-primary-subtle text-primary-emphasis p-3">
+        <div class="card shadow-sm border-0 bg-primary-subtle text-primary-emphasis p-3 rounded-3">
             <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-1"></i> Informasi Pembimbing</h6>
             <p class="small mb-0">Pastikan ketersediaan jadwal mingguan tetap diperbarui agar mahasiswa bimbingan dapat mengajukan permohonan bimbingan tanpa bentrok.</p>
         </div>

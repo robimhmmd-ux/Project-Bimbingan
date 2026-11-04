@@ -8,3 +8,6 @@ assets/uploads/*
 *.log
 .DS_Store
 Thumbs.db
+
+# Temporary scratch scripts
+scratch/

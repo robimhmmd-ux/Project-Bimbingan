@@ -3,7 +3,7 @@
     </div>
 </div>
 
-<footer class="footer mt-auto py-3 bg-white border-top text-center text-muted small">
+<footer class="footer mt-auto py-3 border-top text-center small footer-academic">
     <div class="container">
         <span>&copy; <?= date('Y'); ?> Tim Pengembang Web Dasar. Sistem Bimbingan Skripsi.</span>
     </div>

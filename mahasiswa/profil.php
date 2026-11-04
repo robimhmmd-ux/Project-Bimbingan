@@ -387,9 +387,9 @@ require_once '../templates/sidebar_mahasiswa.php';
                     <div class="mb-2">
                         <span class="text-muted d-block mb-1">Dosen Pembimbing:</span>
                         <?php if (!empty($mhs['nama_dosen'])): ?>
-                            <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-3 border">
+                            <div class="d-flex align-items-center gap-2 p-2 bg-white rounded-3 border" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.06)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';" data-bs-toggle="modal" data-bs-target="#modalProfilDosen" title="Klik untuk melihat profil lengkap dosen">
                                 <?php if ($foto_dosen_src): ?>
-                                    <img src="<?= $foto_dosen_src; ?>" class="rounded-circle border shadow-xs flex-shrink-0" width="36" height="36" style="object-fit: cover;" alt="Dosen Pembimbing">
+                                    <img src="<?= $foto_dosen_src; ?>" class="rounded-circle border shadow-xs flex-shrink-0" width="36" height="36" style="object-fit: cover; width: 36px; height: 36px;" alt="Dosen Pembimbing">
                                 <?php else: ?>
                                     <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0 shadow-xs" style="width: 36px; height: 36px; font-size: 0.95rem;">
                                         <?= strtoupper(substr($mhs['nama_dosen'], 0, 1)); ?>
@@ -403,6 +403,7 @@ require_once '../templates/sidebar_mahasiswa.php';
                                         NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?>
                                     </div>
                                 </div>
+                                <i class="bi bi-chevron-right text-muted small ms-auto"></i>
                             </div>
                         <?php else: ?>
                             <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Belum Diplot</span>
@@ -443,7 +444,7 @@ require_once '../templates/sidebar_mahasiswa.php';
     <div class="col-lg-8">
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white py-3 border-bottom">
-                <ul class="nav nav-pills card-header-pills" id="profilTab" role="tablist">
+                <ul class="nav nav-pills card-header-pills flex-nowrap overflow-x-auto pb-1" id="profilTab" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-bold btn-sm px-3" id="akun-tab" data-bs-toggle="tab" data-bs-target="#tab-akun" type="button" role="tab">
                             <i class="bi bi-person-gear me-1"></i> Pengaturan Akun & Biodata
@@ -993,6 +994,121 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+    </div>
+</div>
+
+<?php
+$clean_wa_dosen = "";
+if (!empty($mhs["no_wa_dosen"])) {
+    $clean_wa_dosen = preg_replace("/[^0-9]/", "", $mhs["no_wa_dosen"]);
+    if (str_starts_with($clean_wa_dosen, "0")) {
+        $clean_wa_dosen = "62" . substr($clean_wa_dosen, 1);
+    }
+}
+?>
+<!-- ============================================================
+     MODAL LIHAT PROFIL DOSEN PEMBIMBING
+============================================================ -->
+<div class="modal fade" id="modalProfilDosen" tabindex="-1" aria-labelledby="modalProfilDosenLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header text-white border-0 py-3" style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #1e40af 100%);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-vcard-fill text-info fs-5"></i>
+                    <h5 class="modal-title fw-bold text-white mb-0" id="modalProfilDosenLabel">Profil Dosen Pembimbing</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <!-- Foto & Identitas Utama Dosen -->
+                <div class="text-center mb-4">
+                    <div class="mb-3 position-relative d-inline-block mx-auto">
+                        <?php if ($foto_dosen_src): ?>
+                            <img src="<?= $foto_dosen_src; ?>" 
+                                 alt="Foto Profil Dosen" 
+                                 class="rounded-circle img-thumbnail shadow object-fit-cover" 
+                                 style="width: 125px; height: 125px;">
+                        <?php else: ?>
+                            <div class="avatar-circle avatar-primary shadow mx-auto d-flex align-items-center justify-content-center text-primary rounded-circle" 
+                                 style="width: 125px; height: 125px; font-size: 3.2rem;">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                        <?php endif; ?>
+                        <span class="position-absolute bottom-0 end-0 p-2 bg-success border border-3 border-white rounded-circle shadow-sm" title="Status Pembimbing Aktif"></span>
+                    </div>
+
+                    <h5 class="fw-bold mb-1 text-dark"><?= htmlspecialchars($mhs['nama_dosen'] ?? 'Dosen Pembimbing'); ?></h5>
+                    <p class="text-muted small mb-2">NIDN: <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></p>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1.5 rounded-pill">
+                        <i class="bi bi-award-fill me-1"></i>Dosen Pembimbing Utama Skripsi
+                    </span>
+                </div>
+
+                <!-- Detail Biodata Profil Dosen -->
+                <div class="list-group list-group-flush text-start small border rounded-3 p-3 bg-light mb-3">
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
+                        <span class="text-muted"><i class="bi bi-person-badge me-2 text-primary"></i>ID Login / Akun:</span>
+                        <strong class="text-primary">@<?= htmlspecialchars($mhs['username_dosen'] ?? 'dosen'); ?></strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
+                        <span class="text-muted"><i class="bi bi-envelope me-2 text-primary"></i>Email Resmi:</span>
+                        <a href="mailto:<?= htmlspecialchars($mhs['email_dosen'] ?? ''); ?>" class="text-decoration-none fw-semibold text-secondary">
+                            <?= htmlspecialchars($mhs['email_dosen'] ?? '-'); ?>
+                        </a>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
+                        <span class="text-muted"><i class="bi bi-whatsapp me-2 text-success"></i>Nomor WhatsApp:</span>
+                        <?php if (!empty($clean_wa_dosen)): ?>
+                            <a href="https://wa.me/<?= $clean_wa_dosen; ?>" target="_blank" class="text-decoration-none fw-semibold text-success">
+                                <?= htmlspecialchars($mhs['no_wa_dosen']); ?> <i class="bi bi-box-arrow-up-right small"></i>
+                            </a>
+                        <?php else: ?>
+                            <span class="text-muted">-</span>
+                        <?php endif; ?>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent">
+                        <span class="text-muted"><i class="bi bi-people me-2 text-primary"></i>Kapasitas Bimbingan:</span>
+                        <strong><?= htmlspecialchars($mhs['kuota_bimbingan'] ?? '5'); ?> Mahasiswa</strong>
+                    </div>
+                </div>
+
+                <!-- Jadwal Ketersediaan Bimbingan Dosen -->
+                <div class="p-3 border rounded-3 bg-white">
+                    <h6 class="fw-bold text-dark mb-2 small d-flex align-items-center">
+                        <i class="bi bi-calendar-check text-primary me-2"></i>Jadwal Konsultasi Dosen
+                    </h6>
+                    <?php if (!empty($jadwal_dosen_list)): ?>
+                        <div class="d-flex flex-wrap gap-2">
+                            <?php foreach ($jadwal_dosen_list as $jd): ?>
+                                <span class="badge bg-light text-dark border px-2.5 py-1.5 small">
+                                    <i class="bi bi-clock-fill text-primary me-1"></i>
+                                    <strong><?= htmlspecialchars($jd['hari']); ?>:</strong> <?= date('H:i', strtotime($jd['jam_mulai'])); ?> - <?= date('H:i', strtotime($jd['jam_selesai'])); ?> WIB
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-info-circle me-1"></i>Jadwal konsultasi tatap muka / daring dapat disepakati secara fleksibel melalui fitur Chat atau WhatsApp.
+                        </p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light border-top d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                <div class="d-flex gap-2">
+                    <a href="jadwal_bimbingan.php" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-calendar-week me-1"></i>Jadwal Bimbingan
+                    </a>
+                    <?php if (!empty($clean_wa_dosen)): ?>
+                        <a href="https://wa.me/<?= $clean_wa_dosen; ?>" target="_blank" class="btn btn-success btn-sm">
+                            <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

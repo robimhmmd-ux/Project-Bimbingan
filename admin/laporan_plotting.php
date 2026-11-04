@@ -283,6 +283,7 @@ margin: 0 !important;
 <!-- ============================================================
      LEMBAR DOKUMEN CETAK AKADEMIK RESMI (PRINT & ON-SCREEN SHEET)
 ============================================================ -->
+<div class="academic-sheet-container">
 <div class="academic-sheet">
 
     <!-- KOP SURAT RESMI AKADEMIK -->
@@ -442,6 +443,7 @@ margin: 0 !important;
         </div>
     </div>
 
+</div>
 </div>
 
 <?php
