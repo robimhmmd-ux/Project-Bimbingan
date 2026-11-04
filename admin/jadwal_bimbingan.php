@@ -327,6 +327,7 @@ $total_selesai   = (int)$pdo->query("SELECT COUNT(*) FROM pengajuan_bimbingan WH
 
 // Daftar Dosen untuk Filter
 $dosen_filter_list = $pdo->query("SELECT id, nama_dosen FROM dosen ORDER BY nama_dosen ASC")->fetchAll();
+$all_kelas_jadwal = $pdo->query("SELECT DISTINCT kelas FROM mahasiswa WHERE kelas IS NOT NULL AND TRIM(kelas) != '' ORDER BY kelas ASC")->fetchAll(PDO::FETCH_COLUMN);
 
 $page_title   = "Jadwal Bimbingan Skripsi";
 $current_page = "jadwal_bimbingan";
@@ -447,9 +448,12 @@ require_once '../templates/sidebar_admin.php';
             <div class="col-md-2">
                 <select name="kelas" class="form-select" onchange="this.form.submit()">
                     <option value="">-- Semua Kelas --</option>
-                    <option value="TI-1A-2025" <?= ($filter_kelas === 'TI-1A-2025') ? 'selected' : ''; ?>>TI-1A-2025</option>
-                    <option value="TI-1B-2025" <?= ($filter_kelas === 'TI-1B-2025') ? 'selected' : ''; ?>>TI-1B-2025</option>
-                    <option value="TI-1C-2025" <?= ($filter_kelas === 'TI-1C-2025') ? 'selected' : ''; ?>>TI-1C-2025</option>
+                    <?php foreach ($all_kelas_jadwal as $kls): ?>
+                        <option value="<?= htmlspecialchars($kls); ?>" <?= ($filter_kelas === $kls) ? 'selected' : ''; ?>><?= htmlspecialchars($kls); ?></option>
+                    <?php endforeach; ?>
+
+
+
                 </select>
             </div>
             <div class="col-md-3">

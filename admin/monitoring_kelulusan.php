@@ -297,7 +297,7 @@ if ($filter_status !== 'all' && in_array($filter_status, ['proses_bimbingan', 's
     $params[':st'] = $filter_status;
 }
 
-if ($filter_kelas !== 'all' && in_array($filter_kelas, ['TI-1A-2025', 'TI-1B-2025', 'TI-1C-2025'])) {
+if ($filter_kelas !== 'all' && !empty($filter_kelas)) {
     $where[] = "m.kelas = :kelas";
     $params[':kelas'] = $filter_kelas;
 }

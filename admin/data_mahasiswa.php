@@ -22,7 +22,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $nim                  = trim($_POST['nim'] ?? '');
         $nama_lengkap         = trim($_POST['nama_lengkap'] ?? '');
         $kelas                = trim($_POST['kelas'] ?? 'TI-1A-2025');
-        $judul_skripsi        = trim($_POST['judul_skripsi'] ?? 'Belum Ditentukan');
+        $judul_skripsi        = 'Belum Ditentukan';
         $dosen_pembimbing_id  = !empty($_POST['dosen_pembimbing_id']) ? (int)$_POST['dosen_pembimbing_id'] : null;
         $status_kelulusan     = $_POST['status_kelulusan'] ?? 'proses_bimbingan';
         $username             = trim($_POST['username'] ?? '');
@@ -257,6 +257,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 // =========================================================================
 $filter_status = $_GET['status'] ?? 'all';
 $filter_kelas  = $_GET['kelas'] ?? 'all';
+
+// Ambil seluruh daftar kelas unik dari database (dinamis)
+$all_kelas_db = $pdo->query("SELECT DISTINCT kelas FROM mahasiswa WHERE kelas IS NOT NULL AND TRIM(kelas) != '' ORDER BY kelas ASC")->fetchAll(PDO::FETCH_COLUMN);
+$default_kelas = ['TI-1A-2025', 'TI-1B-2025', 'TI-1C-2025'];
+$kelas_options = array_values(array_unique(array_filter(array_merge($default_kelas, $all_kelas_db))));
+sort($kelas_options);
 $search_query  = trim($_GET['q'] ?? '');
 
 $where = ["1=1"];
@@ -267,7 +273,7 @@ if ($filter_status !== 'all' && in_array($filter_status, ['proses_bimbingan', 's
     $params[':st'] = $filter_status;
 }
 
-if ($filter_kelas !== 'all' && in_array($filter_kelas, ['TI-1A-2025', 'TI-1B-2025', 'TI-1C-2025'])) {
+if ($filter_kelas !== 'all' && !empty($filter_kelas)) {
     $where[] = "m.kelas = :kelas";
     $params[':kelas'] = $filter_kelas;
 }
@@ -352,10 +358,10 @@ require_once '../templates/sidebar_admin.php';
     <div>
         <div class="hero-tag">
             <i class="bi bi-mortarboard-fill"></i>
-            <span>Direktori Mahasiswa Tugas Akhir (3 Kelas)</span>
+            <span>Direktori Mahasiswa Tugas Akhir</span>
         </div>
         <h2 class="fw-bold text-white mb-1">Manajemen Mahasiswa & Kelulusan</h2>
-        <p class="text-white-50 small mb-0">Kelola master data mahasiswa 3 kelas (TI-1A, TI-1B, TI-1C), judul skripsi, status pembimbing, serta evaluasi kelulusan.</p>
+        <p class="text-white-50 small mb-0">Kelola master data mahasiswa, data akun, status pembimbing, serta evaluasi kelulusan.</p>
     </div>
     <div class="d-flex align-items-center gap-2">
         <button type="button" class="btn btn-light shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#modalTambahMhs">
@@ -389,7 +395,7 @@ require_once '../templates/sidebar_admin.php';
                 <div>
                     <span class="small text-muted fw-bold text-uppercase">Total Mahasiswa</span>
                     <h3 class="fw-bold text-dark mb-0 mt-1"><?= $total_all_mhs; ?></h3>
-                    <small class="text-muted" style="font-size: 0.72rem;">1A: <?= $count_1a; ?> | 1B: <?= $count_1b; ?> | 1C: <?= $count_1c; ?></small>
+                    <small class="text-muted" style="font-size: 0.72rem;">Tersebar di <?= count($kelas_options); ?> Kelas Aktif</small>
                 </div>
                 <div class="metric-icon-box bg-primary-subtle text-primary">
                     <i class="bi bi-people-fill"></i>
@@ -457,10 +463,13 @@ require_once '../templates/sidebar_admin.php';
             <!-- Filter Kelas -->
             <div class="col-md-3">
                 <select name="kelas" class="form-select" onchange="this.form.submit()">
-                    <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Semua Kelas (3 Kelas) --</option>
-                    <option value="TI-1A-2025" <?= ($filter_kelas === 'TI-1A-2025') ? 'selected' : ''; ?>>Kelas TI-1A-2025 (Pagi)</option>
-                    <option value="TI-1B-2025" <?= ($filter_kelas === 'TI-1B-2025') ? 'selected' : ''; ?>>Kelas TI-1B-2025 (Pagi)</option>
-                    <option value="TI-1C-2025" <?= ($filter_kelas === 'TI-1C-2025') ? 'selected' : ''; ?>>Kelas TI-1C-2025 (Malam)</option>
+                    <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Semua Kelas --</option>
+                    <?php foreach ($kelas_options as $k): ?>
+                        <option value="<?= htmlspecialchars($k); ?>" <?= ($filter_kelas === $k) ? 'selected' : ''; ?>>Kelas <?= htmlspecialchars($k); ?></option>
+                    <?php endforeach; ?>
+
+
+
                 </select>
             </div>
             <!-- Filter Status Kelulusan -->
@@ -666,35 +675,22 @@ require_once '../templates/sidebar_admin.php';
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label small fw-semibold">NIM Mahasiswa <span class="text-danger">*</span></label>
                         <input type="text" class="form-control font-monospace" name="nim" placeholder="Contoh: 41257144" required>
                     </div>
-                    <div class="col-md-5">
+                    <div class="col-md-6">
                         <label class="form-label small fw-semibold">Nama Lengkap Mahasiswa <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_lengkap" placeholder="Nama mahasiswa sesuai KRS" required>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-semibold">Kelas Mahasiswa <span class="text-danger">*</span></label>
-                        <select name="kelas" class="form-select" required>
-                            <option value="TI-1A-2025" selected>TI-1A-2025 (Pagi)</option>
-                            <option value="TI-1B-2025">TI-1B-2025 (Pagi)</option>
-                            <option value="TI-1C-2025">TI-1C-2025 (Malam)</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label small fw-semibold">Judul Rencana / Proposal Skripsi</label>
-                        <textarea class="form-control" name="judul_skripsi" rows="2" placeholder="Masukkan rencana topik penelitian skripsi..."></textarea>
-                    </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Dosen Pembimbing</label>
-                        <select name="dosen_pembimbing_id" class="form-select">
-                            <option value="">-- Belum Diplot (Tetapkan Nanti) --</option>
-                            <?php foreach ($dosen_dropdown as $d): ?>
-                                <option value="<?= $d['id']; ?>"><?= htmlspecialchars($d['nama_dosen']); ?> (Kuota: <?= $d['kuota_bimbingan']; ?>)</option>
+                        <label class="form-label small fw-semibold">Kelas Mahasiswa <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="kelas" list="listKelasTambah" placeholder="Pilih atau ketik kelas baru..." required autocomplete="off">
+                        <datalist id="listKelasTambah">
+                            <?php foreach ($kelas_options as $k): ?>
+                                <option value="<?= htmlspecialchars($k); ?>"></option>
                             <?php endforeach; ?>
-                        </select>
-                        <div class="form-text small">Jika dipilih, status pembimbing otomatis menjadi "Menunggu Konfirmasi".</div>
+                        </datalist>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Status Awal Kelulusan <span class="text-danger">*</span></label>
@@ -703,6 +699,16 @@ require_once '../templates/sidebar_admin.php';
                             <option value="siap_sidang">Siap Sidang</option>
                             <option value="lulus">Lulus</option>
                         </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Dosen Pembimbing</label>
+                        <select name="dosen_pembimbing_id" class="form-select">
+                            <option value="">-- Belum Diplot (Tetapkan Nanti) --</option>
+                            <?php foreach ($dosen_dropdown as $d): ?>
+                                <option value="<?= $d['id']; ?>"><?= htmlspecialchars($d['nama_dosen']); ?> (Kuota: <?= $d['kuota_bimbingan']; ?>)</option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-text small">Jika dipilih, status pembimbing otomatis menjadi "Menunggu Konfirmasi".</div>
                     </div>
 
                     <div class="col-12 mt-4">
@@ -750,34 +756,22 @@ require_once '../templates/sidebar_admin.php';
             </div>
             <div class="modal-body p-4">
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label small fw-semibold">NIM <span class="text-danger">*</span></label>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">NIM Mahasiswa <span class="text-danger">*</span></label>
                         <input type="text" class="form-control font-monospace" name="nim" id="edit_nim" required>
                     </div>
-                    <div class="col-md-5">
-                        <label class="form-label small fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Nama Lengkap Mahasiswa <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="nama_lengkap" id="edit_nama_lengkap" required>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-semibold">Kelas <span class="text-danger">*</span></label>
-                        <select name="kelas" id="edit_kelas" class="form-select" required>
-                            <option value="TI-1A-2025">TI-1A-2025</option>
-                            <option value="TI-1B-2025">TI-1B-2025</option>
-                            <option value="TI-1C-2025">TI-1C-2025</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label small fw-semibold">Judul Skripsi</label>
-                        <textarea class="form-control" name="judul_skripsi" id="edit_judul_skripsi" rows="2"></textarea>
-                    </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-semibold">Dosen Pembimbing</label>
-                        <select name="dosen_pembimbing_id" id="edit_dosen_id" class="form-select">
-                            <option value="">-- Belum Diplot / Tanpa Pembimbing --</option>
-                            <?php foreach ($dosen_dropdown as $d): ?>
-                                <option value="<?= $d['id']; ?>"><?= htmlspecialchars($d['nama_dosen']); ?></option>
+                        <label class="form-label small fw-semibold">Kelas Mahasiswa <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="kelas" id="edit_kelas" list="listKelasEdit" placeholder="Pilih atau ketik kelas..." required autocomplete="off">
+                        <datalist id="listKelasEdit">
+                            <?php foreach ($kelas_options as $k): ?>
+                                <option value="<?= htmlspecialchars($k); ?>"></option>
                             <?php endforeach; ?>
-                        </select>
+                        </datalist>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label small fw-semibold">Status Kelulusan <span class="text-danger">*</span></label>
@@ -786,6 +780,19 @@ require_once '../templates/sidebar_admin.php';
                             <option value="siap_sidang">Siap Sidang</option>
                             <option value="lulus">Lulus</option>
                         </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Dosen Pembimbing</label>
+                        <select name="dosen_pembimbing_id" id="edit_dosen_id" class="form-select">
+                            <option value="">-- Belum Diplot / Tanpa Pembimbing --</option>
+                            <?php foreach ($dosen_dropdown as $d): ?>
+                                <option value="<?= $d['id']; ?>"><?= htmlspecialchars($d['nama_dosen']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">Judul Skripsi</label>
+                        <textarea class="form-control" name="judul_skripsi" id="edit_judul_skripsi" rows="2" placeholder="Judul penelitian tugas akhir / skripsi..."></textarea>
                     </div>
 
                     <div class="col-12 mt-4">
@@ -916,6 +923,21 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // Auto sync NIM ke Username pada Modal Tambah
+    const createNim = document.querySelector('#modalTambahMhs input[name="nim"]');
+    const createUsername = document.querySelector('#modalTambahMhs input[name="username"]');
+    if (createNim && createUsername) {
+        let usernameEdited = false;
+        createUsername.addEventListener('input', function () {
+            usernameEdited = true;
+        });
+        createNim.addEventListener('input', function () {
+            if (!usernameEdited) {
+                createUsername.value = this.value.trim();
+            }
+        });
+    }
 
     // Populate Modal Kelulusan
     const kelulusanBtns = document.querySelectorAll('.btn-kelulusan');

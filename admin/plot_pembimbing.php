@@ -118,7 +118,8 @@ $where_kelas_sudah = "";
 $params_belum = [];
 $params_sudah = [];
 
-if ($filter_kelas !== 'all' && in_array($filter_kelas, ['TI-1A-2025', 'TI-1B-2025', 'TI-1C-2025'])) {
+$all_kelas_plot = $pdo->query("SELECT DISTINCT kelas FROM mahasiswa WHERE kelas IS NOT NULL AND TRIM(kelas) != '' ORDER BY kelas ASC")->fetchAll(PDO::FETCH_COLUMN);
+if ($filter_kelas !== 'all' && !empty($filter_kelas)) {
     $where_kelas_belum = " AND m.kelas = :k_belum ";
     $params_belum[':k_belum'] = $filter_kelas;
 
@@ -222,10 +223,13 @@ require_once '../templates/sidebar_admin.php';
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small fw-semibold"><i class="bi bi-filter me-1"></i>Saring Kelas:</span>
                     <select name="kelas" class="form-select form-select-sm" onchange="this.form.submit()">
-                        <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Tampilkan Semua Kelas (TI-1A, 1B, 1C) --</option>
-                        <option value="TI-1A-2025" <?= ($filter_kelas === 'TI-1A-2025') ? 'selected' : ''; ?>>Kelas TI-1A-2025</option>
-                        <option value="TI-1B-2025" <?= ($filter_kelas === 'TI-1B-2025') ? 'selected' : ''; ?>>Kelas TI-1B-2025</option>
-                        <option value="TI-1C-2025" <?= ($filter_kelas === 'TI-1C-2025') ? 'selected' : ''; ?>>Kelas TI-1C-2025</option>
+                        <option value="all" <?= ($filter_kelas === 'all') ? 'selected' : ''; ?>>-- Tampilkan Semua Kelas --</option>
+                        <?php foreach ($all_kelas_plot as $kls): ?>
+                            <option value="<?= htmlspecialchars($kls); ?>" <?= ($filter_kelas === $kls) ? 'selected' : ''; ?>>Kelas <?= htmlspecialchars($kls); ?></option>
+                        <?php endforeach; ?>
+
+
+
                     </select>
                 </div>
             </div>

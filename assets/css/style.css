@@ -3508,17 +3508,6 @@ img, svg, video, canvas {
         border-bottom: none !important;
     }
 
-    .chat-contacts-col,
-    .chat-messages-col {
-        height: calc(100vh - 225px) !important;
-        min-height: 480px !important;
-        max-height: 660px !important;
-    }
-
-    .chat-contacts-col {
-        border-right: none !important;
-        border-bottom: none !important;
-    }
 
     #chatContainer {
         padding: 1rem 0.75rem !important;
