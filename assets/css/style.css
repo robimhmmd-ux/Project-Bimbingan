@@ -3633,3 +3633,56 @@ padding: 0.42rem 0.65rem !important;
         font-size: 0.75rem !important;
     }
 }
+
+/* ==========================================================================
+   ENHANCED SMARTPHONE NAVBAR & SWIPEABLE FILTERS
+   ========================================================================== */
+.filter-scroll-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+.filter-scroll-wrapper::-webkit-scrollbar {
+    display: none;
+}
+.filter-scroll-wrapper .btn {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-size: 0.82rem !important;
+    padding: 0.4rem 0.85rem !important;
+}
+
+@media (max-width: 575.98px) {
+    #topNavbar {
+        height: 58px !important;
+        min-height: 58px !important;
+        max-height: 58px !important;
+        overflow: hidden !important;
+    }
+    #topNavbar .container-fluid {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        height: 100% !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+    .brand-icon-academic {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 0.9rem !important;
+    }
+    .brand-text-title {
+        max-width: 95px !important;
+        font-size: 0.82rem !important;
+    }
+    .btn-sidebar-toggle {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        padding: 0 !important;
+    }
+}

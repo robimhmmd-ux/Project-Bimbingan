@@ -271,20 +271,22 @@ require_once '../templates/sidebar_dosen.php';
     </div>
 <?php endif; ?>
 
-<!-- Tabs Filter Status -->
-<div class="mb-3 d-flex flex-wrap gap-2">
-    <a href="riwayat_bimbingan.php?filter=semua" class="btn btn-sm <?= ($filter === 'semua') ? 'btn-primary' : 'btn-outline-secondary'; ?> rounded-pill px-3">
-        Semua Sesi Aktif
-    </a>
-    <a href="riwayat_bimbingan.php?filter=disetujui" class="btn btn-sm <?= ($filter === 'disetujui') ? 'btn-primary' : 'btn-outline-secondary'; ?> rounded-pill px-3">
-        Jadwal Disetujui (Siap Evaluasi)
-    </a>
-    <a href="riwayat_bimbingan.php?filter=revisi" class="btn btn-sm <?= ($filter === 'revisi') ? 'btn-primary' : 'btn-outline-secondary'; ?> rounded-pill px-3">
-        Perlu Revisi
-    </a>
-    <a href="riwayat_bimbingan.php?filter=selesai" class="btn btn-sm <?= ($filter === 'selesai') ? 'btn-primary' : 'btn-outline-secondary'; ?> rounded-pill px-3">
-        Selesai / Ter-ACC
-    </a>
+<!-- Tabs Filter Status (Swipeable di HP) -->
+<div class="filter-scroll-wrapper mb-3">
+    <div class="d-flex gap-2 flex-nowrap align-items-center pb-1">
+        <a href="riwayat_bimbingan.php?filter=semua" class="btn btn-sm <?= ($filter === 'semua') ? 'btn-primary' : 'btn-outline-secondary'; ?> rounded-pill px-3">
+            Semua Sesi Aktif
+        </a>
+        <a href="riwayat_bimbingan.php?filter=disetujui" class="btn btn-sm <?= ($filter === 'disetujui') ? 'btn-primary' : 'btn-outline-secondary'; ?> rounded-pill px-3">
+            Jadwal Disetujui
+        </a>
+        <a href="riwayat_bimbingan.php?filter=revisi" class="btn btn-sm <?= ($filter === 'revisi') ? 'btn-primary' : 'btn-outline-secondary'; ?> rounded-pill px-3">
+            Perlu Revisi
+        </a>
+        <a href="riwayat_bimbingan.php?filter=selesai" class="btn btn-sm <?= ($filter === 'selesai') ? 'btn-primary' : 'btn-outline-secondary'; ?> rounded-pill px-3">
+            Selesai / Ter-ACC
+        </a>
+    </div>
 </div>
 
 <!-- Card Tabel Riwayat -->

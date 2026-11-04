@@ -182,10 +182,10 @@ $stmt_badge->execute([':did' => $dosen_id]);
 $jumlah_menunggu = $stmt_badge->fetchColumn();
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom">
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-2 pt-md-3 pb-2 mb-3 mb-md-4 border-bottom">
     <div>
-        <h1 class="h3 fw-bold mb-1"><i class="bi bi-calendar-event text-primary me-2"></i>Lihat Jadwal & Persetujuan Bimbingan</h1>
-        <p class="text-muted small mb-0">Tinjau jadwal dan permohonan bimbingan mahasiswa: Terima jadwal, atur ulang waktu pertemuan (reschedule), atau tolak dengan catatan revisi.</p>
+        <h1 class="h3 fw-bold mb-1 fs-5 fs-md-3"><i class="bi bi-calendar-event text-primary me-2"></i>Lihat Jadwal & Persetujuan Bimbingan</h1>
+        <p class="text-muted small mb-0 d-none d-sm-block">Tinjau jadwal dan permohonan bimbingan mahasiswa: Terima jadwal, atur ulang waktu pertemuan (reschedule), atau tolak dengan catatan revisi.</p>
     </div>
 </div>
 
@@ -215,35 +215,37 @@ $jumlah_menunggu = $stmt_badge->fetchColumn();
     </div>
 <?php endif; ?>
 
-<!-- Tab Filter Status Modern -->
-<div class="d-flex flex-wrap gap-2 mb-3">
-    <a href="persetujuan.php?status=menunggu" class="btn btn-sm <?= ($filter_status === 'menunggu') ? 'btn-primary shadow-sm' : 'btn-outline-secondary'; ?>">
-        <i class="bi bi-hourglass-split me-1"></i>Menunggu Konfirmasi
-        <?php if ($jumlah_menunggu > 0): ?>
-            <span class="badge bg-danger rounded-pill ms-1"><?= $jumlah_menunggu; ?></span>
-        <?php endif; ?>
-    </a>
-    <a href="persetujuan.php?status=disetujui" class="btn btn-sm <?= ($filter_status === 'disetujui') ? 'btn-success shadow-sm text-white' : 'btn-outline-secondary'; ?>">
-        <i class="bi bi-check-circle-fill me-1"></i>Telah Disetujui
-    </a>
-    <a href="persetujuan.php?status=ditolak" class="btn btn-sm <?= ($filter_status === 'ditolak') ? 'btn-danger shadow-sm text-white' : 'btn-outline-secondary'; ?>">
-        <i class="bi bi-x-circle-fill me-1"></i>Ditolak
-    </a>
-    <a href="persetujuan.php?status=semua" class="btn btn-sm <?= ($filter_status === 'semua') ? 'btn-secondary shadow-sm text-white' : 'btn-outline-secondary'; ?>">
-        <i class="bi bi-list-ul me-1"></i>Semua Riwayat
-    </a>
+<!-- Tab Filter Status Modern (Swipeable di HP) -->
+<div class="filter-scroll-wrapper mb-3">
+    <div class="d-flex gap-2 flex-nowrap align-items-center pb-1">
+        <a href="persetujuan.php?status=menunggu" class="btn btn-sm rounded-pill <?= ($filter_status === 'menunggu') ? 'btn-primary shadow-sm text-white' : 'btn-outline-secondary'; ?>">
+            <i class="bi bi-hourglass-split me-1"></i>Menunggu Konfirmasi
+            <?php if ($jumlah_menunggu > 0): ?>
+                <span class="badge bg-danger rounded-pill ms-1"><?= $jumlah_menunggu; ?></span>
+            <?php endif; ?>
+        </a>
+        <a href="persetujuan.php?status=disetujui" class="btn btn-sm rounded-pill <?= ($filter_status === 'disetujui') ? 'btn-success shadow-sm text-white' : 'btn-outline-secondary'; ?>">
+            <i class="bi bi-check-circle-fill me-1"></i>Telah Disetujui
+        </a>
+        <a href="persetujuan.php?status=ditolak" class="btn btn-sm rounded-pill <?= ($filter_status === 'ditolak') ? 'btn-danger shadow-sm text-white' : 'btn-outline-secondary'; ?>">
+            <i class="bi bi-x-circle-fill me-1"></i>Ditolak
+        </a>
+        <a href="persetujuan.php?status=semua" class="btn btn-sm rounded-pill <?= ($filter_status === 'semua') ? 'btn-secondary shadow-sm text-white' : 'btn-outline-secondary'; ?>">
+            <i class="bi bi-list-ul me-1"></i>Semua Riwayat
+        </a>
+    </div>
 </div>
 
 <!-- Card Tabel Pengajuan -->
-<div class="table-card-wrapper mb-4">
-    <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
+<div class="table-card-wrapper mb-4 shadow-sm border rounded-3 bg-white overflow-hidden">
+    <div class="p-3 border-bottom bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div>
             <h6 class="mb-0 fw-bold text-dark">
-                <i class="bi bi-inbox-fill text-primary me-2"></i>Daftar Pengajuan (Filter: <?= ucfirst($filter_status); ?>)
+                <i class="bi bi-inbox-fill text-primary me-2"></i>Daftar Pengajuan (<?= ucfirst($filter_status); ?>)
             </h6>
-            <small class="text-muted">Kelola keputusan konsultasi dan penyesuaian waktu bimbingan</small>
+            <small class="text-muted d-none d-sm-block">Kelola keputusan konsultasi dan penyesuaian waktu bimbingan</small>
         </div>
-        <span class="badge bg-secondary"><?= count($daftar_pengajuan); ?> Data Ditemukan</span>
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><?= count($daftar_pengajuan); ?> Data Ditemukan</span>
     </div>
     <div class="table-responsive">
         <table class="table table-modern table-hover align-middle mb-0">

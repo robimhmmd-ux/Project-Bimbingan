@@ -180,7 +180,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             height: var(--navbar-height, 60px) !important;
             min-height: var(--navbar-height, 60px) !important;
             max-height: var(--navbar-height, 60px) !important;
-            z-index: 1030 !important;
+            z-index: 1060 !important;
             background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
             box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2) !important;
@@ -471,32 +471,32 @@ padding: 1rem 0.75rem 2.5rem 0.75rem !important;
 <body>
 
 <!-- Topbar Navbar (Fixed Top - Solid High-Contrast Navy Blue) -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 60px; min-height: 60px; max-height: 60px; z-index: 1030 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
-    <div class="container-fluid px-2 px-sm-3 px-md-4">
+<nav class="navbar navbar-expand navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 58px; min-height: 58px; max-height: 58px; z-index: 1060 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
+    <div class="container-fluid px-2 px-sm-3 px-md-4 d-flex align-items-center justify-content-between flex-nowrap" style="height: 100%;">
         <!-- Tombol Buka/Tutup Sidebar & Brand Logo -->
-        <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-outline-light border-0 p-1 px-2 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none me-1" 
+        <div class="d-flex align-items-center gap-1 gap-sm-2 flex-shrink-1 overflow-hidden">
+            <button class="btn btn-outline-light border-0 p-1 btn-sidebar-toggle d-flex align-items-center justify-content-center shadow-none flex-shrink-0" 
                     id="sidebarToggleBtn" 
                     type="button" 
                     onclick="toggleSidebarMenu()" 
                     aria-label="Toggle Sidebar" 
                     title="Buka / Tutup Sidebar"
-                    style="background: rgba(255, 255, 255, 0.18); border-radius: 8px; cursor: pointer; min-width: 42px; min-height: 40px;">
-                <i class="bi bi-list fs-3 text-white" id="sidebarToggleIcon"></i>
+                    style="background: rgba(255, 255, 255, 0.18); border-radius: 8px; cursor: pointer; width: 38px; height: 38px; min-width: 38px;">
+                <i class="bi bi-list fs-4 text-white" id="sidebarToggleIcon"></i>
             </button>
-            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none m-0" href="#">
-<span class="brand-icon-academic d-inline-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #00AA13 0%, #00880C 100%);">
+            <a class="navbar-brand d-flex align-items-center gap-1 gap-sm-2 fw-bold text-white text-decoration-none m-0 overflow-hidden" href="#">
+                <span class="brand-icon-academic d-inline-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #00AA13 0%, #00880C 100%); font-size: 0.95rem;">
                     <i class="bi bi-mortarboard-fill"></i>
                 </span>
-                <div class="d-flex flex-column">
-<span class="fs-6 lh-1 text-truncate" style="max-width: 155px;">Bimbingan Skripsi</span>
-                    <span class="text-white-50 small d-none d-sm-inline" style="font-size: 0.72rem; font-weight: normal;">Sistem Informasi Akademik</span>
+                <div class="d-flex flex-column overflow-hidden">
+                    <span class="fs-6 lh-1 text-truncate brand-text-title" style="max-width: 130px;">Bimbingan Skripsi</span>
+                    <span class="text-white-50 small d-none d-md-inline" style="font-size: 0.7rem; font-weight: normal;">Sistem Informasi Akademik</span>
                 </div>
             </a>
         </div>
 
         <!-- Right Side User, Notifications & Status Pill -->
-<div class="d-flex align-items-center gap-1 gap-sm-2 gap-md-3 text-white">
+        <div class="d-flex align-items-center gap-1 gap-sm-2 text-white flex-shrink-0">
             <!-- Dropdown Notifikasi Sistem (UPDATE Robi: tabel notifikasi) -->
             <div class="dropdown">
                 <button class="btn btn-link text-white position-relative p-1 text-decoration-none shadow-none" 
@@ -557,21 +557,18 @@ padding: 1rem 0.75rem 2.5rem 0.75rem !important;
                     <?php endif; ?>
                 </ul>
             </div>
-            <a href="profil.php" class="text-decoration-none d-inline-flex align-items-center gap-2 text-white px-2 py-1 rounded-pill navbar-user-pill" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); transition: all 0.2s ease;" title="Buka Profil & Pengaturan Akun">
+            <a href="profil.php" class="text-decoration-none d-inline-flex align-items-center gap-2 text-white p-1 rounded-pill navbar-user-pill flex-shrink-0" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); transition: all 0.2s ease;" title="Buka Profil & Pengaturan Akun">
                 <?php if (function_exists('render_avatar')): ?>
                     <span class="d-inline-flex rounded-circle p-0" style="box-shadow: 0 0 0 2px rgba(255,255,255,0.4);">
-                        <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 34, 'border-2 border-white shadow-sm', ($cur_role === 'admin' ? 'warning' : 'primary')); ?>
+                        <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 30, 'border-2 border-white shadow-sm', ($cur_role === 'admin' ? 'warning' : 'primary')); ?>
                     </span>
                 <?php endif; ?>
-<div class="d-none d-md-block text-truncate pe-1" style="max-width: 150px;">
+                <div class="d-none d-lg-block text-truncate pe-1" style="max-width: 140px;">
                     <span class="fw-bold text-white small"><?= ($cur_role === 'admin' && !str_starts_with(strtolower(trim($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? '')), 'admin') ? 'Admin ' : '') . htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User'); ?></span>
                 </div>
             </a>
-            <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
-                <i class="bi bi-person-gear"></i><span class="d-none d-md-inline">Profil</span>
-            </a>
-            <button type="button" class="btn btn-sm btn-outline-light px-2 px-sm-3 btn-logout-navbar" data-bs-toggle="modal" data-bs-target="#modalLogoutConfirm" title="Keluar dari Sistem">
-                <i class="bi bi-box-arrow-right me-1"></i><span class="d-none d-sm-inline">Logout</span>
+            <button type="button" class="btn btn-sm btn-outline-light px-2 px-sm-3 btn-logout-navbar d-none d-sm-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalLogoutConfirm" title="Keluar dari Sistem">
+                <i class="bi bi-box-arrow-right"></i><span class="d-none d-md-inline">Logout</span>
             </button>
             <!-- Switcher Mode Terang / Gelap (Light / Dark Mode Toggle) -->
             <button id="themeToggle" class="btn-theme-toggle ms-1" type="button" onclick="toggleAppTheme(event)" aria-label="Ganti Tema (Terang / Gelap)" title="Ganti Mode Tampilan (Terang / Gelap)">
