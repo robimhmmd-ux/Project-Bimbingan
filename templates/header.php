@@ -118,6 +118,8 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= isset($page_title) ? htmlspecialchars($page_title) : 'Sistem Bimbingan Skripsi'; ?></title>
+    <!-- Favicon Web -->
+    <link rel="icon" type="image/png" href="../assets/img/logo.png">
     <!-- Bootstrap 5 CSS via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -515,8 +517,9 @@ padding: 1rem 0.75rem 2.5rem 0.75rem !important;
                     style="background: rgba(255, 255, 255, 0.18); border-radius: 8px; cursor: pointer; width: 38px; height: 38px; min-width: 38px;">
                 <i class="bi bi-list fs-4 text-white" id="sidebarToggleIcon"></i>
             </button>
-            <a class="navbar-brand d-flex align-items-center gap-1 gap-sm-2 fw-bold text-white text-decoration-none m-0 overflow-hidden" href="#">
-                <span class="brand-icon-academic d-inline-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #00AA13 0%, #00880C 100%); font-size: 0.95rem;">
+            <a class="navbar-brand d-flex align-items-center gap-1 gap-sm-2 fw-bold text-white text-decoration-none m-0 overflow-hidden" href="index.php">
+                <img src="../assets/img/logo.png" alt="Logo" class="rounded object-fit-contain bg-white p-1 flex-shrink-0 shadow-sm" style="width: 34px; height: 34px; min-width: 34px;" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='/assets/img/logo.png';}else{this.style.display='none';this.nextElementSibling.classList.remove('d-none');this.nextElementSibling.classList.add('d-inline-flex');}">
+                <span class="brand-icon-academic d-none align-items-center justify-content-center text-white flex-shrink-0" style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #00AA13 0%, #00880C 100%); font-size: 0.95rem;">
                     <i class="bi bi-mortarboard-fill"></i>
                 </span>
                 <div class="d-flex flex-column overflow-hidden">

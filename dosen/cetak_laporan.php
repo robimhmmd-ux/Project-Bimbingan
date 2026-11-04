@@ -116,6 +116,8 @@ $auto_print = isset($_GET['print']) && $_GET['print'] === 'true';
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon Web -->
+    <link rel="icon" type="image/png" href="../assets/img/logo.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Progres Bimbingan Skripsi - <?= htmlspecialchars($dosen['nama_dosen'] ?? 'Dosen'); ?></title>

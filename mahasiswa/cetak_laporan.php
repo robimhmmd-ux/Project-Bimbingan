@@ -67,6 +67,8 @@ $info_sidang = $stmt_sidang->fetch();
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <!-- Favicon Web -->
+    <link rel="icon" type="image/png" href="../assets/img/logo.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kartu Kendali Bimbingan Skripsi - <?= htmlspecialchars($mhs['nama_lengkap'] ?? 'Mahasiswa'); ?></title>

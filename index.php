@@ -60,6 +60,8 @@ if (file_exists('config/database.php')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIM Bimbingan Skripsi — #PastiAdaJalan Wisuda Tepat Waktu</title>
+    <!-- Favicon Web -->
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
     <!-- Bootstrap 5 CSS via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -828,7 +830,8 @@ if (file_exists('config/database.php')) {
     <div class="container">
         <!-- Brand Logo -->
         <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="index.php">
-            <div class="d-inline-flex align-items-center justify-content-center rounded-circle shadow-sm" style="width: 40px; height: 40px; background-color: var(--gojek-green) !important; color: var(--brand-icon-color) !important;">
+            <img src="assets/img/logo.png" alt="Logo" class="rounded bg-white p-1 shadow-sm flex-shrink-0" style="width: 40px; height: 40px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('d-none'); this.nextElementSibling.classList.add('d-inline-flex');">
+            <div class="d-none align-items-center justify-content-center rounded-circle shadow-sm" style="width: 40px; height: 40px; background-color: var(--gojek-green) !important; color: var(--brand-icon-color) !important;">
                 <i class="bi bi-mortarboard-fill fs-5"></i>
             </div>
             <div class="d-flex flex-column">
