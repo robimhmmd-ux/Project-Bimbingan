@@ -2257,38 +2257,81 @@ html, body {
         white-space: nowrap;
     }
 
-    /* Chat System Responsif pada Smartphone */
-    .chat-contacts-col {
-        height: 280px !important;
-        border-right: none !important;
-        border-bottom: 2px solid #e2e8f0 !important;
+        /* Chat System Responsif pada Smartphone */
+    .chat-window-box {
+        border-radius: 16px !important;
+        overflow: hidden !important;
     }
 
+    .chat-contacts-col,
     .chat-messages-col {
-        height: 520px !important;
+        height: calc(100vh - 225px) !important;
+        min-height: 480px !important;
+        max-height: 660px !important;
+    }
+
+    .chat-contacts-col {
+        border-right: none !important;
+        border-bottom: none !important;
+    }
+
+    #chatContainer {
+        padding: 1rem 0.75rem !important;
     }
 
     .chat-main-card {
-        height: 72vh !important;
+        height: calc(100vh - 220px) !important;
         min-height: 480px !important;
     }
 
     .chat-bubble,
     .chat-bubble-me,
+    .chat-bubble-peer,
     .chat-bubble-other {
         max-width: 88% !important;
         font-size: 0.88rem !important;
         padding: 0.65rem 0.85rem !important;
+        border-radius: 16px !important;
     }
 
     /* Modal Dialog di Smartphone */
     .modal-dialog {
-        margin: 0.5rem !important;
-        max-width: calc(100% - 1rem) !important;
+        margin: 0.5rem auto !important;
+        width: calc(100% - 1rem) !important;
+        max-width: 480px !important;
     }
 
     .modal-content {
-        border-radius: 1.15rem !important;
+        border-radius: 16px !important;
+        max-height: 90vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .modal-body {
+        overflow-y: auto !important;
+        padding: 1rem !important;
+    }
+
+    .modal-header, .modal-footer {
+        padding: 0.75rem 1rem !important;
+    }
+
+    /* Data Tables Cell & Badges di HP */
+    .table thead th {
+        font-size: 0.74rem !important;
+        letter-spacing: 0.03em;
+    }
+    .table tbody td {
+        font-size: 0.82rem !important;
+    }
+    .table .badge {
+        font-size: 0.72rem !important;
+        padding: 0.3em 0.55em !important;
+    }
+    .table .btn-sm {
+        padding: 0.28rem 0.55rem !important;
+        font-size: 0.76rem !important;
     }
 
     /* Stepper & Tahapan Bimbingan */
@@ -2297,21 +2340,55 @@ html, body {
     }
 }
 
-/* 3. Penyesuaian Ekstra untuk Layar Sangat Kecil (< 400px - iPhone SE, Galaxy A series lama) */
+/* 3. Penyesuaian Ekstra untuk Layar Sangat Kecil (< 576px) */
+@media (max-width: 575.98px) {
+    #topNavbar .container-fluid {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    .navbar-brand span.fs-6 {
+        font-size: 0.88rem !important;
+        max-width: 135px !important;
+    }
+
+    .navbar-user-pill {
+        padding: 2px !important;
+        background: transparent !important;
+        border: none !important;
+    }
+
+    /* Grid 2x2 Kartu Metrik di HP */
+    .row.g-2 .card {
+        padding: 0.75rem !important;
+        border-radius: 14px !important;
+    }
+
+    .row.g-2 .card h3 {
+        font-size: 1.25rem !important;
+    }
+
+    .row.g-2 .card h6.small {
+        font-size: 0.68rem !important;
+        letter-spacing: 0.04em;
+    }
+}
+
+/* 4. Layar Ultra Ringkas (< 400px - iPhone SE, Galaxy A series) */
 @media (max-width: 399.98px) {
     .navbar-brand span.fs-6 {
-        font-size: 0.9rem !important;
-        max-width: 120px !important;
+        font-size: 0.82rem !important;
+        max-width: 110px !important;
     }
 
     .btn-sidebar-toggle {
-        min-width: 38px !important;
-        min-height: 38px !important;
-        padding: 0.2rem !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        padding: 0.15rem !important;
     }
 
     .btn {
-        font-size: 0.82rem !important;
-        padding: 0.45rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        padding: 0.4rem 0.65rem !important;
     }
 }

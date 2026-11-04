@@ -423,9 +423,9 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
 <?php endif; ?>
 
 <!-- 4 Kartu Metrik Ringkasan Progres -->
-<div class="row g-3 mb-4">
+<div class="row g-2 g-md-3 mb-4">
     <!-- Total Mahasiswa -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-primary border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Mahasiswa Bimbingan</h6>
             <h3 class="fw-bold text-dark mb-1"><?= $total_mhs; ?> <span class="fs-6 text-muted fw-normal">/ <?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?> Kuota</span></h3>
@@ -434,7 +434,7 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
     </div>
 
     <!-- Dalam Proses Bimbingan -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-warning border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Proses Bimbingan</h6>
             <h3 class="fw-bold text-warning mb-1"><?= $count_proses; ?> <span class="fs-6 text-muted fw-normal">Mahasiswa</span></h3>
@@ -443,7 +443,7 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
     </div>
 
     <!-- Siap Sidang / Lulus -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-success border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Siap Sidang Skripsi</h6>
             <h3 class="fw-bold text-success mb-1"><?= $count_siap_sidang; ?> <span class="fs-6 text-muted fw-normal">Mahasiswa</span></h3>
@@ -452,7 +452,7 @@ $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
     </div>
 
     <!-- Rata-rata Progres -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-info border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Rata-rata Capaian</h6>
             <h3 class="fw-bold text-info mb-1"><?= $avg_progres; ?>%</h3>

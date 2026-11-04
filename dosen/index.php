@@ -54,22 +54,23 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
 ?>
 
 <!-- Header Halaman -->
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-2 pb-2 mb-4 border-bottom">
-    <div class="d-flex align-items-center gap-3">
-        <a href="profil.php" title="Kelola Profil & Foto Dosen">
-            <?= function_exists('render_avatar') ? render_avatar($dosen['foto_profil'] ?? $_SESSION['foto_profil'] ?? '', $dosen['nama_dosen'] ?? 'Dosen', 54, '', 'success') : ''; ?>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-2 pb-2 mb-3 mb-md-4 border-bottom gap-2">
+    <div class="d-flex align-items-center gap-2 gap-sm-3">
+        <a href="profil.php" title="Kelola Profil & Foto Dosen" class="flex-shrink-0">
+            <?= function_exists('render_avatar') ? render_avatar($dosen['foto_profil'] ?? $_SESSION['foto_profil'] ?? '', $dosen['nama_dosen'] ?? 'Dosen', 46, '', 'success') : ''; ?>
         </a>
         <div>
-            <h1 class="h2 fw-bold text-dark mb-1">Dashboard Dosen Pembimbing</h1>
-            <p class="text-muted small mb-0">Selamat datang di portal pembimbing, <strong><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Bapak/Ibu Dosen'); ?></strong> (NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?>).</p>
+            <h1 class="h3 fw-bold text-dark mb-0 fs-5 fs-md-3">Dashboard Dosen Pembimbing</h1>
+            <p class="text-muted small mb-0 d-none d-sm-block">Selamat datang, <strong><?= htmlspecialchars($dosen['nama_dosen'] ?? 'Bapak/Ibu Dosen'); ?></strong> (NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?>).</p>
+            <p class="text-muted small mb-0 d-sm-none" style="font-size: 0.75rem;">NIDN: <?= htmlspecialchars($dosen['nidn'] ?? '-'); ?></p>
         </div>
     </div>
-    <div class="btn-toolbar mb-2 mb-md-0 gap-2">
-        <a href="mahasiswa_bimbingan.php" class="btn btn-sm btn-outline-primary">
-            <i class="bi bi-people me-1"></i> Mahasiswa Bimbingan
+    <div class="btn-toolbar w-100 w-md-auto d-flex gap-2">
+        <a href="mahasiswa_bimbingan.php" class="btn btn-sm btn-outline-primary flex-fill flex-md-grow-0 text-center">
+            <i class="bi bi-people me-1"></i> Mahasiswa
         </a>
-        <a href="persetujuan.php" class="btn btn-sm btn-primary">
-            <i class="bi bi-calendar-event me-1"></i> Lihat Jadwal
+        <a href="persetujuan.php" class="btn btn-sm btn-primary flex-fill flex-md-grow-0 text-center">
+            <i class="bi bi-calendar-event me-1"></i> Jadwal
         </a>
     </div>
 </div>
@@ -86,9 +87,9 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
 <?php endif; ?>
 
 <!-- 4 Kartu Metrik Bersih & Tegas -->
-<div class="row g-3 mb-4">
+<div class="row g-2 g-md-3 mb-4">
     <!-- Profil & Kuota Bimbingan -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-primary border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Mahasiswa Bimbingan</h6>
             <h3 class="fw-bold text-dark mb-1"><?= $count_mhs; ?> <span class="fs-6 text-muted fw-normal">/ <?= htmlspecialchars($dosen['kuota_bimbingan'] ?? '10'); ?> Kuota</span></h3>
@@ -100,7 +101,7 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
     </div>
 
     <!-- Permintaan Menunggu Respon -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-warning border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Menunggu Respon</h6>
             <h3 class="fw-bold text-warning mb-1"><?= $count_menunggu; ?> <span class="fs-6 text-muted fw-normal">Permintaan</span></h3>
@@ -112,7 +113,7 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
     </div>
 
     <!-- Jadwal Bimbingan Disetujui -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-success border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Jadwal Disetujui</h6>
             <h3 class="fw-bold text-success mb-1"><?= $count_aktif; ?> <span class="fs-6 text-muted fw-normal">Sesi</span></h3>
@@ -124,7 +125,7 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
     </div>
 
     <!-- Jadwal Masuk & Antrean -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-6 col-xl-3">
         <div class="card p-3 shadow-sm border-0 border-start border-info border-4 h-100 bg-white">
             <h6 class="text-muted small text-uppercase fw-semibold mb-1">Jadwal Bimbingan</h6>
             <h3 class="fw-bold text-info mb-1"><?= ($count_aktif + $count_menunggu); ?> <span class="fs-6 text-muted fw-normal">Sesi</span></h3>

@@ -125,10 +125,22 @@ require_once '../templates/sidebar_dosen.php';
     </div>
 </div>
 
+<!-- Tab Navigasi Khusus Smartphone -->
+<div class="d-md-none mb-3">
+    <div class="btn-group w-100 p-1 bg-white rounded-pill shadow-sm border" role="group">
+        <button type="button" class="btn btn-sm rounded-pill fw-bold btn-light text-muted" id="btnTabKontak" onclick="switchMobileChatView('contacts')">
+            <i class="bi bi-people-fill me-1"></i>Mahasiswa (<?= count($daftar_mahasiswa); ?>)
+        </button>
+        <button type="button" class="btn btn-sm rounded-pill fw-bold btn-primary text-white shadow-sm" id="btnTabObrolan" onclick="switchMobileChatView('chat')">
+            <i class="bi bi-chat-dots-fill me-1"></i>Ruang Chat
+        </button>
+    </div>
+</div>
+
 <div class="chat-window-box">
     <div class="row g-0">
         <!-- Kolom Kiri: Daftar Kontak Mahasiswa -->
-        <div class="col-md-4 col-lg-4 border-end bg-light d-flex flex-column chat-contacts-col">
+        <div class="col-md-4 col-lg-4 border-end bg-light d-flex flex-column chat-contacts-col" id="chatContactsPane">
             <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
                 <div>
                     <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Mahasiswa Bimbingan</h6>
@@ -209,11 +221,14 @@ require_once '../templates/sidebar_dosen.php';
         </div>
 
         <!-- Kolom Kanan: Area Ruang Obrolan -->
-        <div class="col-md-8 col-lg-8 d-flex flex-column bg-white chat-messages-col">
+        <div class="col-md-8 col-lg-8 d-flex flex-column bg-white chat-messages-col" id="chatMessagesPane">
             <?php if ($active_mhs): ?>
                 <!-- Header Chat Aktif -->
                 <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white shadow-sm">
                     <div class="d-flex align-items-center">
+                        <button type="button" class="btn btn-sm btn-outline-secondary d-md-none me-2" onclick="switchMobileChatView('contacts')" title="Kembali ke Kontak Mahasiswa">
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
                         <div class="position-relative me-3">
                             <div class="avatar-circle avatar-md avatar-primary shadow-sm">
                                 <?= strtoupper(substr($active_mhs['nama_lengkap'], 0, 1)); ?>
@@ -293,11 +308,43 @@ require_once '../templates/sidebar_dosen.php';
 </div>
 
 <script>
-    // Auto-scroll ke pesan terbawah saat halaman selesai dimuat
+    function switchMobileChatView(view) {
+        if (window.innerWidth >= 768) return;
+        const contactsPane = document.getElementById('chatContactsPane');
+        const messagesPane = document.getElementById('chatMessagesPane');
+        const btnKontak = document.getElementById('btnTabKontak');
+        const btnObrolan = document.getElementById('btnTabObrolan');
+
+        if (view === 'contacts') {
+            if (contactsPane) contactsPane.classList.remove('d-none');
+            if (messagesPane) messagesPane.classList.add('d-none');
+            if (btnKontak) btnKontak.className = 'btn btn-sm rounded-pill fw-bold btn-primary text-white shadow-sm';
+            if (btnObrolan) btnObrolan.className = 'btn btn-sm rounded-pill fw-bold btn-light text-muted';
+        } else {
+            if (contactsPane) contactsPane.classList.add('d-none');
+            if (messagesPane) messagesPane.classList.remove('d-none');
+            if (btnKontak) btnKontak.className = 'btn btn-sm rounded-pill fw-bold btn-light text-muted';
+            if (btnObrolan) btnObrolan.className = 'btn btn-sm rounded-pill fw-bold btn-primary text-white shadow-sm';
+            
+            const chatContainer = document.getElementById('chatContainer');
+            if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+
+    // Auto-scroll ke pesan terbawah & inisialisasi state mobile saat halaman selesai dimuat
     window.addEventListener('DOMContentLoaded', function() {
         const chatContainer = document.getElementById('chatContainer');
         if (chatContainer) {
             chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        if (window.innerWidth < 768) {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('uid')) {
+                switchMobileChatView('chat');
+            } else {
+                switchMobileChatView('contacts');
+            }
         }
     });
 </script>

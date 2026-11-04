@@ -22,7 +22,19 @@ $is_sk_aktif = ($status_pembimbing_mhs === 'aktif');
 ?>
 <nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky">
-        <h6 class="sidebar-heading px-3 mt-2 mb-3 text-muted text-uppercase small fw-bold">Menu Mahasiswa</h6>
+        <!-- Header Khusus Drawer Mobile -->
+        <div class="d-md-none d-flex align-items-center justify-content-between pb-2 mb-3 border-bottom px-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="p-1 px-2 bg-primary bg-opacity-10 text-primary rounded-2">
+                    <i class="bi bi-mortarboard-fill"></i>
+                </span>
+                <span class="fw-bold text-dark small">Portal Mahasiswa</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-light border-0 rounded-circle" onclick="toggleSidebarMenu()" aria-label="Tutup Menu" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                <i class="bi bi-x-lg fs-6 text-dark"></i>
+            </button>
+        </div>
+        <h6 class="sidebar-heading px-3 mt-1 mb-2 text-muted text-uppercase small fw-bold">Menu Mahasiswa</h6>
         <ul class="nav flex-column nav-pills">
             <li class="nav-item mb-1">
                 <a class="nav-link <?= ($current_page == 'dashboard') ? 'active' : 'text-dark'; ?>" href="index.php" title="Dashboard Progres">
