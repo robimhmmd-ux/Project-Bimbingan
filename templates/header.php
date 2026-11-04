@@ -85,6 +85,31 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Custom CSS with Cache Buster -->
     <link href="../assets/css/style.css?v=<?= $css_ver; ?>" rel="stylesheet">
+    <!-- SweetAlert2 Modern Alerts & Modals via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Script Deteksi & Pengalih Tema Terang / Gelap (Anti-Flicker & Instant) -->
+    <script>
+        (function() {
+            var savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+
+        function toggleAppTheme(e) {
+            if (e) {
+                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                if (typeof e.stopPropagation === 'function') e.stopPropagation();
+                if (typeof e.preventDefault === 'function') e.preventDefault();
+            }
+            var html = document.documentElement;
+            var cur = html.getAttribute('data-theme') || 'light';
+            var next = (cur === 'dark') ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            try {
+                localStorage.setItem('theme', next);
+            } catch (err) {}
+        }
+    </script>
+
     <style>
         /* =========================================================================
            JAMINAN MUTLAK: TOPBAR TETAP FIX DI ATAS & SIDEBAR TIDAK IKUT SCROLL
@@ -112,7 +137,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             height: var(--navbar-height, 60px) !important;
             min-height: var(--navbar-height, 60px) !important;
             max-height: var(--navbar-height, 60px) !important;
-            z-index: 1060 !important;
+            z-index: 1030 !important;
             background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
             box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2) !important;
@@ -121,6 +146,14 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             display: flex !important;
             align-items: center !important;
             margin: 0 !important;
+        }
+
+        /* Modal Stacking & Overlay: Pastikan modal dan backdrop selalu berada di atas navbar & sidebar */
+        .modal {
+            z-index: 1065 !important;
+        }
+        .modal-backdrop {
+            z-index: 1060 !important;
         }
 
         /* 3. Sidebar Desktop (>= 768px): Stationary (Fixed di Kiri di Bawah Navbar) */
@@ -135,8 +168,8 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 height: calc(100vh - var(--navbar-height, 60px)) !important;
                 max-height: calc(100vh - var(--navbar-height, 60px)) !important;
                 z-index: 1020 !important;
-                background-color: #ffffff !important;
-                border-right: 1px solid #e2e8f0 !important;
+                background-color: var(--surface, #ffffff) !important;
+                border-right: 1px solid var(--border-color, #e2e8f0) !important;
                 border-top: none !important;
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
@@ -289,6 +322,38 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             background: rgba(255, 255, 255, 0.28) !important;
             transform: scale(1.06);
         }
+    
+        /* =========================================================================
+           DUKUNGAN TEMA GELAP (DARK MODE) TOPBAR, SIDEBAR & MAIN CONTENT
+           ========================================================================= */
+        [data-theme="dark"] .sidebar,
+        [data-theme="dark"] #sidebarMenu {
+            background-color: #131b2a !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+
+        [data-theme="dark"] .sidebar::-webkit-scrollbar-thumb {
+            background: #334155 !important;
+        }
+
+        [data-theme="dark"] body {
+            background-color: #0a0e17 !important;
+            color: #f1f5f9 !important;
+        }
+
+        [data-theme="dark"] main,
+        [data-theme="dark"] .main-content-wrapper,
+        [data-theme="dark"] #mainContent {
+            background-color: #0a0e17 !important;
+            color: #f1f5f9 !important;
+        }
+
+        [data-theme="dark"] .card,
+        [data-theme="dark"] .bg-white {
+            background-color: #131b2a !important;
+            color: #f1f5f9 !important;
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
     </style>
     <script>
         // State awal instan sebelum render
@@ -330,10 +395,10 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
         });
     </script>
 </head>
-<body class="bg-light">
+<body>
 
 <!-- Topbar Navbar (Fixed Top - Solid High-Contrast Navy Blue) -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 60px; min-height: 60px; max-height: 60px; z-index: 1060 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm py-0" id="topNavbar" style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important; height: 60px; min-height: 60px; max-height: 60px; z-index: 1030 !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;">
     <div class="container-fluid px-md-4">
         <!-- Tombol Buka/Tutup Sidebar & Brand Logo -->
         <div class="d-flex align-items-center gap-2">
@@ -347,7 +412,7 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
                 <i class="bi bi-list fs-3 text-white" id="sidebarToggleIcon"></i>
             </button>
             <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-white text-decoration-none m-0" href="#">
-                <span class="p-1 px-2 bg-white bg-opacity-20 rounded-2 text-warning">
+                <span class="brand-icon-academic d-inline-flex align-items-center justify-content-center text-white" style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #00AA13 0%, #00880C 100%);">
                     <i class="bi bi-mortarboard-fill"></i>
                 </span>
                 <div class="d-flex flex-column">
@@ -429,15 +494,70 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             <a href="profil.php" class="btn btn-sm btn-outline-light d-none d-sm-inline-flex align-items-center gap-1" title="Buka Profil & Pengaturan Akun">
                 <i class="bi bi-person-gear"></i><span class="d-none d-md-inline">Profil</span>
             </a>
-            <a href="../logout.php" class="btn btn-sm btn-outline-light px-3" onclick="return confirm('Apakah Anda yakin ingin keluar?')" title="Logout">
+            <button type="button" class="btn btn-sm btn-outline-light px-3 btn-logout-navbar" data-bs-toggle="modal" data-bs-target="#modalLogoutConfirm" title="Keluar dari Sistem">
                 <i class="bi bi-box-arrow-right me-1"></i>Logout
-            </a>
+            </button>
+            <!-- Switcher Mode Terang / Gelap (Light / Dark Mode Toggle) -->
+            <button id="themeToggle" class="btn-theme-toggle ms-1" type="button" onclick="toggleAppTheme(event)" aria-label="Ganti Tema (Terang / Gelap)" title="Ganti Mode Tampilan (Terang / Gelap)">
+                <i class="bi bi-sun-fill theme-icon-light"></i>
+                <i class="bi bi-moon-stars-fill theme-icon-dark"></i>
+            </button>
         </div>
     </div>
 </nav>
 
+<!-- MODAL MODERN KONFIRMASI LOGOUT -->
+<div class="modal fade modal-modern-confirm" id="modalLogoutConfirm" tabindex="-1" aria-labelledby="modalLogoutConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content shadow-lg border-0 text-center p-4">
+            <div class="modal-body p-0">
+                <div class="confirm-icon-box logout-icon-box mx-auto mb-3">
+                    <i class="bi bi-box-arrow-right fs-1"></i>
+                </div>
+                <h5 class="fw-bold mb-2 confirm-title" id="modalLogoutConfirmLabel">Konfirmasi Keluar Akun</h5>
+                <p class="confirm-desc mb-4 px-2">
+                    Apakah Anda yakin ingin mengakhiri sesi saat ini? Seluruh progres bimbingan dan perubahan data Anda telah tersimpan dengan aman di sistem.
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-confirm-cancel px-4 py-2" data-bs-dismiss="modal">
+                        Batal
+                    </button>
+                    <a href="../logout.php" class="btn btn-confirm-logout px-4 py-2">
+                        <i class="bi bi-box-arrow-right me-1"></i> Ya, Keluar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL UNIVERSAL KONFIRMASI MODERN (FALLBACK OFFLINE) -->
+<div class="modal fade modal-modern-confirm" id="modalModernConfirm" tabindex="-1" aria-labelledby="modalModernConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content shadow-lg border-0 text-center p-4">
+            <div class="modal-body p-0">
+                <div class="confirm-icon-box default-icon-box mx-auto mb-3" id="modernConfirmIconBox">
+                    <i class="bi bi-question-circle fs-1" id="modernConfirmIcon"></i>
+                </div>
+                <h5 class="fw-bold mb-2 confirm-title" id="modalModernConfirmLabel">Konfirmasi Tindakan</h5>
+                <p class="confirm-desc mb-4 px-2" id="modernConfirmText">
+                    Apakah Anda yakin ingin melanjutkan tindakan ini?
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-confirm-cancel px-4 py-2" data-bs-dismiss="modal" id="modernConfirmCancelBtn">
+                        Batal
+                    </button>
+                    <button type="button" class="btn btn-confirm-action px-4 py-2" id="modernConfirmOkBtn">
+                        <i class="bi bi-check2-circle me-1"></i> Ya, Lanjutkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Backdrop untuk mobile saat sidebar dibuka -->
 <div class="sidebar-mobile-backdrop" id="sidebarBackdrop" onclick="toggleSidebarMenu()"></div>
-
+<!--  -->
 <div class="container-fluid">
     <div class="row">

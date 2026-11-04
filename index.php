@@ -4,6 +4,12 @@
 if (file_exists(__DIR__ . '/config/database.php')) {
     require_once __DIR__ . '/config/database.php';
 }
+if (file_exists(__DIR__ . '/config/session_helper.php')) {
+    require_once __DIR__ . '/config/session_helper.php';
+    init_app_session($pdo ?? null);
+} elseif (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Jika pengguna sudah login, arahkan langsung ke dashboard sesuai peran
 if (isset($_SESSION['role'])) {
@@ -65,14 +71,149 @@ if (file_exists('config/database.php')) {
     <!-- Custom CSS dengan Cache Buster Wajib -->
     <link href="assets/css/style.css?v=<?= time(); ?>" rel="stylesheet">
     
+    <!-- Script Deteksi Mode Terang / Gelap Otomatis (Anti-Flicker) -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+    
     <!-- DESAIN SISTEM KHAS GOJEK (SELF-CONTAINED & ANTI CACHE) -->
     <style>
         :root {
-            --gojek-green: #00aa13;
-            --gojek-green-dark: #00880d;
-            --gojek-green-subtle: #e6f7ea;
-            --gojek-dark: #0b0f19;
-            --gojek-bubble-bg: linear-gradient(145deg, #005024 0%, #003a19 100%);
+            /* ========================================================
+               1. TEMA TERANG (LIGHT MODE - GOJEK CLEAN RESMI)
+            ======================================================== */
+            --bg-base:           #F8FAFC;
+            --bg-surface:        #FFFFFF;
+            --bg-alt:            #F1F5F9;
+            --bg-navbar:         rgba(255, 255, 255, 0.96);
+            --brand-icon-color:  #FFFFFF;
+            
+            --nav-link-color:    #334155;
+            --nav-link-hover:    #0F172A;
+            --text-heading:      #0F172A;
+            --text-body:         #475569;
+            --text-muted-dark:   #64748B;
+            --border-subtle:     #E2E8F0;
+            
+            --gojek-green:          #00AA13;
+            --gojek-green-hover:    #00880C;
+            --gojek-green-btn-text: #FFFFFF;
+            --gojek-green-subtle:   rgba(0, 170, 19, 0.1);
+            --gojek-green-border:   rgba(0, 170, 19, 0.25);
+            --gojek-green-text:     #00880C;
+            --gojek-green-glow:     rgba(0, 170, 19, 0.25);
+
+            --hero-overlay:      linear-gradient(to right, rgba(248, 250, 252, 0.95) 0%, rgba(248, 250, 252, 0.84) 48%, rgba(248, 250, 252, 0.38) 100%);
+            --hero-badge-bg:     rgba(0, 170, 19, 0.08);
+            --hero-badge-color:  #00880C;
+            --hero-badge-border: rgba(0, 170, 19, 0.25);
+
+            --bubble-bg:         linear-gradient(145deg, #00880F 0%, #005F0B 60%, #004507 100%);
+            --bubble-border:     #00AA13;
+            --bubble-shadow:     0 25px 60px -12px rgba(0, 100, 20, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+            --bubble-headline:   #FFFFFF;
+            --bubble-badge-bg:   #FFFFFF;
+            --bubble-badge-text: #00600A;
+
+            --card-solusi-1-bg:     linear-gradient(180deg, #F0FDF4 0%, #FFFFFF 55%);
+            --card-solusi-1-border: #BBF7D0;
+            --card-solusi-1-title:  #0F172A;
+            --card-solusi-1-desc:   #475569;
+            --card-solusi-1-shadow: 0 10px 30px -5px rgba(0, 170, 19, 0.08);
+
+            --card-solusi-2-bg:     linear-gradient(180deg, #F5F3FF 0%, #FFFFFF 55%);
+            --card-solusi-2-border: #DDD6FE;
+            --card-solusi-2-title:  #0F172A;
+            --card-solusi-2-desc:   #475569;
+            --card-solusi-2-shadow: 0 10px 30px -5px rgba(124, 58, 237, 0.08);
+
+            --card-solusi-3-bg:     linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 55%);
+            --card-solusi-3-border: #FED7AA;
+            --card-solusi-3-title:  #0F172A;
+            --card-solusi-3-desc:   #475569;
+            --card-solusi-3-shadow: 0 10px 30px -5px rgba(249, 115, 22, 0.08);
+
+            --cta-bg:            linear-gradient(135deg, #00880F 0%, #00500A 100%);
+            --cta-border:        #00AA13;
+            --cta-btn-bg:        #FFFFFF;
+            --cta-btn-text:      #00600A;
+            --cta-shadow:        0 25px 50px -12px rgba(0, 90, 15, 0.3);
+
+            --footer-bg:         #0B0F19;
+            --toggle-bg:         #FFFFFF;
+            --toggle-border:     #CBD5E1;
+            --toggle-color:      #0F172A;
+        }
+
+        [data-theme="dark"] {
+            /* ========================================================
+               2. TEMA GELAP (DARK MODE - TECH MODERN EMERALD)
+            ======================================================== */
+            --bg-base:           #0A0E17;
+            --bg-surface:        #131B2A;
+            --bg-alt:            #0F1523;
+            --bg-navbar:         rgba(10, 14, 23, 0.92);
+            --brand-icon-color:  #0A0E17;
+
+            --nav-link-color:    #94A3B8;
+            --nav-link-hover:    #FFFFFF;
+            --text-heading:      #FFFFFF;
+            --text-body:         #CBD5E1;
+            --text-muted-dark:   #94A3B8;
+            --border-subtle:     rgba(255, 255, 255, 0.08);
+
+            --gojek-green:          #00D056;
+            --gojek-green-hover:    #25E572;
+            --gojek-green-btn-text: #0A0E17;
+            --gojek-green-subtle:   rgba(0, 208, 86, 0.15);
+            --gojek-green-glow:     rgba(0, 208, 86, 0.35);
+
+            --gojek-green-border:   rgba(0, 208, 86, 0.3);
+            --gojek-green-text:     #00D056;
+
+            --hero-overlay:      linear-gradient(to right, rgba(10, 14, 23, 0.94) 0%, rgba(10, 14, 23, 0.82) 50%, rgba(10, 14, 23, 0.5) 100%);
+            --hero-badge-bg:     rgba(0, 208, 86, 0.12);
+            --hero-badge-color:  #00D056;
+            --hero-badge-border: rgba(0, 208, 86, 0.3);
+
+            --bubble-bg:         linear-gradient(145deg, #093b1d 0%, #055026 50%, #032b14 100%);
+            --bubble-border:     #00D056;
+            --bubble-shadow:     0 25px 60px -12px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 208, 86, 0.25);
+            --bubble-headline:   #FFFFFF;
+            --bubble-badge-bg:   #00D056;
+            --bubble-badge-text: #0A0E17;
+
+            --card-solusi-1-bg:     linear-gradient(165deg, #0e2a1b 0%, #071f13 100%);
+            --card-solusi-1-border: rgba(0, 208, 86, 0.35);
+            --card-solusi-1-title:  #FFFFFF;
+            --card-solusi-1-desc:   #A7F3D0;
+            --card-solusi-1-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+
+            --card-solusi-2-bg:     linear-gradient(165deg, #13243f 0%, #0c182b 100%);
+            --card-solusi-2-border: rgba(59, 130, 246, 0.35);
+            --card-solusi-2-title:  #FFFFFF;
+            --card-solusi-2-desc:   #BAE6FD;
+            --card-solusi-2-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+
+            --card-solusi-3-bg:     linear-gradient(165deg, #2e1d0d 0%, #1e1308 100%);
+            --card-solusi-3-border: rgba(245, 158, 11, 0.35);
+            --card-solusi-3-title:  #FFFFFF;
+            --card-solusi-3-desc:   #FDE68A;
+            --card-solusi-3-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+
+            --cta-bg:            linear-gradient(135deg, #072f17 0%, #094722 50%, #062311 100%);
+            --cta-border:        #00D056;
+            --cta-btn-bg:        #00D056;
+            --cta-btn-text:      #0A0E17;
+            --cta-shadow:        0 25px 60px -12px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 208, 86, 0.2);
+
+            --footer-bg:         #06090F;
+            --toggle-bg:         #131B2A;
+            --toggle-border:     rgba(255, 255, 255, 0.15);
+            --toggle-color:      #FACC15;
         }
 
         html {
@@ -82,20 +223,23 @@ if (file_exists('config/database.php')) {
 
         body {
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-            background-color: #f8fafc;
-            color: #0f172a;
+            background-color: var(--bg-base) !important;
+            color: var(--text-heading) !important;
+            transition: background-color 0.3s ease, color 0.3s ease;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 1. Navbar Gojek Style */
+        /* 1. Navbar Adaptif */
         .navbar-gojek {
-            background-color: var(--gojek-dark) !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(12px);
+            background: var(--bg-navbar) !important;
+            border-bottom: 1px solid var(--border-subtle) !important;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
         .navbar-gojek .nav-link {
-            color: rgba(255, 255, 255, 0.65) !important;
+            color: var(--nav-link-color) !important;
             font-weight: 600;
             font-size: 0.95rem;
             padding: 0.5rem 0.95rem !important;
@@ -103,142 +247,278 @@ if (file_exists('config/database.php')) {
         }
 
         .navbar-gojek .nav-link:hover {
-            color: #ffffff !important;
+            color: var(--nav-link-hover) !important;
         }
 
-        /* Status Aktif Navbar (Teks Putih Terang Bold Bersih) */
         .navbar-gojek .nav-link.active {
-            color: #ffffff !important;
+            color: var(--gojek-green) !important;
             font-weight: 800;
         }
 
         .btn-gojek-green {
-            background-color: var(--gojek-green) !important;
-            color: #ffffff !important;
+            background: var(--gojek-green) !important;
+            color: var(--gojek-green-btn-text) !important;
             font-weight: 800 !important;
             border-radius: 9999px !important;
             border: none !important;
             padding: 0.65rem 1.6rem !important;
-            transition: all 0.25s ease !important;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
             text-decoration: none !important;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            box-shadow: 0 4px 18px var(--gojek-green-glow) !important;
         }
 
         .btn-gojek-green:hover {
-            background-color: var(--gojek-green-dark) !important;
-            color: #ffffff !important;
+            background: var(--gojek-green-hover) !important;
+            color: var(--gojek-green-btn-text) !important;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px -4px rgba(0, 170, 19, 0.45) !important;
+            box-shadow: 0 8px 25px rgba(0, 208, 86, 0.45) !important;
         }
 
-        /* 2. Hero Section Gojek */
+        /* Tombol Switcher Mode Terang / Gelap */
+        .btn-theme-toggle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--toggle-bg);
+            border: 1.5px solid var(--toggle-border);
+            color: var(--toggle-color);
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            font-size: 1.15rem;
+            padding: 0;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .btn-theme-toggle:hover {
+            transform: scale(1.1);
+            border-color: var(--gojek-green);
+        }
+        [data-theme="light"] .theme-icon-light { display: none; }
+        [data-theme="light"] .theme-icon-dark  { display: inline-block; }
+        [data-theme="dark"]  .theme-icon-light { display: inline-block; }
+        [data-theme="dark"]  .theme-icon-dark  { display: none; }
+
+        /* 2. Hero Section */
         .hero-gojek-container {
             position: relative;
-            background-color: #0b0f19;
-            background-image: linear-gradient(to right, rgba(11, 15, 25, 0.94) 0%, rgba(11, 15, 25, 0.82) 55%, rgba(11, 15, 25, 0.92) 100%),
+            background-color: var(--bg-base);
+            background-image: var(--hero-overlay),
                               url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80');
             background-size: cover;
-            background-position: center;
-            color: #ffffff;
+            background-position: center 30%;
+            color: var(--text-heading);
             overflow: hidden;
+            border-bottom: 1px solid var(--border-subtle);
+            transition: background-color 0.3s ease;
         }
 
-        /* Gelembung Hijau Ikonik Gojek */
+        @media (min-width: 992px) {
+            .hero-gojek-container {
+                min-height: calc(100vh - 76px);
+                display: flex;
+                align-items: center;
+            }
+        }
+
+        .hero-gojek-container > .container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-gojek-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to bottom, transparent, var(--bg-alt));
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Hero Left Column Highlights */
+        .hero-title-highlight {
+            color: var(--gojek-green) !important;
+            -webkit-text-fill-color: var(--gojek-green) !important;
+            display: inline-block;
+        }
+
+        .hero-lead-text {
+            color: var(--text-body);
+            font-size: 1.05rem;
+            line-height: 1.65;
+            max-width: 520px;
+            font-weight: 500;
+        }
+
+        .hero-trust-item {
+            color: var(--text-muted-dark);
+            font-size: 0.84rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* Gelembung Hero Khas Gojek */
         .bubble-card-gojek {
-            background: var(--gojek-bubble-bg) !important;
+            background: var(--bubble-bg) !important;
             border-radius: 34px !important;
             padding: 3.2rem 2.8rem !important;
-            color: #ffffff !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 45, 20, 0.75) !important;
-            border: 1px solid rgba(255, 255, 255, 0.16) !important;
+            color: #FFFFFF !important;
+            box-shadow: var(--bubble-shadow) !important;
+            border: 2px solid var(--bubble-border) !important;
             position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
 
-        .bubble-headline {
-            font-weight: 900;
-            line-height: 1.12;
-            letter-spacing: -0.035em;
-            font-size: clamp(2.4rem, 4.6vw, 3.8rem);
-            color: #ffffff !important;
+        .bubble-card-gojek::before {
+            content: '';
+            position: absolute;
+            top: -25%;
+            right: -25%;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+            pointer-events: none;
         }
 
-        /* 3. Section Skala Kami (Gojek Metrics) */
-        .card-skala-gojek {
-            background: #ffffff;
-            border-radius: 24px;
-            padding: 2.2rem 1.6rem;
-            border: 1px solid #e2e8f0;
-            transition: all 0.25s ease;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-            height: 100%;
+        .bubble-card-gojek h1,
+        .bubble-card-gojek .bubble-headline,
+        h1.bubble-headline {
+            font-weight: 900 !important;
+            line-height: 1.12 !important;
+            letter-spacing: -0.035em !important;
+            font-size: clamp(2.4rem, 4.6vw, 3.8rem) !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            text-shadow: 0 3px 18px rgba(0, 0, 0, 0.35) !important;
         }
 
-        .card-skala-gojek:hover {
-            transform: translateY(-5px);
-            border-color: var(--gojek-green);
-            box-shadow: 0 16px 28px -8px rgba(0, 170, 19, 0.15);
+        .bubble-chips-strip {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.8rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.18);
+            flex-wrap: wrap;
         }
 
-        .stat-number-big {
-            font-weight: 900;
-            font-size: 3rem;
-            line-height: 1;
-            letter-spacing: -0.03em;
-            color: #0f172a;
+        .bubble-chip {
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(8px);
+            border-radius: 9999px;
+            padding: 0.35rem 0.85rem;
+            color: #FFFFFF;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .bubble-chip i {
+            color: #FFFFFF !important;
         }
 
-        /* 4. Gojek Authentic 3D Solusi Cards */
+        /* 3. Section Solusi Kami */
+        #solusi {
+            background-color: var(--bg-alt) !important;
+            border-bottom: 1px solid var(--border-subtle) !important;
+            transition: background-color 0.3s ease;
+        }
+        #solusi h2 {
+            color: var(--text-heading) !important;
+        }
+        #solusi p.text-muted {
+            color: var(--text-muted-dark) !important;
+        }
+
+        /* Kartu Solusi 3D Gojek */
         .card-gojek-solusi {
-            border-radius: 36px;
-            padding: 2.5rem 2rem 2.5rem 2rem;
-            min-height: 460px;
+            border-radius: 28px;
+            padding: 1.8rem 1.6rem;
+            min-height: 380px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, background-color 0.3s ease, border-color 0.3s ease;
             position: relative;
             overflow: hidden;
-            border: none;
             text-align: left;
         }
         .card-gojek-solusi:hover {
             transform: translateY(-8px);
-            box-shadow: 0 24px 45px -10px rgba(0, 0, 0, 0.18);
         }
         .card-gojek-solusi.bg-gojek-green-card {
-            background-color: #74CE5E;
+            background: var(--card-solusi-1-bg) !important;
+            border: 1.5px solid var(--card-solusi-1-border) !important;
+            box-shadow: var(--card-solusi-1-shadow) !important;
+        }
+        .card-gojek-solusi.bg-gojek-green-card .card-title-gojek {
+            color: var(--card-solusi-1-title) !important;
+        }
+        .card-gojek-solusi.bg-gojek-green-card .card-desc-gojek {
+            color: var(--card-solusi-1-desc) !important;
         }
         .card-gojek-solusi.bg-gojek-purple-card {
-            background-color: #D094F7;
+            background: var(--card-solusi-2-bg) !important;
+            border: 1.5px solid var(--card-solusi-2-border) !important;
+            box-shadow: var(--card-solusi-2-shadow) !important;
+        }
+        .card-gojek-solusi.bg-gojek-purple-card .card-title-gojek {
+            color: var(--card-solusi-2-title) !important;
+        }
+        .card-gojek-solusi.bg-gojek-purple-card .card-desc-gojek {
+            color: var(--card-solusi-2-desc) !important;
         }
         .card-gojek-solusi.bg-gojek-orange-card {
-            background-color: #FFA244;
+            background: var(--card-solusi-3-bg) !important;
+            border: 1.5px solid var(--card-solusi-3-border) !important;
+            box-shadow: var(--card-solusi-3-shadow) !important;
         }
+        .card-gojek-solusi.bg-gojek-orange-card .card-title-gojek {
+            color: var(--card-solusi-3-title) !important;
+        }
+        .card-gojek-solusi.bg-gojek-orange-card .card-desc-gojek {
+            color: var(--card-solusi-3-desc) !important;
+        }
+
         .card-gojek-illustration {
             width: 100%;
-            height: 210px;
+            height: 160px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .card-gojek-illustration svg {
+            max-height: 155px;
+            width: auto;
+            max-width: 100%;
         }
         .card-gojek-solusi .card-title-gojek {
-            font-size: 1.85rem;
+            font-size: 1.5rem;
             font-weight: 800;
-            color: #000000;
             letter-spacing: -0.03em;
-            line-height: 1.2;
-            margin-bottom: 0.65rem;
+            line-height: 1.25;
+            margin-bottom: 0.4rem;
         }
         .card-gojek-solusi .card-desc-gojek {
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             font-weight: 500;
-            color: #111827;
             line-height: 1.45;
             margin-bottom: 0;
-            opacity: 0.95;
         }
         @media (max-width: 768px) {
             .card-gojek-solusi {
@@ -254,14 +534,276 @@ if (file_exists('config/database.php')) {
             }
         }
 
-        /* 6. CTA Card Gojek */
-        .cta-banner-gojek {
-            background: linear-gradient(135deg, #0b0f19 0%, #004d23 100%);
-            border-radius: 36px;
-            padding: 4rem 3rem;
-            color: #ffffff;
+        /* 3b. Section Alur & Portal (Roadmap Bimbingan & Akses Masuk) */
+        #alur {
+            background-color: var(--bg-base) !important;
+            border-bottom: 1px solid var(--border-subtle) !important;
+            transition: background-color 0.3s ease;
+            scroll-margin-top: 0px;
+        }
+        #alur h2 {
+            color: var(--text-heading) !important;
+        }
+        #alur p.text-muted {
+            color: var(--text-muted-dark) !important;
+        }
+
+        .card-alur-gojek {
+            background-color: var(--bg-surface) !important;
+            border: 1.5px solid var(--border-subtle) !important;
+            border-radius: 22px !important;
+            padding: 1.35rem 1.25rem !important;
             position: relative;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 210px;
+            height: 100%;
+        }
+        .card-alur-gojek:hover {
+            transform: translateY(-5px);
+            border-color: var(--gojek-green) !important;
+            box-shadow: 0 16px 32px -8px var(--gojek-green-glow) !important;
+        }
+        .card-alur-gojek h5 {
+            color: var(--text-heading) !important;
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-top: 0.55rem;
+            margin-bottom: 0.45rem;
+        }
+        .card-alur-gojek p {
+            color: var(--text-muted-dark) !important;
+            line-height: 1.6;
+            font-size: 0.88rem;
+            margin-bottom: 0;
+        }
+
+        .step-number-pill {
+            font-size: 1.55rem;
+            font-weight: 900;
+            color: var(--gojek-green);
+            line-height: 1;
+            letter-spacing: -0.04em;
+        }
+
+        .step-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--gojek-green-subtle);
+            color: var(--gojek-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.25s ease;
+        }
+        .card-alur-gojek:hover .step-icon-wrap {
+            background: var(--gojek-green);
+            color: var(--gojek-green-btn-text);
+            transform: scale(1.06);
+        }
+
+        /* Strip CTA Hasil Penggabungan */
+        .cta-banner-merged {
+            background: var(--cta-bg) !important;
+            border: 2px solid var(--cta-border) !important;
+            box-shadow: var(--cta-shadow) !important;
+            color: #ffffff !important;
+            border-radius: 24px !important;
+            transition: all 0.3s ease;
+        }
+        .cta-banner-merged h3,
+        [data-theme="light"] .cta-banner-merged h3,
+        [data-theme="dark"] .cta-banner-merged h3 {
+            color: #FFFFFF !important;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+        }
+        .cta-banner-merged p,
+        [data-theme="light"] .cta-banner-merged p,
+        [data-theme="dark"] .cta-banner-merged p {
+            color: rgba(255, 255, 255, 0.92) !important;
+        }
+        .cta-badge-pill {
+            background: rgba(255, 255, 255, 0.2) !important;
+            border: 1px solid rgba(255, 255, 255, 0.35) !important;
+            color: #FFFFFF !important;
+            backdrop-filter: blur(6px);
+        }
+        .cta-badge-pill span {
+            color: #FFFFFF !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.05em !important;
+        }
+        .cta-banner-merged .btn-light {
+            background: var(--cta-btn-bg) !important;
+            color: var(--cta-btn-text) !important;
+            border: none !important;
+            font-weight: 800 !important;
+            transition: all 0.25s ease;
+        }
+        .cta-banner-merged .btn-light:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35) !important;
+        }
+
+        /* 4. Section Skala Kami */
+        #skala {
+            background-color: var(--bg-base) !important;
+            border-bottom: 1px solid var(--border-subtle) !important;
+            transition: background-color 0.3s ease;
+        }
+        #skala h2 {
+            color: var(--text-heading) !important;
+        }
+        #skala .text-muted {
+            color: var(--text-muted-dark) !important;
+        }
+        .card-skala-gojek {
+            background: var(--bg-surface) !important;
+            border-radius: 24px;
+            padding: 2.2rem 1.6rem;
+            border: 1px solid var(--border-subtle) !important;
+            transition: all 0.25s ease;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06) !important;
+            height: 100%;
+        }
+        .card-skala-gojek:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 35px -10px var(--gojek-green-glow) !important;
+            border-color: var(--gojek-green) !important;
+        }
+        .card-skala-gojek .stat-number-big {
+            font-weight: 900;
+            font-size: 3rem;
+            line-height: 1;
+            letter-spacing: -0.03em;
+            color: var(--gojek-green) !important;
+        }
+        .card-skala-gojek h5 {
+            color: var(--text-heading) !important;
+        }
+        .card-skala-gojek p {
+            color: var(--text-muted-dark) !important;
+        }
+
+        /* 5. Section Dosen */
+        #dosen {
+            background-color: var(--bg-alt) !important;
+            border-bottom: 1px solid var(--border-subtle) !important;
+            transition: background-color 0.3s ease;
+        }
+        #dosen h2 {
+            color: var(--text-heading) !important;
+        }
+        #dosen p.text-muted {
+            color: var(--text-muted-dark) !important;
+        }
+        #dosen .card {
+            background-color: var(--bg-surface) !important;
+            border: 1px solid var(--border-subtle) !important;
+            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06) !important;
+            border-radius: 20px !important;
+            transition: all 0.25s ease;
+        }
+        #dosen .card:hover {
+            border-color: var(--gojek-green) !important;
+            transform: translateY(-4px);
+        }
+        #dosen .card h6 {
+            color: var(--text-heading) !important;
+        }
+        #dosen .card .text-muted {
+            color: var(--text-muted-dark) !important;
+        }
+        #dosen .card .rounded-circle {
+            background: linear-gradient(135deg, var(--gojek-green) 0%, #059669 100%) !important;
+            color: var(--brand-icon-color) !important;
+            border: none !important;
+        }
+        #dosen .card .badge.bg-light {
+            background-color: var(--bg-alt) !important;
+            color: var(--text-body) !important;
+            border: 1px solid var(--border-subtle) !important;
+        }
+        #dosen .btn-outline-dark {
+            border-color: var(--gojek-green) !important;
+            color: var(--gojek-green) !important;
+        }
+        #dosen .btn-outline-dark:hover {
+            background-color: var(--gojek-green) !important;
+            color: #FFFFFF !important;
+        }
+
+        /* 6. CTA Mulai Bimbingan (Merged inside Alur) */
+        #mulai-bimbingan {
+            scroll-margin-top: 90px;
+        }
+
+        /* 7. Footer & FAQ Terpadu */
+        #faq {
+            background-color: var(--footer-bg) !important;
+            transition: background-color 0.3s ease;
+        }
+        .faq-dark-item {
+            background: rgba(255, 255, 255, 0.04) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-radius: 18px !important;
             overflow: hidden;
+            margin-bottom: 1rem;
+            transition: all 0.25s ease;
+        }
+        .faq-dark-item:hover {
+            border-color: rgba(0, 208, 86, 0.45) !important;
+            background: rgba(255, 255, 255, 0.07) !important;
+        }
+        .faq-dark-btn {
+            background-color: transparent !important;
+            color: #ffffff !important;
+            box-shadow: none !important;
+            font-size: 1.02rem;
+            font-weight: 700 !important;
+            padding: 1.15rem 1.4rem !important;
+        }
+        .faq-dark-btn:not(.collapsed) {
+            background-color: rgba(0, 208, 86, 0.12) !important;
+            color: var(--gojek-green) !important;
+        }
+        .faq-dark-btn::after {
+            filter: invert(1) brightness(2);
+        }
+        .faq-dark-body {
+            background-color: transparent !important;
+            color: rgba(255, 255, 255, 0.82) !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+            padding: 1.15rem 1.4rem !important;
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+        .faq-dark-body code {
+            color: var(--gojek-green) !important;
+            background: rgba(0, 208, 86, 0.15) !important;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+
+        /* 8. Global Badges */
+        .badge.bg-success-subtle,
+        .badge.bg-secondary-subtle,
+        .badge.bg-dark {
+            background-color: var(--gojek-green-subtle) !important;
+            color: var(--gojek-green) !important;
+            border: 1px solid var(--border-subtle) !important;
+        }
+
+        /* 9. Footer */
+        footer {
+            background-color: var(--footer-bg) !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
         }
 
         @media (max-width: 767.98px) {
@@ -274,7 +816,7 @@ if (file_exists('config/database.php')) {
                 border-radius: 24px;
             }
             .stat-number-big {
-                font-size: 2.4rem;
+                font-size: 2.4rem !important;
             }
         }
     </style>
@@ -282,22 +824,22 @@ if (file_exists('config/database.php')) {
 <body class="d-flex flex-column min-vh-100">
 
 <!-- 1. NAVBAR MINIMALIS GOJEK -->
-<nav class="navbar navbar-expand-lg navbar-dark navbar-gojek sticky-top py-3">
+<nav class="navbar navbar-expand-lg navbar-gojek sticky-top py-3">
     <div class="container">
         <!-- Brand Logo -->
-        <a class="navbar-brand d-flex align-items-center gap-2 text-white text-decoration-none" href="index.php">
-            <div class="d-inline-flex align-items-center justify-content-center text-white rounded-circle shadow-sm" style="width: 40px; height: 40px; background-color: var(--gojek-green) !important;">
+        <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="index.php">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle shadow-sm" style="width: 40px; height: 40px; background-color: var(--gojek-green) !important; color: var(--brand-icon-color) !important;">
                 <i class="bi bi-mortarboard-fill fs-5"></i>
             </div>
             <div class="d-flex flex-column">
-                <span class="fs-5 fw-extrabold lh-1 tracking-tight text-white">SIM Skripsi</span>
-                <span class="text-white-50 small" style="font-size: 0.7rem;">Bimbingan & Tugas Akhir</span>
+                <span class="fs-5 fw-extrabold lh-1 tracking-tight" style="color: var(--text-heading);">SIM Skripsi</span>
+                <span class="small" style="font-size: 0.7rem; color: var(--text-muted-dark);">Bimbingan & Tugas Akhir</span>
             </div>
         </a>
 
         <!-- Hamburger Toggle Mobile/Tablet -->
-        <button class="navbar-toggler border-white border-opacity-25" type="button" data-bs-toggle="collapse" data-bs-target="#navGojek" aria-controls="navGojek" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navGojek" aria-controls="navGojek" aria-expanded="false" aria-label="Toggle navigation" style="border-color: var(--border-subtle);">
+            <i class="bi bi-list fs-3" style="color: var(--text-heading);"></i>
         </button>
 
         <div class="collapse navbar-collapse" id="navGojek">
@@ -315,82 +857,76 @@ if (file_exists('config/database.php')) {
                     <a class="nav-link" href="#dosen">Dosen</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="#alur">Alur & Portal</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="#faq">FAQ</a>
                 </li>
-                <li class="nav-item ms-lg-2 mt-2 mt-lg-0 d-flex align-items-center gap-2">
-                    <a href="register.php" class="btn btn-sm btn-outline-light rounded-pill px-3 py-2 fw-bold d-inline-flex align-items-center gap-1">
-                        <i class="bi bi-person-plus"></i>
-                        <span>Daftar</span>
-                    </a>
-                    <a href="login.php" class="btn-gojek-green">
-                        <i class="bi bi-box-arrow-in-right"></i>
-                        <span>Masuk Portal</span>
-                    </a>
+                <li class="nav-item ms-lg-3 mt-2 mt-lg-0 d-flex align-items-center">
+                    <!-- Tombol Ganti Tema Terang/Gelap -->
+                    <button id="themeToggle" class="btn-theme-toggle" type="button" aria-label="Ganti Tema (Terang / Gelap)" title="Ganti Mode Tampilan (Terang / Gelap)">
+                        <i class="bi bi-sun-fill theme-icon-light"></i>
+                        <i class="bi bi-moon-stars-fill theme-icon-dark"></i>
+                    </button>
                 </li>
             </ul>
         </div>
     </div>
 </nav>
 
-<!-- 2. HERO BANNER UTAMA (Foto Mahasiswa + Gelembung Hijau Ikonik Gojek) -->
-<section id="beranda" class="hero-gojek-container py-5 py-lg-6">
-    <div class="container py-4 py-lg-5">
+<!-- 2. HERO BANNER UTAMA (Desain Tech Academic Bersih & Gelembung Hijau Ikonik Gojek) -->
+<section id="beranda" class="hero-gojek-container py-5">
+    <div class="container py-4">
         <div class="row align-items-center g-5">
             <!-- Kolom Kiri: Pesan Kampus Tegas & Poin Solusi -->
             <div class="col-lg-6">
                 <div class="pe-lg-3">
-                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-10 border border-white border-opacity-10 text-success small mb-3">
-                        <i class="bi bi-patch-check-fill text-success"></i>
-                        <span class="fw-bold text-white">Sistem Bimbingan Skripsi Terpadu</span>
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill small mb-3 shadow-sm" style="background: var(--hero-badge-bg); color: var(--hero-badge-color); border: 1px solid var(--hero-badge-border); font-size: 0.82rem; font-weight: 700;">
+                        <i class="bi bi-patch-check-fill" style="color: var(--hero-badge-color);"></i>
+                        <span>Sistem Bimbingan Skripsi Terpadu</span>
                     </div>
 
-                    <h2 class="display-6 fw-extrabold text-white mb-3 lh-sm">
-                        Bimbingan Teratur, Skripsi Tuntas, Wisuda Tepat Waktu.
-                    </h2>
-                    <p class="text-white text-opacity-75 mb-4 fs-6" style="line-height: 1.8;">
-                        Tak perlu lagi antre tanpa kepastian atau khawatir naskah revisian tercecer di chat. Akses ketersediaan jadwal dosen, serahkan draf bab PDF, dan pantau logbook kelulusan dalam satu pintu.
+                    <h1 class="display-5 fw-extrabold mb-3 lh-sm" style="color: var(--text-heading); letter-spacing: -0.035em; font-weight: 900;">
+                        Bimbingan Teratur,<br class="d-none d-md-inline">
+                        Skripsi Tuntas,<br class="d-none d-md-inline">
+                        <span class="hero-title-highlight">Wisuda Tepat Waktu.</span>
+                    </h1>
+
+                    <p class="hero-lead-text mb-4">
+                        Atur jadwal bimbingan anti-bentrok, pantau revisi naskah, dan cetak kartu kendali sah.
                     </p>
 
-                    <!-- Poin Manfaat Ringkas -->
-                    <div class="d-flex flex-column gap-3 mb-4">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; background-color: rgba(0, 170, 19, 0.25); color: #00aa13;">
-                                <i class="bi bi-calendar-check-fill"></i>
-                            </div>
-                            <span class="text-white fw-medium">Reservasi slot waktu dosen tanpa bentrok jadwal mahasiswa lain</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; background-color: rgba(0, 170, 19, 0.25); color: #00aa13;">
-                                <i class="bi bi-file-earmark-pdf-fill"></i>
-                            </div>
-                            <span class="text-white fw-medium">Unggah berkas PDF Bab & arsip catatan evaluasi tersimpan rapi</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; background-color: rgba(0, 170, 19, 0.25); color: #00aa13;">
-                                <i class="bi bi-printer-fill"></i>
-                            </div>
-                            <span class="text-white fw-medium">Format cetak kartu bimbingan fisik resmi siap tanda tangan dosen</span>
-                        </div>
+                    <!-- Tombol Aksi Bersih & Rapi (Anchor Bawah Kolom Kiri) -->
+                    <div class="d-flex flex-wrap align-items-center gap-3">
+                        <a href="#solusi" class="btn-gojek-green shadow-sm">
+                            <span>Jelajahi Solusi</span>
+                            <i class="bi bi-arrow-down-short fs-5"></i>
+                        </a>
+                        <a href="login.php" class="btn fw-bold rounded-pill px-4 py-2" style="background: var(--bg-surface); color: var(--text-heading); border: 1.5px solid var(--border-subtle); box-shadow: 0 2px 10px rgba(0,0,0,0.04); text-decoration: none;">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Portal
+                        </a>
                     </div>
+
                 </div>
             </div>
 
             <!-- Kolom Kanan: GELEMBUNG HIJAU GOJEK DENGAN SLOGAN BESAR -->
             <div class="col-lg-6">
                 <div class="bubble-card-gojek">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="badge bg-white text-dark fw-bold px-3 py-1 rounded-pill" style="font-size: 0.72rem; letter-spacing: 0.05em;">
-                            KAMPUS TERPADU
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <span class="badge fw-extrabold px-3 py-1.5 rounded-pill shadow-sm" style="font-size: 0.74rem; letter-spacing: 0.05em; background: var(--bubble-badge-bg); color: var(--bubble-badge-text);">
+                            <i class="bi bi-mortarboard-fill me-1"></i> KAMPUS TERPADU
                         </span>
-                        <span class="text-white-50 small"><i class="bi bi-shield-fill-check me-1 text-success"></i>TiDB Cloud Live</span>
+                        <span class="small" style="color: rgba(255, 255, 255, 0.92); font-weight: 600;"><i class="bi bi-shield-fill-check me-1" style="color: #FFFFFF;"></i>TiDB Cloud Live</span>
                     </div>
 
-                    <!-- SLOGAN BESAR & BOLD GAYA GOJEK -->
-                    <h1 class="bubble-headline mb-0">
+                    <!-- SLOGAN BESAR & BOLD GAYA GOJEK (SEMUA HURUF PUTIH BERSIH) -->
+                    <h1 class="bubble-headline mb-0" style="color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important;">
                         Dari Bab 1,<br>
                         Pasti Ada<br>
                         Jalan Wisuda.
                     </h1>
+
                 </div>
             </div>
         </div>
@@ -398,15 +934,15 @@ if (file_exists('config/database.php')) {
 </section>
 
 <!-- 3. SECTION SOLUSI KAMI (Inspirasi Bahasa Desain Kartu 3D Gojek) -->
-<section id="solusi" class="py-5 bg-white border-bottom">
-    <div class="container py-4">
-        <div class="text-center max-w-700 mx-auto mb-5">
-            <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill mb-2">SOLUSI TANTANGAN SKRIPSI</span>
-            <h2 class="fw-extrabold text-dark display-6 mb-2">Menghadirkan Solusi untuk Menghadapi Hambatan Bimbingan</h2>
+<section id="solusi" class="py-5 py-lg-6 border-bottom">
+    <div class="container">
+        <div class="text-center max-w-700 mx-auto mb-4 mb-lg-5 pb-lg-1">
+            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1.5 rounded-pill mb-2">SOLUSI TANTANGAN SKRIPSI</span>
+            <h2 class="fw-extrabold display-6 mb-2">Menghadirkan Solusi untuk Menghadapi Hambatan Bimbingan</h2>
             <p class="text-muted mb-0">Skripsi sering terhambat karena jadwal dosen sulit dicocokkan atau revisi tercecer? Kami selesaikan secara sistematis.</p>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-3 g-lg-4">
             <!-- Kartu 1: Hijau Gojek (Pasti Tanpa Drama) -->
             <div class="col-md-4">
                 <div class="card-gojek-solusi bg-gojek-green-card">
@@ -587,45 +1123,45 @@ if (file_exists('config/database.php')) {
 </section>
 
 <!-- 4. SECTION SKALA KAMI (Inspirasi Section Skala Gojek: Angka Pembuktian Riil) -->
-<section id="skala" class="py-5 bg-light border-bottom">
-    <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-5">
+<section id="skala" class="py-5 py-lg-6 border-bottom">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4 mb-lg-5 pb-lg-1">
             <div>
-                <span class="badge bg-dark text-white fw-bold px-3 py-2 rounded-pill mb-2">DATA SISTEM REALTIME</span>
-                <h2 class="fw-extrabold text-dark display-6 mb-0">Skala Kami</h2>
+                <span class="badge fw-bold px-3 py-1.5 rounded-pill mb-2">DATA SISTEM REALTIME</span>
+                <h2 class="fw-extrabold display-6 mb-0" style="color: var(--text-heading);">Skala Kami</h2>
             </div>
-            <div class="text-muted small">
+            <div class="small" style="color: var(--text-muted-dark);">
                 Terhubung langsung ke kluster basis data TiDB Serverless
             </div>
         </div>
 
-        <div class="row g-4 text-start">
+        <div class="row g-3 g-lg-4 text-start">
             <div class="col-6 col-lg-3">
                 <div class="card-skala-gojek">
                     <div class="stat-number-big mb-2"><?= $total_dosen; ?></div>
-                    <h5 class="fw-bold text-dark mb-1">Dosen Pembimbing</h5>
-                    <p class="text-muted small mb-0">Terdaftar aktif dan bersertifikasi NIDN resmi di program studi.</p>
+                    <h5 class="fw-bold mb-1" style="color: var(--text-heading);">Dosen Pembimbing</h5>
+                    <p class="small mb-0" style="color: var(--text-muted-dark);">Terdaftar aktif dan bersertifikasi NIDN resmi di program studi.</p>
                 </div>
             </div>
             <div class="col-6 col-lg-3">
                 <div class="card-skala-gojek">
                     <div class="stat-number-big mb-2"><?= $total_mhs; ?></div>
-                    <h5 class="fw-bold text-dark mb-1">Mahasiswa Tugas Akhir</h5>
-                    <p class="text-muted small mb-0">Terbagi pada 3 kelas paralel (Kelas TI-1A, TI-1B, dan TI-1C).</p>
+                    <h5 class="fw-bold mb-1" style="color: var(--text-heading);">Mahasiswa Tugas Akhir</h5>
+                    <p class="small mb-0" style="color: var(--text-muted-dark);">Terbagi pada 3 kelas paralel (Kelas TI-1A, TI-1B, dan TI-1C).</p>
                 </div>
             </div>
             <div class="col-6 col-lg-3">
                 <div class="card-skala-gojek">
                     <div class="stat-number-big mb-2">Maks 5</div>
-                    <h5 class="fw-bold text-dark mb-1">Batas Kuota / Dosen</h5>
-                    <p class="text-muted small mb-0">Rasio ideal untuk menjamin mutu dan kedalaman konsultasi skripsi.</p>
+                    <h5 class="fw-bold mb-1" style="color: var(--text-heading);">Batas Kuota / Dosen</h5>
+                    <p class="small mb-0" style="color: var(--text-muted-dark);">Rasio ideal untuk menjamin mutu dan kedalaman konsultasi skripsi.</p>
                 </div>
             </div>
             <div class="col-6 col-lg-3">
                 <div class="card-skala-gojek">
-                    <div class="stat-number-big mb-2 text-success">100%</div>
-                    <h5 class="fw-bold text-dark mb-1">Bebas Bentrok Jadwal</h5>
-                    <p class="text-muted small mb-0">Validasi otomatis mencegah tumpang tindih waktu bimbingan mahasiswa.</p>
+                    <div class="stat-number-big mb-2">100%</div>
+                    <h5 class="fw-bold mb-1" style="color: var(--text-heading);">Bebas Bentrok Jadwal</h5>
+                    <p class="small mb-0" style="color: var(--text-muted-dark);">Validasi otomatis mencegah tumpang tindih waktu bimbingan mahasiswa.</p>
                 </div>
             </div>
         </div>
@@ -633,13 +1169,13 @@ if (file_exists('config/database.php')) {
 </section>
 
 <!-- 6. SECTION DOSEN PEMBIMBING (Gaya Kartu Mitra Gojek) -->
-<section id="dosen" class="py-5 bg-light border-bottom">
-    <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+<section id="dosen" class="py-5 py-lg-6 border-bottom">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-3 mb-md-4">
             <div>
-                <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill mb-2">TENAGA PENDIDIK</span>
-                <h2 class="fw-extrabold text-dark display-6 mb-1">Dosen Pembimbing Akademik</h2>
-                <p class="text-muted mb-0">Dosen yang aktif membimbing tugas akhir mahasiswa semester ini.</p>
+                <span class="badge fw-bold px-3 py-1.5 rounded-pill mb-2">TENAGA PENDIDIK</span>
+                <h2 class="fw-extrabold display-6 mb-1" style="color: var(--text-heading);">Dosen Pembimbing Akademik</h2>
+                <p class="mb-0" style="color: var(--text-muted-dark);">Dosen yang aktif membimbing tugas akhir mahasiswa semester ini.</p>
             </div>
             <div>
                 <a href="login.php" class="btn btn-outline-dark rounded-pill px-4 py-2 small fw-bold">
@@ -652,20 +1188,20 @@ if (file_exists('config/database.php')) {
             <?php if (!empty($list_dosen)): ?>
                 <?php foreach ($list_dosen as $d): ?>
                     <div class="col-md-6 col-lg-4">
-                        <div class="card p-3 rounded-4 h-100 bg-white border shadow-sm" style="transition: transform 0.2s ease;">
+                        <div class="card p-3 rounded-4 h-100 border shadow-sm" style="transition: transform 0.2s ease;">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold fs-5 flex-shrink-0" style="width: 50px; height: 50px; background: linear-gradient(135deg, #00aa13 0%, #005024 100%);">
+                                <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold fs-5 flex-shrink-0" style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--gojek-green) 0%, #059669 100%); color: var(--brand-icon-color) !important;">
                                     <?= strtoupper(substr($d['nama_dosen'], 0, 1)); ?>
                                 </div>
                                 <div class="overflow-hidden">
-                                    <h6 class="fw-bold text-dark text-truncate mb-0" title="<?= htmlspecialchars($d['nama_dosen']); ?>">
+                                    <h6 class="fw-bold text-truncate mb-0" style="color: var(--text-heading);" title="<?= htmlspecialchars($d['nama_dosen']); ?>">
                                         <?= htmlspecialchars($d['nama_dosen']); ?>
                                     </h6>
-                                    <div class="text-muted small" style="font-size: 0.78rem;">
+                                    <div class="small" style="font-size: 0.78rem; color: var(--text-muted-dark);">
                                         NIDN: <strong><?= htmlspecialchars($d['nidn'] ?? '-'); ?></strong>
                                     </div>
                                     <div class="d-flex align-items-center gap-2 mt-1">
-                                        <span class="badge bg-light text-dark border" style="font-size: 0.7rem;">
+                                        <span class="badge bg-light border" style="font-size: 0.7rem;">
                                             Kuota: <?= (int)$d['terisi']; ?> / <?= (int)$d['kuota_bimbingan']; ?> Mahasiswa
                                         </span>
                                         <?php if ((int)$d['terisi'] >= (int)$d['kuota_bimbingan']): ?>
@@ -684,29 +1220,101 @@ if (file_exists('config/database.php')) {
     </div>
 </section>
 
-<!-- 7. CTA BANNER BESAR GOJEK (Inspirasi: "Belum punya aplikasi Gojek? Unduh sekarang") -->
-<section id="mulai-bimbingan" class="py-5 bg-white border-bottom">
-    <div class="container py-4">
-        <div class="cta-banner-gojek">
-            <div class="row align-items-center g-4">
-                <div class="col-lg-8">
-                    <span class="badge bg-white text-dark fw-bold px-3 py-1 rounded-pill mb-3" style="font-size: 0.75rem;">
-                        #PASTIADAJALAN WISUDA
-                    </span>
-                    <h2 class="display-6 fw-extrabold text-white mb-3">
-                        Siap Menuntaskan Skripsi Anda? Mulai Bimbingan Sekarang.
-                    </h2>
-                    <p class="text-white text-opacity-80 mb-0 fs-6" style="line-height: 1.8;">
-                        Gunakan akun akademik Anda untuk masuk ke sistem, jadwalkan sesi bimbingan pertama, dan wujudkan kelulusan tepat waktu bersama dosen pembimbing Anda.
-                    </p>
+<!-- 6. SECTION ALUR & MULAI BIMBINGAN (Hasil Penggabungan Terpadu - Rapi & Pas di Layar) -->
+<section id="alur" class="pt-3 pt-md-4 pb-4 border-bottom">
+    <div class="container">
+        <!-- Judul Atas Rekomendasi: Empat Langkah Pasti Menuju Wisuda Tepat Waktu -->
+        <div class="text-center max-w-700 mx-auto mb-3">
+            <span class="badge bg-success-subtle text-success fw-bold px-3 py-1 rounded-pill mb-2">#PASTIADAJALAN MENUJU SIDANG</span>
+            <h2 class="fw-extrabold fs-2 mb-2">Empat Langkah Pasti Menuju Wisuda Tepat Waktu</h2>
+            <p class="text-muted mb-0 fs-6" style="line-height: 1.7;">Alur bimbingan terstruktur dan transparan dari usulan judul hingga siap mendaftar sidang akademik.</p>
+        </div>
+
+        <!-- 4 Kotak Alur Ringkas & Rapi (Spacious Step Cards) -->
+        <div class="row g-3 mb-3">
+            <!-- Langkah 1: Pengajuan Judul -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card-alur-gojek">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="step-number-pill">01</span>
+                            <div class="step-icon-wrap">
+                                <i class="bi bi-file-earmark-text-fill"></i>
+                            </div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success fw-semibold rounded-pill px-2.5 py-1 mb-2" style="font-size: 0.72rem;">Tahap 1</span>
+                        <h5 class="fw-bold">Pengajuan Judul</h5>
+                        <p>Usulkan topik skripsi dan unggah matriks proposal awal untuk validasi dosen pembimbing.</p>
+                    </div>
                 </div>
-                <div class="col-lg-4 text-lg-end d-flex flex-column flex-sm-row justify-content-lg-end gap-2">
-                    <a href="register.php" class="btn btn-outline-light fw-extrabold px-4 py-3 rounded-pill shadow d-inline-flex align-items-center justify-content-center gap-2 fs-6">
-                        <i class="bi bi-person-plus fs-5"></i>
-                        <span>Daftar Akun</span>
-                    </a>
-                    <a href="login.php" class="btn btn-light text-dark fw-extrabold px-4 py-3 rounded-pill shadow-lg d-inline-flex align-items-center justify-content-center gap-2 fs-6">
-                        <i class="bi bi-box-arrow-in-right text-success fs-5"></i>
+            </div>
+
+            <!-- Langkah 2: Booking Jadwal -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card-alur-gojek">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="step-number-pill">02</span>
+                            <div class="step-icon-wrap">
+                                <i class="bi bi-calendar-check-fill"></i>
+                            </div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success fw-semibold rounded-pill px-2.5 py-1 mb-2" style="font-size: 0.72rem;">Tahap 2</span>
+                        <h5 class="fw-bold">Reservasi Jadwal</h5>
+                        <p>Pilih slot waktu tatap muka atau daring dosen secara real-time anti-bentrok.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Langkah 3: Penyerahan Draf & Evaluasi -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card-alur-gojek">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="step-number-pill">03</span>
+                            <div class="step-icon-wrap">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success fw-semibold rounded-pill px-2.5 py-1 mb-2" style="font-size: 0.72rem;">Tahap 3</span>
+                        <h5 class="fw-bold">Bimbingan & Revisi</h5>
+                        <p>Unggah berkas draf bab PDF (Bab 1 - 5), catat evaluasi pembimbing, dan pantau revisi.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Langkah 4: ACC & Cetak Kartu -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card-alur-gojek">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <span class="step-number-pill">04</span>
+                            <div class="step-icon-wrap">
+                                <i class="bi bi-award-fill"></i>
+                            </div>
+                        </div>
+                        <span class="badge bg-success-subtle text-success fw-semibold rounded-pill px-2.5 py-1 mb-2" style="font-size: 0.72rem;">Tahap 4</span>
+                        <h5 class="fw-bold">ACC & Cetak Kartu</h5>
+                        <p>Setelah kuota terpenuhi dan disetujui, kartu kendali siap dicetak untuk daftar sidang.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Strip Hasil Penggabungan (Lega, Terpisah, & Elegan) -->
+        <div id="mulai-bimbingan" class="cta-banner-merged mt-3 p-3.5 p-md-4 rounded-4 shadow-lg position-relative overflow-hidden">
+            <div class="row align-items-center g-4 position-relative" style="z-index: 2;">
+                <div class="col-lg-8 text-center text-lg-start">
+                    <div class="cta-badge-pill d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill mb-3">
+                        <i class="bi bi-lightning-charge-fill text-warning"></i>
+                        <span class="fw-extrabold text-uppercase" style="font-size: 0.82rem;">Akses Portal Mandiri</span>
+                    </div>
+                    <h3 class="fw-extrabold mb-2" style="font-size: 1.65rem; letter-spacing: -0.02em;">Siap Memulai Langkah Pertama Skripsi Anda?</h3>
+                    <p class="mb-0" style="font-size: 1rem; line-height: 1.6; max-width: 680px;">Masuk menggunakan akun akademik Anda untuk menjadwalkan sesi bimbingan pertama hari ini.</p>
+                </div>
+                <div class="col-lg-4 text-center text-lg-end">
+                    <a href="login.php" class="btn btn-light fw-extrabold px-4 py-2.5 rounded-pill shadow d-inline-flex align-items-center gap-2 text-decoration-none" style="font-size: 1rem;">
+                        <i class="bi bi-box-arrow-in-right fs-4"></i>
                         <span>Masuk ke Portal</span>
                     </a>
                 </div>
@@ -715,66 +1323,65 @@ if (file_exists('config/database.php')) {
     </div>
 </section>
 
-<!-- 8. FAQ (Pertanyaan yang Kerap Ditanyakan) -->
-<section id="faq" class="py-5 bg-light border-bottom">
-    <div class="container py-4">
-        <div class="text-center max-w-700 mx-auto mb-5">
-            <span class="badge bg-secondary-subtle text-secondary fw-bold px-3 py-2 rounded-pill mb-2">TANYA JAWAB</span>
-            <h2 class="fw-extrabold text-dark display-6">Pertanyaan yang Kerap Ditanyakan</h2>
-            <p class="text-muted">Panduan singkat seputar teknis bimbingan skripsi akademik.</p>
-        </div>
+<!-- 8. FOOTER HITAM GOJEK & FAQ TERPADU (Bagian Bawah Terpadu) -->
+<footer id="faq" class="text-white pt-5 pb-4 mt-auto" style="background-color: var(--footer-bg) !important;">
+    <div class="container">
+        <!-- Bagian FAQ Terpadu di Bagian Paling Bawah -->
+        <div class="pb-5 border-bottom border-secondary border-opacity-25">
+            <div class="text-center max-w-700 mx-auto mb-4">
+                <span class="badge bg-success-subtle text-success fw-bold px-3 py-1.5 rounded-pill mb-2">TANYA JAWAB</span>
+                <h2 class="fw-extrabold display-6 text-white mb-2">Pertanyaan yang Kerap Ditanyakan</h2>
+                <p class="text-white-50 mb-0">Panduan singkat seputar teknis bimbingan skripsi akademik.</p>
+            </div>
 
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="accordion" id="accordionGojek">
-                    <div class="accordion-item border rounded-4 mb-3 overflow-hidden shadow-sm">
-                        <h2 class="accordion-header" id="faqH1">
-                            <button class="accordion-button collapsed fw-bold text-dark fs-6 p-4" type="button" data-bs-toggle="collapse" data-bs-target="#faqC1">
-                                Bagaimana jika jadwal dosen tidak cocok dengan jadwal mahasiswa?
-                            </button>
-                        </h2>
-                        <div id="faqC1" class="accordion-collapse collapse" data-bs-parent="#accordionGojek">
-                            <div class="accordion-body text-muted p-4 pt-0" style="line-height: 1.8;">
-                                Mahasiswa dapat berkoordinasi langsung dengan dosen pembimbing melalui fitur pesan/chat yang tersedia di dalam portal untuk menyepakati slot waktu tambahan.
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="accordion accordion-flush" id="accordionGojek">
+                        <div class="accordion-item faq-dark-item mb-3">
+                            <h2 class="accordion-header" id="faqH1">
+                                <button class="accordion-button collapsed faq-dark-btn" type="button" data-bs-toggle="collapse" data-bs-target="#faqC1">
+                                    Bagaimana jika jadwal dosen tidak cocok dengan jadwal mahasiswa?
+                                </button>
+                            </h2>
+                            <div id="faqC1" class="accordion-collapse collapse" data-bs-parent="#accordionGojek">
+                                <div class="accordion-body faq-dark-body">
+                                    Mahasiswa dapat berkoordinasi langsung dengan dosen pembimbing melalui fitur pesan/chat yang tersedia di dalam portal untuk menyepakati slot waktu tambahan.
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="accordion-item border rounded-4 mb-3 overflow-hidden shadow-sm">
-                        <h2 class="accordion-header" id="faqH2">
-                            <button class="accordion-button collapsed fw-bold text-dark fs-6 p-4" type="button" data-bs-toggle="collapse" data-bs-target="#faqC2">
-                                Berapa batas kapasitas file draf naskah skripsi yang diizinkan?
-                            </button>
-                        </h2>
-                        <div id="faqC2" class="accordion-collapse collapse" data-bs-parent="#accordionGojek">
-                            <div class="accordion-body text-muted p-4 pt-0" style="line-height: 1.8;">
-                                Berkas draf naskah wajib berekstensi <code>.pdf</code> dengan ukuran maksimum <strong>5.0 Megabytes</strong> per unggahan demi menjaga efisiensi penyimpanan cloud.
+                        <div class="accordion-item faq-dark-item mb-3">
+                            <h2 class="accordion-header" id="faqH2">
+                                <button class="accordion-button collapsed faq-dark-btn" type="button" data-bs-toggle="collapse" data-bs-target="#faqC2">
+                                    Berapa batas kapasitas file draf naskah skripsi yang diizinkan?
+                                </button>
+                            </h2>
+                            <div id="faqC2" class="accordion-collapse collapse" data-bs-parent="#accordionGojek">
+                                <div class="accordion-body faq-dark-body">
+                                    Berkas draf naskah wajib berekstensi <code>.pdf</code> dengan ukuran maksimum <strong>5.0 Megabytes</strong> per unggahan demi menjaga efisiensi penyimpanan cloud.
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="accordion-item border rounded-4 mb-3 overflow-hidden shadow-sm">
-                        <h2 class="accordion-header" id="faqH3">
-                            <button class="accordion-button collapsed fw-bold text-dark fs-6 p-4" type="button" data-bs-toggle="collapse" data-bs-target="#faqC3">
-                                Kapan mahasiswa dinyatakan siap mendaftar sidang tugas akhir?
-                            </button>
-                        </h2>
-                        <div id="faqC3" class="accordion-collapse collapse" data-bs-parent="#accordionGojek">
-                            <div class="accordion-body text-muted p-4 pt-0" style="line-height: 1.8;">
-                                Mahasiswa dapat mendaftar sidang setelah mengumpulkan sekurang-kurangnya 8 sesi bimbingan sah dan telah memperoleh pengesahan status ACC Sidang dari Dosen Pembimbing Utama.
+                        <div class="accordion-item faq-dark-item mb-3">
+                            <h2 class="accordion-header" id="faqH3">
+                                <button class="accordion-button collapsed faq-dark-btn" type="button" data-bs-toggle="collapse" data-bs-target="#faqC3">
+                                    Kapan mahasiswa dinyatakan siap mendaftar sidang tugas akhir?
+                                </button>
+                            </h2>
+                            <div id="faqC3" class="accordion-collapse collapse" data-bs-parent="#accordionGojek">
+                                <div class="accordion-body faq-dark-body">
+                                    Mahasiswa dapat mendaftar sidang setelah mengumpulkan sekurang-kurangnya 8 sesi bimbingan sah dan telah memperoleh pengesahan status ACC Sidang dari Dosen Pembimbing Utama.
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
 
-<!-- 9. FOOTER HITAM GOJEK -->
-<footer class="text-white pt-5 pb-4 mt-auto" style="background-color: var(--gojek-dark) !important;">
-    <div class="container">
-        <div class="row g-4 pb-4 border-bottom border-secondary border-opacity-25">
+        <!-- Informasi Footer & Navigasi -->
+        <div class="row g-4 pt-5 pb-4 border-bottom border-secondary border-opacity-25">
             <div class="col-lg-5">
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <div class="d-inline-flex align-items-center justify-content-center text-white rounded-circle" style="width: 40px; height: 40px; background-color: var(--gojek-green) !important;">
@@ -798,8 +1405,9 @@ if (file_exists('config/database.php')) {
                     <li><a href="#solusi" class="text-white-50 text-decoration-none">Solusi Bimbingan</a></li>
                     <li><a href="#skala" class="text-white-50 text-decoration-none">Skala Kami</a></li>
                     <li><a href="#dosen" class="text-white-50 text-decoration-none">Daftar Dosen</a></li>
+                    <li><a href="#alur" class="text-white-50 text-decoration-none">Alur & Portal</a></li>
+                    <li><a href="#faq" class="text-white-50 text-decoration-none">FAQ (Tanya Jawab)</a></li>
                     <li><a href="login.php" class="text-success text-decoration-none fw-bold">Portal Masuk</a></li>
-                    <li><a href="register.php" class="text-white-50 text-decoration-none">Daftar Akun Baru</a></li>
                 </ul>
             </div>
 
@@ -828,9 +1436,21 @@ if (file_exists('config/database.php')) {
 <!-- Bootstrap 5 Bundle JS via CDN -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Script Navigasi Interaktif (Active Menu On Click & Scroll) -->
+<!-- Script Navigasi Interaktif & Switcher Mode Terang / Gelap -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // 1. Switcher Mode Terang / Gelap (Light / Dark Mode Toggle)
+    const themeToggleBtn = document.getElementById('themeToggle');
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', function () {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const targetTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', targetTheme);
+            localStorage.setItem('theme', targetTheme);
+        });
+    }
+
+    // 2. Event Navigasi Interaktif
     const navLinks = document.querySelectorAll('.navbar-gojek .nav-link[href^="#"]');
 
     // Event Klik Navigasi (Teks langsung aktif putih tebal)
@@ -842,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Otomatis Aktif saat di-Scroll (Intersection Observer)
-    const trackedSections = document.querySelectorAll('section[id]');
+    const trackedSections = document.querySelectorAll('section[id], footer[id]');
     let lastSectionId = '';
 
     const scrollObserver = new IntersectionObserver(function (entries) {

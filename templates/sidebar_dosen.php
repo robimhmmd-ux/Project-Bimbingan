@@ -39,49 +39,49 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
     }
 }
 ?>
-<nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 border-end" id="sidebarMenu">
+<nav class="col-md-3 col-lg-2 d-md-block sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky">
         <h6 class="sidebar-heading px-3 mt-2 mb-3 text-muted text-uppercase small fw-bold">Menu Dosen</h6>
         <ul class="nav flex-column nav-pills">
             <li class="nav-item mb-1">
-                <a class="nav-link <?= ($current_page == 'dashboard') ? 'active' : 'text-dark'; ?>" href="index.php">
-                    <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                <a class="nav-link <?= ($current_page == 'dashboard') ? 'active' : ''; ?>" href="index.php" title="Dashboard">
+                    <i class="bi bi-speedometer2 me-2"></i><span class="menu-text">Dashboard</span>
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link <?= ($current_page == 'mahasiswa_bimbingan') ? 'active' : 'text-dark'; ?>" href="mahasiswa_bimbingan.php">
-                    <i class="bi bi-people-fill me-2"></i>Mahasiswa Bimbingan
+                <a class="nav-link <?= ($current_page == 'mahasiswa_bimbingan') ? 'active' : ''; ?>" href="mahasiswa_bimbingan.php" title="Mahasiswa Bimbingan">
+                    <i class="bi bi-people-fill me-2"></i><span class="menu-text">Mahasiswa Bimbingan</span>
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'persetujuan') ? 'active' : 'text-dark'; ?>" href="persetujuan.php">
-                    <span><i class="bi bi-calendar-event me-2"></i>Lihat Jadwal</span>
+                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'persetujuan') ? 'active' : ''; ?>" href="persetujuan.php" title="Lihat Jadwal & Pengajuan">
+                    <span><i class="bi bi-calendar-event me-2"></i><span class="menu-text">Lihat Jadwal</span></span>
                     <?php if ($badge_menunggu > 0): ?>
                         <span class="badge bg-danger rounded-pill"><?= $badge_menunggu; ?></span>
                     <?php endif; ?>
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link <?= ($current_page == 'cek_judul') ? 'active' : 'text-dark'; ?>" href="cek_judul.php">
-                    <i class="bi bi-search me-2"></i>Cek Judul Skripsi
+                <a class="nav-link <?= ($current_page == 'cek_judul') ? 'active' : ''; ?>" href="cek_judul.php" title="Cek Judul Skripsi">
+                    <i class="bi bi-search me-2"></i><span class="menu-text">Cek Judul Skripsi</span>
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'sidang') ? 'active' : 'text-dark'; ?>" href="sidang.php">
-                    <span><i class="bi bi-mortarboard-fill me-2 text-warning"></i>Jadwal & Penguji Sidang</span>
+                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'sidang') ? 'active' : ''; ?>" href="sidang.php" title="Jadwal & Penguji Sidang">
+                    <span><i class="bi bi-mortarboard-fill me-2 text-warning"></i><span class="menu-text">Jadwal & Penguji Sidang</span></span>
                     <?php if ($badge_sidang > 0): ?>
                         <span class="badge bg-success rounded-pill"><?= $badge_sidang; ?></span>
                     <?php endif; ?>
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link <?= ($current_page == 'laporan') ? 'active' : 'text-dark'; ?>" href="cetak_laporan.php">
-                    <i class="bi bi-printer me-2"></i>Cetak Laporan
+                <a class="nav-link <?= ($current_page == 'laporan') ? 'active' : ''; ?>" href="cetak_laporan.php" title="Cetak Laporan">
+                    <i class="bi bi-printer me-2"></i><span class="menu-text">Cetak Laporan</span>
                 </a>
             </li>
             <li class="nav-item mb-1">
-                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'chat') ? 'active' : 'text-dark'; ?>" href="chat.php">
-                    <span><i class="bi bi-chat-dots me-2"></i>Konsultasi Chat</span>
+                <a class="nav-link d-flex justify-content-between align-items-center <?= ($current_page == 'chat') ? 'active' : ''; ?>" href="chat.php" title="Konsultasi Chat">
+                    <span><i class="bi bi-chat-dots me-2"></i><span class="menu-text">Konsultasi Chat</span></span>
                     <?php if ($badge_chat > 0): ?>
                         <span class="badge bg-primary rounded-pill"><?= $badge_chat; ?></span>
                     <?php endif; ?>
@@ -89,8 +89,8 @@ if (isset($pdo) && isset($_SESSION['user_id'])) {
             </li>
             
             <li class="nav-item mt-3 pt-3 border-top">
-                <a class="nav-link <?= ($current_page == 'profil') ? 'active' : 'text-dark'; ?>" href="profil.php">
-                    <i class="bi bi-person-gear me-2"></i>Profil & Akun
+                <a class="nav-link <?= ($current_page == 'profil') ? 'active' : ''; ?>" href="profil.php" title="Profil & Akun">
+                    <i class="bi bi-person-gear me-2"></i><span class="menu-text">Profil & Akun</span>
                 </a>
             </li>
         </ul>

@@ -1,5 +1,5 @@
 <!-- templates/sidebar_admin.php -->
-<nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar shadow-sm p-3 border-end" id="sidebarMenu">
+<nav class="col-md-3 col-lg-2 d-md-block sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky d-flex flex-column h-100">
         <!-- Section: Dashboard -->
         <div class="sidebar-category mb-2">
