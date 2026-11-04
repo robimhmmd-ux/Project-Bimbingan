@@ -15,7 +15,7 @@ if (file_exists(__DIR__ . '/../config/session_helper.php')) {
 
 // Proteksi login umum
 if (!isset($_SESSION['user_id'])) {
-    header("Location: ../login.php");
+    header("Location: ../login");
     exit;
 }
 
@@ -557,7 +557,7 @@ padding: 1rem 0.75rem 2.5rem 0.75rem !important;
                     <?php endif; ?>
                 </ul>
             </div>
-            <a href="profil.php" class="text-decoration-none d-inline-flex align-items-center gap-2 text-white p-1 rounded-pill navbar-user-pill flex-shrink-0" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); transition: all 0.2s ease;" title="Buka Profil & Pengaturan Akun">
+            <a href="profil" class="text-decoration-none d-inline-flex align-items-center gap-2 text-white p-1 rounded-pill navbar-user-pill flex-shrink-0" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); transition: all 0.2s ease;" title="Buka Profil & Pengaturan Akun">
                 <?php if (function_exists('render_avatar')): ?>
                     <span class="d-inline-flex rounded-circle p-0" style="box-shadow: 0 0 0 2px rgba(255,255,255,0.4);">
                         <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 30, 'border-2 border-white shadow-sm', ($cur_role === 'admin' ? 'warning' : 'primary')); ?>
@@ -595,7 +595,7 @@ padding: 1rem 0.75rem 2.5rem 0.75rem !important;
                     <button type="button" class="btn btn-confirm-cancel px-4 py-2" data-bs-dismiss="modal">
                         Batal
                     </button>
-                    <a href="../logout.php" class="btn btn-confirm-logout px-4 py-2">
+                    <a href="../logout" class="btn btn-confirm-logout px-4 py-2">
                         <i class="bi bi-box-arrow-right me-1"></i> Ya, Keluar
                     </a>
                 </div>

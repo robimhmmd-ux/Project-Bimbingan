@@ -11,7 +11,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'dosen') {
-    header("Location: ../login.php");
+    header("Location: ../login");
     exit;
 }
 

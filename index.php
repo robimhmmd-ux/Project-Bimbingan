@@ -14,13 +14,13 @@ if (file_exists(__DIR__ . '/config/session_helper.php')) {
 // Jika pengguna sudah login, arahkan langsung ke dashboard sesuai peran
 if (isset($_SESSION['role'])) {
     if ($_SESSION['role'] === 'admin') {
-        header("Location: admin/index.php");
+        header("Location: admin/");
         exit;
     } elseif ($_SESSION['role'] === 'dosen') {
-        header("Location: dosen/index.php");
+        header("Location: dosen/");
         exit;
     } elseif ($_SESSION['role'] === 'mahasiswa') {
-        header("Location: mahasiswa/index.php");
+        header("Location: mahasiswa/");
         exit;
     }
 }
@@ -902,7 +902,7 @@ if (file_exists('config/database.php')) {
                             <span>Jelajahi Solusi</span>
                             <i class="bi bi-arrow-down-short fs-5"></i>
                         </a>
-                        <a href="login.php" class="btn fw-bold rounded-pill px-4 py-2" style="background: var(--bg-surface); color: var(--text-heading); border: 1.5px solid var(--border-subtle); box-shadow: 0 2px 10px rgba(0,0,0,0.04); text-decoration: none;">
+                        <a href="login" class="btn fw-bold rounded-pill px-4 py-2" style="background: var(--bg-surface); color: var(--text-heading); border: 1.5px solid var(--border-subtle); box-shadow: 0 2px 10px rgba(0,0,0,0.04); text-decoration: none;">
                             <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Portal
                         </a>
                     </div>
@@ -1178,7 +1178,7 @@ if (file_exists('config/database.php')) {
                 <p class="mb-0" style="color: var(--text-muted-dark);">Dosen yang aktif membimbing tugas akhir mahasiswa semester ini.</p>
             </div>
             <div>
-                <a href="login.php" class="btn btn-outline-dark rounded-pill px-4 py-2 small fw-bold">
+                <a href="login" class="btn btn-outline-dark rounded-pill px-4 py-2 small fw-bold">
                     <i class="bi bi-calendar3 me-1"></i>Lihat Jadwal Lengkap
                 </a>
             </div>
@@ -1313,7 +1313,7 @@ if (file_exists('config/database.php')) {
                     <p class="mb-0" style="font-size: 1rem; line-height: 1.6; max-width: 680px;">Masuk menggunakan akun akademik Anda untuk menjadwalkan sesi bimbingan pertama hari ini.</p>
                 </div>
                 <div class="col-lg-4 text-center text-lg-end">
-                    <a href="login.php" class="btn btn-light fw-extrabold px-4 py-2.5 rounded-pill shadow d-inline-flex align-items-center gap-2 text-decoration-none" style="font-size: 1rem;">
+                    <a href="login" class="btn btn-light fw-extrabold px-4 py-2.5 rounded-pill shadow d-inline-flex align-items-center gap-2 text-decoration-none" style="font-size: 1rem;">
                         <i class="bi bi-box-arrow-in-right fs-4"></i>
                         <span>Masuk ke Portal</span>
                     </a>
@@ -1407,7 +1407,7 @@ if (file_exists('config/database.php')) {
                     <li><a href="#dosen" class="text-white-50 text-decoration-none">Daftar Dosen</a></li>
                     <li><a href="#alur" class="text-white-50 text-decoration-none">Alur & Portal</a></li>
                     <li><a href="#faq" class="text-white-50 text-decoration-none">FAQ (Tanya Jawab)</a></li>
-                    <li><a href="login.php" class="text-success text-decoration-none fw-bold">Portal Masuk</a></li>
+                    <li><a href="login" class="text-success text-decoration-none fw-bold">Portal Masuk</a></li>
                 </ul>
             </div>
 

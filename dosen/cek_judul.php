@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Validasi otentikasi role dosen
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'dosen') {
-    header("Location: ../login.php");
+    header("Location: ../login");
     exit;
 }
 

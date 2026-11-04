@@ -14,7 +14,7 @@ if (file_exists('../config/session_helper.php')) {
 
 // Proteksi akses role mahasiswa
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
-    header("Location: ../login.php");
+    header("Location: ../login");
     exit;
 }
 

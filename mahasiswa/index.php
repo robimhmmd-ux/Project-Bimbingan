@@ -9,7 +9,7 @@ require_once '../templates/sidebar_mahasiswa.php';
 
 // Proteksi akses role mahasiswa
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
-    header("Location: ../login.php");
+    header("Location: ../login");
     exit;
 }
 

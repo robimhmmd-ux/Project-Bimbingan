@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Proteksi akses
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'mahasiswa') {
-    header("Location: ../login.php");
+    header("Location: ../login");
     exit;
 }
 

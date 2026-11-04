@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Proteksi akses role admin
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../login.php");
+    header("Location: ../login");
     exit;
 }
 

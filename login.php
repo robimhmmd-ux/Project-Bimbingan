@@ -10,9 +10,9 @@ if (file_exists('config/session_helper.php')) {
 }
 
 if (isset($_SESSION['role'])) {
-    if ($_SESSION['role'] === 'admin')         header("Location: admin/index.php");
-    elseif ($_SESSION['role'] === 'dosen')     header("Location: dosen/index.php");
-    elseif ($_SESSION['role'] === 'mahasiswa') header("Location: mahasiswa/index.php");
+    if ($_SESSION['role'] === 'admin')         header("Location: admin/");
+    elseif ($_SESSION['role'] === 'dosen')     header("Location: dosen/");
+    elseif ($_SESSION['role'] === 'mahasiswa') header("Location: mahasiswa/");
     exit;
 }
 
@@ -211,9 +211,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'samesite' => 'Lax'
                     ]);
 
-                    if ($user['role'] === 'admin')         header("Location: admin/index.php");
-                    elseif ($user['role'] === 'dosen')     header("Location: dosen/index.php");
-                    elseif ($user['role'] === 'mahasiswa') header("Location: mahasiswa/index.php");
+                    if ($user['role'] === 'admin')         header("Location: admin/");
+                    elseif ($user['role'] === 'dosen')     header("Location: dosen/");
+                    elseif ($user['role'] === 'mahasiswa') header("Location: mahasiswa/");
                     exit;
                 } else {
                     $error_message = 'Username atau password yang Anda masukkan salah.';
@@ -1081,7 +1081,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <?php endif; ?>
 
-        <form action="login.php" method="POST" novalidate>
+        <form action="login" method="POST" novalidate>
             <input type="hidden" name="action" value="login">
 
             <div class="mb-3">

@@ -30,7 +30,7 @@ require_once '../templates/sidebar_dosen.php';
 
 // Proteksi akses role dosen
 if ($_SESSION['role'] !== 'dosen') {
-    header("Location: ../login.php");
+    header("Location: ../login");
     exit;
 }
 

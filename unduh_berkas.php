@@ -4,7 +4,7 @@ require_once __DIR__ . '/config/database.php';
 
 // Verifikasi sesi login pengguna (Admin, Dosen, atau Mahasiswa)
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header("Location: login");
     exit;
 }
 

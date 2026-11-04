@@ -4,7 +4,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Proteksi akses role mahasiswa
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
-    header("Location: ../login.php");
+    header("Location: ../login");
     exit;
 }
 if (file_exists(__DIR__ . '/../config/avatar_helper.php')) {

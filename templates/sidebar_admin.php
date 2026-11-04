@@ -22,7 +22,7 @@
             <span class="sidebar-heading px-3 text-uppercase">Utama</span>
             <ul class="nav flex-column nav-pills mt-1">
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'dashboard') ? 'active' : ''; ?>" href="index.php">
+                    <a class="nav-link <?= ($current_page == 'dashboard') ? 'active' : ''; ?>" href="./">
                         <i class="bi bi-grid-1x2-fill me-2 text-primary"></i>
                         <span>Dashboard</span>
                     </a>
@@ -35,19 +35,19 @@
             <span class="sidebar-heading px-3 text-uppercase">Master Data & Jadwal</span>
             <ul class="nav flex-column nav-pills mt-1">
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'dosen') ? 'active' : ''; ?>" href="data_dosen.php">
+                    <a class="nav-link <?= ($current_page == 'dosen') ? 'active' : ''; ?>" href="data_dosen">
                         <i class="bi bi-person-badge-fill me-2 text-success"></i>
                         <span>Data Dosen</span>
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'jadwal_dosen') ? 'active' : ''; ?>" href="jadwal_dosen.php">
+                    <a class="nav-link <?= ($current_page == 'jadwal_dosen') ? 'active' : ''; ?>" href="jadwal_dosen">
                         <i class="bi bi-calendar2-week-fill me-2 text-warning"></i>
                         <span>Jadwal Bimbingan Dosen</span>
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'mahasiswa') ? 'active' : ''; ?>" href="data_mahasiswa.php">
+                    <a class="nav-link <?= ($current_page == 'mahasiswa') ? 'active' : ''; ?>" href="data_mahasiswa">
                         <i class="bi bi-people-fill me-2 text-info"></i>
                         <span>Data Mahasiswa</span>
                     </a>
@@ -60,31 +60,31 @@
             <span class="sidebar-heading px-3 text-uppercase">Layanan & Rekapitulasi</span>
             <ul class="nav flex-column nav-pills mt-1">
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'plotting') ? 'active' : ''; ?>" href="plot_pembimbing.php">
+                    <a class="nav-link <?= ($current_page == 'plotting') ? 'active' : ''; ?>" href="plot_pembimbing">
                         <i class="bi bi-diagram-3-fill me-2 text-primary"></i>
                         <span>Atur Pembimbing</span>
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'jadwal_bimbingan') ? 'active' : ''; ?>" href="jadwal_bimbingan.php">
+                    <a class="nav-link <?= ($current_page == 'jadwal_bimbingan') ? 'active' : ''; ?>" href="jadwal_bimbingan">
                         <i class="bi bi-calendar2-range-fill me-2 text-info"></i>
                         <span>Jadwal Bimbingan</span>
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'monitoring') ? 'active' : ''; ?>" href="monitoring_kelulusan.php">
+                    <a class="nav-link <?= ($current_page == 'monitoring') ? 'active' : ''; ?>" href="monitoring_kelulusan">
                         <i class="bi bi-mortarboard-fill me-2 text-purple"></i>
                         <span>Monitoring Kelulusan</span>
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'sidang') ? 'active' : ''; ?>" href="jadwal_sidang.php">
+                    <a class="nav-link <?= ($current_page == 'sidang') ? 'active' : ''; ?>" href="jadwal_sidang">
                         <i class="bi bi-calendar2-check-fill me-2 text-warning"></i>
                         <span>Jadwal Sidang Skripsi</span>
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'laporan') ? 'active' : ''; ?>" href="laporan_plotting.php">
+                    <a class="nav-link <?= ($current_page == 'laporan') ? 'active' : ''; ?>" href="laporan_plotting">
                         <i class="bi bi-printer-fill me-2 text-danger"></i>
                         <span>Rekap & Cetak Laporan</span>
                     </a>
@@ -97,7 +97,7 @@
             <span class="sidebar-heading px-3 text-uppercase">Pengaturan</span>
             <ul class="nav flex-column nav-pills mt-1">
                 <li class="nav-item mb-1">
-                    <a class="nav-link <?= ($current_page == 'profil') ? 'active' : ''; ?>" href="profil.php">
+                    <a class="nav-link <?= ($current_page == 'profil') ? 'active' : ''; ?>" href="profil">
                         <i class="bi bi-person-gear me-2 text-secondary"></i>
                         <span>Profil & Pengaturan Akun</span>
                     </a>
