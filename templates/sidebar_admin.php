@@ -1,6 +1,22 @@
 <!-- templates/sidebar_admin.php -->
 <nav class="col-md-3 col-lg-2 d-md-block sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky d-flex flex-column h-100">
+
+        <!-- Mobile Drawer Header: Khusus Smartphone saat drawer dibuka -->
+        <div class="d-md-none p-3 mb-3 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <span class="p-1 px-2 bg-primary text-white rounded-circle flex-shrink-0" style="font-size: 0.85rem;">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </span>
+                <div class="overflow-hidden">
+                    <div class="fw-bold text-dark text-truncate small"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Admin'); ?></div>
+                    <span class="badge bg-primary-subtle text-primary" style="font-size: 0.65rem;">Administrator</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close btn-sm shadow-none" onclick="toggleSidebarMenu()" aria-label="Tutup Menu"></button>
+        </div>
+
+
         <!-- Section: Dashboard -->
         <div class="sidebar-category mb-2">
             <span class="sidebar-heading px-3 text-uppercase">Utama</span>

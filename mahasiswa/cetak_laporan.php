@@ -177,6 +177,38 @@ font-size: 9.5pt;
             margin: 15mm 15mm 15mm 15mm;
         }
 
+        @media (max-width: 767.98px) {
+            .paper-sheet-container {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                padding: 10px 8px 30px !important;
+            }
+            .paper-sheet {
+                min-width: 680px !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 10px auto !important;
+                padding: 10mm 12mm !important;
+            }
+            .no-print .container {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 0.75rem;
+            }
+            .no-print .container > div {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                gap: 0.5rem;
+            }
+            .no-print button, .no-print a {
+                flex: 1 1 auto;
+                text-align: center;
+                justify-content: center;
+            }
+        }
+
         @media print {
             body {
 background: #ffffff !important;
@@ -219,6 +251,7 @@ background: #ffffff !important;
     </div>
 </div>
 
+<div class="paper-sheet-container">
 <div class="paper-sheet">
     <!-- Kop Surat Kampus -->
     <div class="kop-surat text-center">
@@ -432,6 +465,7 @@ background: #ffffff !important;
             <span>NIDN. <?= htmlspecialchars($mhs['nidn'] ?? '-'); ?></span>
         </div>
     </div>
+</div>
 </div>
 
 <script>

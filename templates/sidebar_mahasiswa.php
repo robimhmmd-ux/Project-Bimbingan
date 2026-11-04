@@ -22,6 +22,22 @@ $is_sk_aktif = ($status_pembimbing_mhs === 'aktif');
 ?>
 <nav class="col-md-3 col-lg-2 d-md-block sidebar shadow-sm p-3 border-end" id="sidebarMenu">
     <div class="position-sticky">
+
+        <!-- Mobile Drawer Header: Khusus Smartphone saat drawer dibuka -->
+        <div class="d-md-none p-3 mb-3 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2 overflow-hidden">
+                <span class="p-1 px-2 bg-indigo text-white rounded-circle flex-shrink-0" style="font-size: 0.85rem; background-color: #4f46e5;">
+                    <i class="bi bi-mortarboard-fill"></i>
+                </span>
+                <div class="overflow-hidden">
+                    <div class="fw-bold text-dark text-truncate small"><?= htmlspecialchars($_SESSION['nama_lengkap'] ?? 'Mahasiswa'); ?></div>
+                    <span class="badge bg-primary-subtle text-primary" style="font-size: 0.65rem;">Mahasiswa Skripsi</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close btn-sm shadow-none" onclick="toggleSidebarMenu()" aria-label="Tutup Menu"></button>
+        </div>
+
+
         <h6 class="sidebar-heading px-3 mt-2 mb-3 text-muted text-uppercase small fw-bold">Menu Mahasiswa</h6>
         <ul class="nav flex-column nav-pills">
             <li class="nav-item mb-1">

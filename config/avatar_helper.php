@@ -7,7 +7,11 @@
 
 if (!function_exists('get_avatar_url')) {
     function get_avatar_url($foto) {
-        if (empty($foto) || $foto === 'default.png') {
+        if (empty($foto)) {
+            return null;
+        }
+        $foto = trim($foto);
+        if ($foto === 'default.png') {
             return null;
         }
         // Base64 Data URI atau External URL
@@ -16,11 +20,15 @@ if (!function_exists('get_avatar_url')) {
         }
         // File lokal legacy
         $fname = basename($foto);
-        if (file_exists(__DIR__ . '/../assets/uploads/profile/' . $fname)) {
-            return '../assets/uploads/profile/' . htmlspecialchars($fname);
+        $disk_profile = __DIR__ . '/../assets/uploads/profile/' . $fname;
+        if (file_exists($disk_profile)) {
+            $prefix = file_exists('assets/uploads/profile/' . $fname) ? 'assets/uploads/profile/' : '../assets/uploads/profile/';
+            return $prefix . htmlspecialchars($fname) . '?v=' . filemtime($disk_profile);
         }
-        if (file_exists(__DIR__ . '/../assets/uploads/' . $fname)) {
-            return '../assets/uploads/' . htmlspecialchars($fname);
+        $disk_upload = __DIR__ . '/../assets/uploads/' . $fname;
+        if (file_exists($disk_upload)) {
+            $prefix = file_exists('assets/uploads/' . $fname) ? 'assets/uploads/' : '../assets/uploads/';
+            return $prefix . htmlspecialchars($fname) . '?v=' . filemtime($disk_upload);
         }
         return null;
     }
@@ -52,4 +60,3 @@ if (!function_exists('render_avatar')) {
         );
     }
 }
-

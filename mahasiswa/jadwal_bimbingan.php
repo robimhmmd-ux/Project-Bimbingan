@@ -143,54 +143,54 @@ function format_indo_date($date_str) {
 <?php else: ?>
 
     <!-- RINGKASAN METRIK BIMBINGAN -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-lg-3">
-            <div class="card shadow-sm border-0 border-start border-primary border-4 p-3 bg-white h-100">
+    <div class="row g-2 g-md-3 mb-4">
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="card shadow-sm border-0 border-start border-primary border-4 p-2.5 p-sm-3 bg-white h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <span class="text-muted small fw-semibold d-block">Slot Waktu Dosen</span>
-                        <h4 class="fw-bold text-dark mb-0"><?= count($jadwal_dosen_list); ?> Sesi</h4>
+                        <span class="text-muted small fw-semibold d-block">Slot Waktu</span>
+                        <h4 class="fw-bold text-dark mb-0 fs-5 fs-sm-4"><?= count($jadwal_dosen_list); ?> Sesi</h4>
                     </div>
-                    <div class="bg-primary-subtle text-primary rounded-circle p-2 fs-4">
+                    <div class="bg-primary-subtle text-primary rounded-circle p-2 fs-5 fs-sm-4">
                         <i class="bi bi-calendar-event"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card shadow-sm border-0 border-start border-success border-4 p-3 bg-white h-100">
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="card shadow-sm border-0 border-start border-success border-4 p-2.5 p-sm-3 bg-white h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <span class="text-muted small fw-semibold d-block">Sesi Disetujui / Aktif</span>
-                        <h4 class="fw-bold text-success mb-0"><?= $count_disetujui; ?> Sesi</h4>
+                        <span class="text-muted small fw-semibold d-block">Sesi Disetujui</span>
+                        <h4 class="fw-bold text-success mb-0 fs-5 fs-sm-4"><?= $count_disetujui; ?> Sesi</h4>
                     </div>
-                    <div class="bg-success-subtle text-success rounded-circle p-2 fs-4">
+                    <div class="bg-success-subtle text-success rounded-circle p-2 fs-5 fs-sm-4">
                         <i class="bi bi-calendar-check"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card shadow-sm border-0 border-start border-warning border-4 p-3 bg-white h-100">
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="card shadow-sm border-0 border-start border-warning border-4 p-2.5 p-sm-3 bg-white h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <span class="text-muted small fw-semibold d-block">Menunggu Evaluasi</span>
-                        <h4 class="fw-bold text-warning mb-0"><?= $count_menunggu; ?> Berkas</h4>
+                        <span class="text-muted small fw-semibold d-block">Menunggu</span>
+                        <h4 class="fw-bold text-warning mb-0 fs-5 fs-sm-4"><?= $count_menunggu; ?> Berkas</h4>
                     </div>
-                    <div class="bg-warning-subtle text-warning rounded-circle p-2 fs-4">
+                    <div class="bg-warning-subtle text-warning rounded-circle p-2 fs-5 fs-sm-4">
                         <i class="bi bi-hourglass-split"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card shadow-sm border-0 border-start border-info border-4 p-3 bg-white h-100">
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="card shadow-sm border-0 border-start border-info border-4 p-2.5 p-sm-3 bg-white h-100">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
-                        <span class="text-muted small fw-semibold d-block">Bimbingan Selesai</span>
-                        <h4 class="fw-bold text-info mb-0"><?= $count_selesai; ?> Sesi</h4>
+                        <span class="text-muted small fw-semibold d-block">Selesai</span>
+                        <h4 class="fw-bold text-info mb-0 fs-5 fs-sm-4"><?= $count_selesai; ?> Sesi</h4>
                     </div>
-                    <div class="bg-info-subtle text-info rounded-circle p-2 fs-4">
+                    <div class="bg-info-subtle text-info rounded-circle p-2 fs-5 fs-sm-4">
                         <i class="bi bi-check2-all"></i>
                     </div>
                 </div>
@@ -210,7 +210,7 @@ function format_indo_date($date_str) {
                 </div>
                 <div class="card-body text-center p-4">
                     <?php 
-                    $foto_dosen_src = get_avatar_url($mhs['foto_dosen'] ?? null);
+                    $foto_dosen_src = function_exists('get_avatar_url') ? get_avatar_url($mhs['foto_dosen'] ?? null) : null;
                     ?>
                     <div class="mb-3">
                         <div class="position-relative d-inline-block">

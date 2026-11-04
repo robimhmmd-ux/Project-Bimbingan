@@ -18,6 +18,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'mahasiswa') {
     exit;
 }
 
+$page_title   = "Chat Dosen Pembimbing";
+$current_page = "chat";
+
+require_once '../config/database.php';
+
 // Ambil info mahasiswa & dosen pembimbing
 $stmt_mhs = $pdo->prepare("
     SELECT m.*, d.id AS dosen_id, d.user_id AS dosen_user_id, d.nidn, d.nama_dosen, 
@@ -199,12 +204,12 @@ require_once '../templates/sidebar_mahasiswa.php';
     <div class="row g-3">
         <!-- Area Chat Utama -->
         <div class="col-lg-8">
-            <div class="card shadow-sm border-0 d-flex flex-column" style="height: 650px;">
+<div class="card shadow-sm border-0 d-flex flex-column chat-box-card chat-main-card">
                 <!-- Header Chat Box -->
-                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+                <div class="card-header bg-white py-2.5 py-sm-3 px-3 px-sm-4 d-flex justify-content-between align-items-center border-bottom">
                     <div class="d-flex align-items-center">
                         <?php 
-            $foto_dosen_src = get_avatar_url($mhs['foto_dosen'] ?? null);
+            $foto_dosen_src = function_exists('get_avatar_url') ? get_avatar_url($mhs['foto_dosen'] ?? null) : null;
             ?>
             <div class="position-relative me-3">
                 <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#modalProfilDosen" title="Klik untuk melihat profil dosen">
@@ -229,8 +234,8 @@ require_once '../templates/sidebar_mahasiswa.php';
                         <a href="chat.php" class="btn btn-outline-secondary btn-sm me-1" title="Segarkan Percakapan">
                             <i class="bi bi-arrow-clockwise"></i>
                         </a>
-                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalKontakDosen">
-                            <i class="bi bi-info-circle me-1"></i>Kontak Dosen
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalKontakDosen" title="Kontak Dosen">
+                            <i class="bi bi-info-circle me-sm-1"></i><span class="d-none d-sm-inline">Kontak Dosen</span>
                         </button>
                     </div>
                 </div>
@@ -250,9 +255,13 @@ require_once '../templates/sidebar_mahasiswa.php';
                             <div class="d-flex mb-3 <?= $is_me ? 'justify-content-end' : 'justify-content-start'; ?>">
                                 <?php if (!$is_me): ?>
                                     <div class="me-2 align-self-end">
-                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center small fw-bold" style="width: 32px; height: 32px;">
-                                            <?= strtoupper(substr($mhs['nama_dosen'] ?? 'D', 0, 1)); ?>
-                                        </div>
+                                        <?php if ($foto_dosen_src): ?>
+                                            <img src="<?= $foto_dosen_src; ?>" class="rounded-circle border shadow-xs object-fit-cover" width="32" height="32" style="width: 32px; height: 32px;" alt="Foto Dosen">
+                                        <?php else: ?>
+                                            <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center small fw-bold" style="width: 32px; height: 32px;">
+                                                <?= strtoupper(substr($mhs['nama_dosen'] ?? 'D', 0, 1)); ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
 

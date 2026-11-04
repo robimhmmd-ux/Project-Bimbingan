@@ -683,8 +683,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         @media (max-width: 680px) {
+            body {
+                padding: 0.75rem 0.5rem !important;
+                align-items: flex-start !important;
+            }
+            .login-wrapper {
+                margin-top: 2.6rem;
+                min-height: auto;
+                border-radius: 1.25rem;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            }
             .login-visual { display: none; }
-            .login-form-panel { padding: 2.5rem 1.75rem; }
+            .login-form-panel {
+                padding: 1.5rem 1.15rem;
+                max-height: none;
+            }
+            .btn-kembali-floating {
+                top: 0.5rem !important;
+                left: 0.5rem !important;
+                margin: 0 !important;
+                font-size: 0.78rem;
+                padding: 0.38rem 0.75rem;
+                background: #ffffff;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            .input-pill, .form-select-custom {
+                font-size: 16px !important;
+            }
         }
 
         /* ========================================================
@@ -1036,9 +1061,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ============================================================ -->
     <div class="login-form-panel">
 
+        <!-- Header Branding Khusus Smartphone -->
+        <div class="d-md-none text-center mb-3">
+            <div class="d-inline-flex align-items-center gap-2 p-1 px-3 rounded-pill bg-light border shadow-sm">
+                <span class="p-1 px-2 bg-success text-white rounded-circle" style="font-size: 0.85rem;"><i class="bi bi-mortarboard-fill"></i></span>
+                <span class="fw-bold text-dark small">Bimbingan Skripsi</span>
+            </div>
+        </div>
+
         <div class="mb-4">
             <h2>Selamat Datang</h2>
             <p class="subtitle">Masuk untuk mengakses dashboard bimbingan Anda.</p>
+        </div>
         </div>
 
         <?php if (!empty($error_message)): ?>
