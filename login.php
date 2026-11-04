@@ -1073,7 +1073,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h2>Selamat Datang</h2>
             <p class="subtitle">Masuk untuk mengakses dashboard bimbingan Anda.</p>
         </div>
-        </div>
 
         <?php if (!empty($error_message)): ?>
         <div class="alert-error mb-3">
