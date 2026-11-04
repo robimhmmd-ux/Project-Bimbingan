@@ -1,24 +1,3 @@
-<style>
-/* CSS Sticky Column untuk Kolom Aksi agar tidak terpotong */
-.sticky-action-col {
-    position: sticky !important;
-    right: 0 !important;
-    background: #ffffff !important;
-    z-index: 2 !important;
-    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.06) !important;
-}
-thead th.sticky-action-col {
-    background: #f8fafc !important;
-    z-index: 3 !important;
-}
-[data-theme="dark"] .sticky-action-col {
-    background: #111827 !important;
-    box-shadow: -6px 0 14px rgba(0, 0, 0, 0.45) !important;
-}
-[data-theme="dark"] thead th.sticky-action-col {
-    background: #1f2937 !important;
-}
-</style>
 <?php
 // dosen/mahasiswa_bimbingan.php - Monitoring & Pengelolaan Catatan Progres Mahasiswa (Salsa)
 $page_title   = "Mahasiswa Bimbingan & Progres";
@@ -411,6 +390,28 @@ foreach ($daftar_mahasiswa as $row) {
 }
 $avg_progres = ($total_mhs > 0) ? round($sum_progres / $total_mhs, 1) : 0;
 ?>
+
+<style>
+/* CSS Sticky Column untuk Kolom Aksi agar tidak terpotong */
+.sticky-action-col {
+    position: sticky !important;
+    right: 0 !important;
+    background: #ffffff !important;
+    z-index: 2 !important;
+    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.06) !important;
+}
+thead th.sticky-action-col {
+    background: #f8fafc !important;
+    z-index: 3 !important;
+}
+[data-theme="dark"] .sticky-action-col {
+    background: #111827 !important;
+    box-shadow: -6px 0 14px rgba(0, 0, 0, 0.45) !important;
+}
+[data-theme="dark"] thead th.sticky-action-col {
+    background: #1f2937 !important;
+}
+</style>
 
 <!-- Header Halaman -->
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-2 pb-2 mb-4 border-bottom">
