@@ -5,7 +5,7 @@ $rootDir = realpath(__DIR__ . '/..');
 
 // 1. Redirect Canonical GET dari file.php ke Clean URL (menghilangkan .php dari URL)
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
-if ($method === 'GET' && str_ends_with($uri, '.php') && !str_starts_with($uri, '/api/')) {
+if ($method === 'GET' && str_ends_with($uri, '.php') && !str_starts_with($uri, '/api/') && $uri !== '/unduh_berkas.php') {
     $cleanPath = substr($uri, 0, -4);
     if (str_ends_with($cleanPath, '/index')) {
         $cleanPath = substr($cleanPath, 0, -5);
