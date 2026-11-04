@@ -73,8 +73,6 @@ $pengajuan_terbaru = $stmt_terbaru->fetchAll();
             <i class="bi bi-calendar-event"></i> Lihat Jadwal
         </a>
     </div>
-        </a>
-    </div>
 </div>
 
 <!-- Alert Notifikasi Pengajuan Menunggu -->
