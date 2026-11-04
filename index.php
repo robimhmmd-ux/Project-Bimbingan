@@ -830,7 +830,7 @@ if (file_exists('config/database.php')) {
     <div class="container">
         <!-- Brand Logo -->
         <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="index.php">
-            <img src="assets/img/logo.png" alt="Logo" class="rounded bg-white p-1 shadow-sm flex-shrink-0" style="width: 40px; height: 40px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('d-none'); this.nextElementSibling.classList.add('d-inline-flex');">
+            <img src="assets/img/logo.png" alt="Logo" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0 border" style="width: 40px; height: 40px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('d-none'); this.nextElementSibling.classList.add('d-inline-flex');">
             <div class="d-none align-items-center justify-content-center rounded-circle shadow-sm" style="width: 40px; height: 40px; background-color: var(--gojek-green) !important; color: var(--brand-icon-color) !important;">
                 <i class="bi bi-mortarboard-fill fs-5"></i>
             </div>

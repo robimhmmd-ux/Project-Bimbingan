@@ -888,7 +888,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Logo Topi Toga + Nama Web di Sampingnya -->
         <div class="web-logo-area">
-            <img src="assets/img/logo.png" alt="Logo" class="rounded bg-white p-1 shadow-sm flex-shrink-0" style="width: 52px; height: 52px; object-fit: contain;" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='/assets/img/logo.png';}">
+            <img src="assets/img/logo.png" alt="Logo" class="rounded-circle object-fit-cover shadow-sm flex-shrink-0 border" style="width: 52px; height: 52px; object-fit: contain;" onerror="if(!this.dataset.retry){this.dataset.retry=1;this.src='/assets/img/logo.png';}">
             <div>
                 <h1 class="site-name">Bimbingan Skripsi</h1>
                 <p class="site-tagline">Sistem Informasi Akademik</p>
