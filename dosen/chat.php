@@ -137,10 +137,10 @@ require_once '../templates/sidebar_dosen.php';
     </div>
 </div>
 
-<div class="chat-window-box">
-    <div class="row g-0">
-        <!-- Kolom Kiri: Daftar Kontak Mahasiswa -->
-        <div class="col-md-4 col-lg-4 border-end bg-light d-flex flex-column chat-contacts-col" id="chatContactsPane">
+<div class="row g-3 g-xl-4">
+    <!-- Kolom Kiri: Daftar Kontak Mahasiswa (Card Terpisah) -->
+    <div class="col-md-4 col-lg-4" id="chatContactsPane">
+        <div class="card shadow-sm border rounded-4 overflow-hidden d-flex flex-column bg-white chat-contacts-col">
             <div class="p-3 border-bottom bg-white d-flex justify-content-between align-items-center">
                 <div>
                     <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-chat-dots-fill text-primary me-2"></i>Mahasiswa Bimbingan</h6>
@@ -149,7 +149,7 @@ require_once '../templates/sidebar_dosen.php';
                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Online</span>
             </div>
 
-            <div class="overflow-auto flex-grow-1 list-group list-group-flush">
+            <div class="overflow-auto flex-grow-1 list-group list-group-flush p-2">
                 <?php if (empty($daftar_mahasiswa)): ?>
                     <div class="text-center p-5 text-muted small">
                         <i class="bi bi-people fs-1 d-block mb-2 text-muted"></i>
@@ -183,7 +183,7 @@ require_once '../templates/sidebar_dosen.php';
                         $is_active = ($mhs['mhs_user_id'] == $active_mhs_user_id);
                         ?>
                         <a href="chat.php?uid=<?= $mhs['mhs_user_id']; ?>" 
-                           class="list-group-item list-group-item-action p-3 border-bottom <?= $is_active ? 'active shadow-sm' : ''; ?>"
+                           class="list-group-item list-group-item-action p-3 rounded-3 mb-1 border-0 <?= $is_active ? 'active shadow-sm' : ''; ?>"
                            style="<?= $is_active ? 'background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%) !important; border-color: transparent !important;' : ''; ?>">
                             <div class="d-flex align-items-center">
                                 <div class="position-relative me-3 flex-shrink-0">
@@ -219,9 +219,11 @@ require_once '../templates/sidebar_dosen.php';
                 <?php endif; ?>
             </div>
         </div>
+    </div>
 
-        <!-- Kolom Kanan: Area Ruang Obrolan -->
-        <div class="col-md-8 col-lg-8 d-flex flex-column bg-white chat-messages-col" id="chatMessagesPane">
+    <!-- Kolom Kanan: Area Ruang Obrolan (Card Terpisah) -->
+    <div class="col-md-8 col-lg-8" id="chatMessagesPane">
+        <div class="card shadow-sm border rounded-4 overflow-hidden d-flex flex-column bg-white chat-messages-col">
             <?php if ($active_mhs): ?>
                 <!-- Header Chat Aktif -->
                 <div class="p-3 border-bottom d-flex align-items-center justify-content-between bg-white shadow-sm">

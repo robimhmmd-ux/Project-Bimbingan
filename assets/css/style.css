@@ -945,6 +945,13 @@ main {
     background: #ffffff;
 }
 
+.chat-contacts-col,
+.chat-messages-col {
+    height: 640px;
+    max-height: calc(100vh - 180px);
+    min-height: 520px;
+}
+
 .chat-bubble-me {
     background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
     color: #ffffff;
