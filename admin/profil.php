@@ -387,13 +387,13 @@ $has_foto = !empty($foto_url);
                              alt="Foto Profil Admin" 
                              id="avatarPreviewImg"
                              class="rounded-circle border border-4 border-white shadow" 
-                             style="width: 110px; height: 110px; object-fit: cover;">
+                             style="width: 110px; height: 110px; min-width: 110px; min-height: 110px; object-fit: cover !important; aspect-ratio: 1 / 1 !important; flex-shrink: 0 !important;">
                     <?php else: ?>
                         <div id="avatarFallback" class="rounded-circle border border-4 border-white shadow d-flex align-items-center justify-content-center text-white fw-bold fs-2" 
                              style="width: 110px; height: 110px; background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);">
                             <?= htmlspecialchars($initials); ?>
                         </div>
-                        <img src="" alt="Preview" id="avatarPreviewImg" class="rounded-circle border border-4 border-white shadow d-none" style="width: 110px; height: 110px; object-fit: cover;">
+                        <img src="" alt="Preview" id="avatarPreviewImg" class="rounded-circle border border-4 border-white shadow d-none" style="width: 110px; height: 110px; min-width: 110px; min-height: 110px; object-fit: cover !important; aspect-ratio: 1 / 1 !important; flex-shrink: 0 !important;">
                     <?php endif; ?>
                     <span class="position-absolute bottom-0 end-0 p-2 bg-success border border-2 border-white rounded-circle" title="Akun Aktif">
                         <span class="visually-hidden">Aktif</span>

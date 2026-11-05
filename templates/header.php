@@ -593,7 +593,7 @@ padding: 1rem 0.75rem 2.5rem 0.75rem !important;
             </div>
             <a href="profil" class="text-decoration-none d-inline-flex align-items-center gap-2 text-white p-1 rounded-pill navbar-user-pill flex-shrink-0" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.22); transition: all 0.2s ease;" title="Buka Profil & Pengaturan Akun">
                 <?php if (function_exists('render_avatar')): ?>
-                    <span class="d-inline-flex rounded-circle p-0" style="box-shadow: 0 0 0 2px rgba(255,255,255,0.4);">
+                    <span class="d-inline-flex rounded-circle p-0 flex-shrink-0" style="box-shadow: 0 0 0 2px rgba(255,255,255,0.4); width: 30px; height: 30px; min-width: 30px; min-height: 30px; aspect-ratio: 1 / 1; overflow: hidden;">
                         <?= render_avatar($_SESSION['foto_profil'] ?? '', $_SESSION['nama_lengkap'] ?? $_SESSION['username'] ?? 'User', 30, 'border-2 border-white shadow-sm', ($cur_role === 'admin' ? 'warning' : 'primary')); ?>
                     </span>
                 <?php endif; ?>

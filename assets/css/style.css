@@ -4756,3 +4756,17 @@ html:not([data-theme="dark"]) .modal-body {
 [data-theme="light"] .chat-scrollable-messages {
     background-color: #f8fafc !important;
 }
+
+
+/* Universal Protection Against Gepeng / Distorted Avatar Images */
+.avatar-circle img,
+.student-avatar-inner img,
+.navbar-user-pill img,
+img.rounded-circle,
+.rounded-circle img,
+#fotoProfilPreview,
+#avatarPreviewImg {
+    object-fit: cover !important;
+    aspect-ratio: 1 / 1 !important;
+    flex-shrink: 0 !important;
+}

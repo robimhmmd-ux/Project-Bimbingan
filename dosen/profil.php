@@ -212,7 +212,7 @@ $has_foto = !empty($foto_url);
                     <img src="<?= htmlspecialchars($foto_url); ?>" 
                          alt="Foto Profil Dosen" 
                          class="rounded-circle img-thumbnail shadow object-fit-cover" 
-                         style="width: 140px; height: 140px;">
+                         style="width: 140px; height: 140px; min-width: 140px; min-height: 140px; object-fit: cover !important; aspect-ratio: 1 / 1 !important; flex-shrink: 0 !important;">
                 <?php else: ?>
                     <div class="avatar-circle avatar-primary shadow mx-auto" 
                          style="width: 140px; height: 140px; font-size: 3.5rem;">

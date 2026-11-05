@@ -760,6 +760,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastPosX     = 0;
     let lastPosY     = 0;
     let activeDataUrl = '';
+    let renderW      = 240;
+    let renderH      = 240;
 
     // Perbarui Transformasi Gambar
     function updateTransform() {
@@ -788,7 +790,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateTransform();
     }
 
-    // Memuat Gambar ke dalam Viewport Modal
+    // Memuat Gambar ke dalam Viewport Modal Tanpa Distorsi (Preserve Exact Aspect Ratio)
     function loadImageIntoCrop(src) {
         activeDataUrl = src;
         cropImage.crossOrigin = 'anonymous';
@@ -796,14 +798,26 @@ document.addEventListener('DOMContentLoaded', function() {
             naturalW = cropImage.naturalWidth || 300;
             naturalH = cropImage.naturalHeight || 300;
 
-            // Diameter crop guide = 240px
-            baseScale = Math.max(240 / naturalW, 240 / naturalH);
-            cropImage.style.maxWidth = 'none';
-            cropImage.style.maxHeight = 'none';
-            cropImage.style.width = naturalW + 'px';
-            cropImage.style.height = naturalH + 'px';
-            cropImage.style.marginTop = (-naturalH / 2) + 'px';
-            cropImage.style.marginLeft = (-naturalW / 2) + 'px';
+            const cropDiameter = 240;
+            // Hitung ukuran proporsional gambar di viewport agar tepat menutup lingkaran panduan (crop diameter 240px)
+            // tanpa distorsi rasio aspek (asli 100%)
+            if (naturalW >= naturalH) {
+                renderH = cropDiameter;
+                renderW = Math.round(cropDiameter * (naturalW / naturalH));
+            } else {
+                renderW = cropDiameter;
+                renderH = Math.round(cropDiameter * (naturalH / naturalW));
+            }
+
+            baseScale = 1.0;
+            cropImage.style.setProperty('max-width', 'none', 'important');
+            cropImage.style.setProperty('max-height', 'none', 'important');
+            cropImage.style.setProperty('min-width', '0', 'important');
+            cropImage.style.setProperty('min-height', '0', 'important');
+            cropImage.style.setProperty('width', renderW + 'px', 'important');
+            cropImage.style.setProperty('height', renderH + 'px', 'important');
+            cropImage.style.marginTop = (-renderH / 2) + 'px';
+            cropImage.style.marginLeft = (-renderW / 2) + 'px';
 
             resetPosition();
             modalSesuaikanFoto.show();
@@ -950,7 +964,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const drawScale = baseScale * userZoom * ratio;
             ctx.scale(drawScale, drawScale);
-            ctx.drawImage(cropImage, -naturalW / 2, -naturalH / 2, naturalW, naturalH);
+            ctx.drawImage(cropImage, -renderW / 2, -renderH / 2, renderW, renderH);
             ctx.restore();
 
             const finalDataUrl = canvas.toDataURL('image/jpeg', 0.92);
@@ -996,21 +1010,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     // 2. Perbarui foto profil di header navbar kanan (sebelah ikon lonceng)
-                    const headerPhoto = document.getElementById('headerUserPhoto');
-                    if (headerPhoto) {
-                        if (headerPhoto.tagName === 'IMG') {
-                            headerPhoto.src = freshUrl;
+                    const headerPill = document.querySelector('.navbar-user-pill');
+                    if (headerPill) {
+                        const curNavImg = headerPill.querySelector('img');
+                        if (curNavImg) {
+                            curNavImg.src = freshUrl;
+                            curNavImg.style.cssText = 'object-fit: cover !important; aspect-ratio: 1 / 1 !important; width: 30px !important; height: 30px !important; flex-shrink: 0 !important;';
                         } else {
-                            const newHeaderImg = document.createElement('img');
-                            newHeaderImg.id = 'headerUserPhoto';
-                            newHeaderImg.src = freshUrl;
-                            newHeaderImg.alt = 'Foto Profil';
-                            newHeaderImg.className = 'rounded-circle border border-2 border-white shadow-sm flex-shrink-0';
-                            newHeaderImg.style.width = '34px';
-                            newHeaderImg.style.height = '34px';
-                            newHeaderImg.style.objectFit = 'cover';
-                            newHeaderImg.style.backgroundColor = '#ffffff';
-                            headerPhoto.parentNode.replaceChild(newHeaderImg, headerPhoto);
+                            const curFallback = headerPill.querySelector('.rounded-circle');
+                            if (curFallback) {
+                                const newNavImg = document.createElement('img');
+                                newNavImg.src = freshUrl;
+                                newNavImg.alt = 'Foto Profil';
+                                newNavImg.className = 'rounded-circle border border-2 border-white shadow-sm flex-shrink-0';
+                                newNavImg.style.cssText = 'object-fit: cover !important; aspect-ratio: 1 / 1 !important; width: 30px !important; height: 30px !important; flex-shrink: 0 !important;';
+                                curFallback.replaceWith(newNavImg);
+                            }
                         }
                     }
 

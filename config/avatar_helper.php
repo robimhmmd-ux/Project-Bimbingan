@@ -42,20 +42,21 @@ if (!function_exists('render_avatar')) {
 
         if ($url) {
             return sprintf(
-                '<img src="%s" class="rounded-circle border shadow-sm %s" width="%d" height="%d" style="object-fit:cover; width:%dpx; height:%dpx;" alt="%s">',
+                '<img src="%s" class="rounded-circle border shadow-sm %s" width="%d" height="%d" style="object-fit:cover !important; aspect-ratio:1/1 !important; width:%dpx !important; height:%dpx !important; min-width:%dpx !important; min-height:%dpx !important; max-width:none !important; flex-shrink:0 !important; display:inline-block;" alt="%s">',
                 htmlspecialchars($url),
                 htmlspecialchars($classes),
-                $size, $size, $size, $size,
+                $size, $size, $size, $size, $size, $size,
                 htmlspecialchars($nama)
             );
         }
 
         return sprintf(
-            '<div class="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold bg-%s text-white shadow-sm %s" style="width:%dpx; height:%dpx; font-size:%.2frem; flex-shrink:0;">%s</div>',
+            '<div class="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold bg-%s text-white shadow-sm %s" style="width:%dpx !important; height:%dpx !important; min-width:%dpx !important; min-height:%dpx !important; aspect-ratio:1/1 !important; font-size:%.2frem; flex-shrink:0 !important;" role="img" aria-label="%s">%s</div>',
             htmlspecialchars($role_color),
             htmlspecialchars($classes),
-            $size, $size,
+            $size, $size, $size, $size,
             $fontSize,
+            htmlspecialchars($nama),
             htmlspecialchars($initial)
         );
     }
