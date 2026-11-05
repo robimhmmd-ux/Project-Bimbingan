@@ -2041,6 +2041,11 @@ a.bab-step-card:hover {
     -webkit-user-drag: none;
     pointer-events: none;
     will-change: transform;
+    max-width: none !important;
+    max-height: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    box-sizing: content-box !important;
 }
 
 .crop-circle-ring {

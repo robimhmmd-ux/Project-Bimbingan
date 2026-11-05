@@ -671,6 +671,15 @@ require_once '../templates/sidebar_mahasiswa.php';
                     <i class="bi bi-arrows-move me-1 text-primary"></i><strong>Geser foto</strong> untuk memposisikan wajah di tengah lingkaran, lalu gunakan slider untuk <strong>zoom in / out</strong>.
                 </p>
 
+                <style>
+                    .crop-viewport-wrapper img#cropImage {
+                        max-width: none !important;
+                        max-height: none !important;
+                        min-width: 0 !important;
+                        min-height: 0 !important;
+                        box-sizing: content-box !important;
+                    }
+                </style>
                 <!-- Area Viewport Crop Interaktif -->
                 <div class="crop-viewport-wrapper position-relative mx-auto mb-3" id="cropViewport" title="Geser foto dengan mouse atau touch untuk mengatur posisi">
                     <img id="cropImage" src="" alt="Crop Source">
@@ -789,6 +798,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Diameter crop guide = 240px
             baseScale = Math.max(240 / naturalW, 240 / naturalH);
+            cropImage.style.maxWidth = 'none';
+            cropImage.style.maxHeight = 'none';
             cropImage.style.width = naturalW + 'px';
             cropImage.style.height = naturalH + 'px';
             cropImage.style.marginTop = (-naturalH / 2) + 'px';
