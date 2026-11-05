@@ -467,10 +467,6 @@ require_once '../templates/sidebar_mahasiswa.php';
                 <!-- Detail Biodata Profil Dosen (Sesuai profil dosen itu sendiri) -->
                 <div class="list-group list-group-flush text-start small border rounded-3 p-3 bg-light mb-3">
                     <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
-                        <span class="text-muted"><i class="bi bi-person-badge me-2 text-primary"></i>ID Login / Akun:</span>
-                        <strong class="text-primary">@<?= htmlspecialchars($mhs['username_dosen'] ?? 'dosen'); ?></strong>
-                    </div>
-                    <div class="list-group-item d-flex justify-content-between px-0 py-2 bg-transparent border-bottom">
                         <span class="text-muted"><i class="bi bi-envelope me-2 text-primary"></i>Email Resmi:</span>
                         <a href="mailto:<?= htmlspecialchars($mhs['email_dosen'] ?? ''); ?>" class="text-decoration-none fw-semibold text-secondary">
                             <?= htmlspecialchars($mhs['email_dosen'] ?? '-'); ?>
