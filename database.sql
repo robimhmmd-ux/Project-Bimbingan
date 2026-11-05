@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS mahasiswa (
     user_id INT NOT NULL,
     nim VARCHAR(20) NOT NULL UNIQUE,
     nama_lengkap VARCHAR(100) NOT NULL,
+    no_whatsapp VARCHAR(25) NULL DEFAULT NULL,
     kelas VARCHAR(20) DEFAULT 'TI-1A-2025',
     prodi VARCHAR(100) NOT NULL DEFAULT 'Teknik Informatika',
     judul_skripsi VARCHAR(255) DEFAULT 'Belum Ditentukan',

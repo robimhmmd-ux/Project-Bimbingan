@@ -128,37 +128,31 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         }
     }
 
-    // 1. UPDATE DATA AKUN, BIODATA & FOTO PROFIL
+    // 1. UPDATE DATA PROFIL (HANYA NAMA LENGKAP, NIM, NO WHATSAPP & FOTO)
     if ($action === 'update_profil') {
-        $username      = trim($_POST['username'] ?? '');
         $nama_lengkap  = trim($_POST['nama_lengkap'] ?? '');
         $nim           = trim($_POST['nim'] ?? '');
-        $kelas         = trim($_POST['kelas'] ?? 'TI-1A-2025');
-        $prodi         = sanitize_prodi($_POST['prodi'] ?? ($mhs['prodi'] ?? 'Teknik Informatika'));
-        $judul_skripsi = trim($_POST['judul_skripsi'] ?? '');
+        $no_whatsapp   = trim($_POST['no_whatsapp'] ?? '');
         $foto_baru     = $mhs['foto_profil'];
 
         // Validasi input wajib
-        if (empty($nama_lengkap) || empty($nim) || empty($username)) {
-            $error_msg = "Nama lengkap, NIM, dan Username tidak boleh kosong.";
-        } elseif (preg_match('/\s/', $username)) {
-            $error_msg = "Username tidak boleh mengandung spasi.";
+        if (empty($nama_lengkap) || empty($nim)) {
+            $error_msg = "Nama lengkap dan NIM tidak boleh kosong.";
         } else {
-            // Cek apakah username diubah dan apakah sudah dipakai user lain
-            if ($username !== $mhs['username']) {
-                $stmt_cek_u = $pdo->prepare("SELECT COUNT(*) FROM users WHERE username = :u AND id != :uid");
-                $stmt_cek_u->execute([':u' => $username, ':uid' => $my_user_id]);
-                if ($stmt_cek_u->fetchColumn() > 0) {
-                    $error_msg = "Username '@{$username}' sudah digunakan oleh pengguna lain. Silakan pilih username lain.";
-                }
-            }
-
             // Cek apakah NIM diubah dan apakah sudah dipakai mahasiswa lain
-            if (empty($error_msg) && $nim !== $mhs['nim']) {
+            if ($nim !== $mhs['nim']) {
                 $stmt_cek_nim = $pdo->prepare("SELECT COUNT(*) FROM mahasiswa WHERE nim = :nim AND id != :mid");
                 $stmt_cek_nim->execute([':nim' => $nim, ':mid' => $mhs_id]);
                 if ($stmt_cek_nim->fetchColumn() > 0) {
                     $error_msg = "NIM '{$nim}' sudah terdaftar untuk mahasiswa lain.";
+                }
+            }
+
+            // Validasi format nomor WhatsApp (opsional, jika diisi minimal 8 digit)
+            if (empty($error_msg) && !empty($no_whatsapp)) {
+                $clean_wa_check = preg_replace('/[^0-9]/', '', $no_whatsapp);
+                if (strlen($clean_wa_check) < 8 || strlen($clean_wa_check) > 16) {
+                    $error_msg = "Nomor WhatsApp harus berupa angka valid (8 - 16 digit).";
                 }
             }
 
@@ -189,37 +183,29 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 }
             }
 
-            // Eksekusi update jika seluruh validasi lolos
+            // Eksekusi update jika seluruh validasi lolos (HANYA Nama Lengkap, NIM, No WhatsApp & Foto)
             if (empty($error_msg)) {
                 try {
                     $pdo->beginTransaction();
-
-                    // Update data di tabel users (username)
-                    $stmt_u = $pdo->prepare("UPDATE users SET username = :u WHERE id = :uid");
-                    $stmt_u->execute([':u' => $username, ':uid' => $my_user_id]);
 
                     // Hapus berkas foto lama jika mengunggah foto profil baru
                     if (!empty($foto_baru) && $foto_baru !== $mhs['foto_profil'] && function_exists('delete_old_profile_photo')) {
                         delete_old_profile_photo($mhs['foto_profil'] ?? null);
                     }
 
-                    // Update data di tabel mahasiswa
+                    // Update HANYA kolom nama_lengkap, nim, no_whatsapp, dan foto_profil pada tabel mahasiswa
                     $stmt_m = $pdo->prepare("
                         UPDATE mahasiswa 
                         SET nama_lengkap = :nama, 
                             nim = :nim, 
-                            kelas = :kelas, 
-                            prodi = :prodi, 
-                            judul_skripsi = :judul, 
+                            no_whatsapp = :no_wa, 
                             foto_profil = :foto 
                         WHERE id = :mid
                     ");
                     $stmt_m->execute([
                         ':nama'  => $nama_lengkap,
                         ':nim'   => $nim,
-                        ':kelas' => $kelas,
-                        ':prodi' => $prodi,
-                        ':judul' => $judul_skripsi,
+                        ':no_wa' => $no_whatsapp,
                         ':foto'  => $foto_baru,
                         ':mid'   => $mhs_id
                     ]);
@@ -227,10 +213,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     $pdo->commit();
 
                     // Perbarui session
-                    $_SESSION['username']     = $username;
                     $_SESSION['nama_lengkap'] = $nama_lengkap;
                     $_SESSION['foto_profil']  = $foto_baru;
-                    $success_msg = "Data akun dan foto profil Anda berhasil diperbarui!";
+                    $success_msg = "Data profil Anda (Nama, NIM, WhatsApp, dan Foto) berhasil diperbarui!";
 
                     // Refresh data mhs
                     $stmt_mhs->execute([':uid' => $my_user_id]);
@@ -303,7 +288,7 @@ require_once '../templates/sidebar_mahasiswa.php';
             </div>
             <h2 class="fw-bold text-white mb-1">Profil & Pengaturan Akun</h2>
             <p class="text-white-50 small mb-0">
-                Kelola dan perbarui identitas akun login, NIM, kelas akademik, judul skripsi, serta keamanan kata sandi Anda.
+                Kelola dan perbarui nama lengkap, NIM, nomor WhatsApp, serta keamanan kata sandi Anda.
             </p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0 flex-wrap">
@@ -382,6 +367,21 @@ require_once '../templates/sidebar_mahasiswa.php';
                     <div class="mb-2">
                         <span class="text-muted d-block">ID Login / Username:</span>
                         <span class="fw-semibold text-dark"><i class="bi bi-at text-primary"></i><?= htmlspecialchars($mhs['username']); ?></span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted d-block">Nomor WhatsApp:</span>
+                        <?php if (!empty($mhs['no_whatsapp'])): 
+                            $clean_mhs_wa = preg_replace('/[^0-9]/', '', $mhs['no_whatsapp']);
+                            if (str_starts_with($clean_mhs_wa, '0')) {
+                                $clean_mhs_wa = '62' . substr($clean_mhs_wa, 1);
+                            }
+                        ?>
+                            <a href="https://wa.me/<?= $clean_mhs_wa; ?>" target="_blank" class="fw-semibold text-success text-decoration-none">
+                                <i class="bi bi-whatsapp me-1"></i><?= htmlspecialchars($mhs['no_whatsapp']); ?>
+                            </a>
+                        <?php else: ?>
+                            <span class="text-muted fst-italic">Belum diatur</span>
+                        <?php endif; ?>
                     </div>
                     <div class="mb-2">
                         <span class="text-muted d-block">Kelas & Program Studi:</span>
@@ -470,78 +470,107 @@ require_once '../templates/sidebar_mahasiswa.php';
                         <form action="profil.php" method="POST" enctype="multipart/form-data" id="formUpdateProfil">
                             <input type="hidden" name="action" value="update_profil">
 
-                            <div class="alert alert-light border small text-muted mb-4">
-                                <i class="bi bi-info-circle text-primary me-1"></i>
-                                Anda dapat mengedit seluruh data akun login, NIM, nama lengkap, kelas, judul tugas akhir, dan foto profil.
+                            <div class="alert alert-light border small text-muted mb-4 d-flex align-items-start gap-2">
+                                <i class="bi bi-info-circle-fill text-primary fs-6 mt-0.5"></i>
+                                <div>
+                                    Pada halaman ini, data yang dapat diubah adalah <strong>Nama Lengkap</strong>, <strong>NIM</strong>, <strong>Nomor WhatsApp</strong>, dan <strong>Kata Sandi</strong>. Data akademik lainnya bersifat tetap (hanya baca).
+                                </div>
                             </div>
 
-                            <!-- Baris Username & NIM -->
+                            <!-- Baris Nama Lengkap & NIM (DAPAT DIUBAH) -->
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
-                                    <label for="username" class="form-label small fw-semibold text-secondary">
-                                        Username / ID Login <span class="text-danger">*</span>
+                                    <label for="nama_lengkap" class="form-label small fw-semibold text-secondary">
+                                        Nama Lengkap <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
-                                        <span class="input-group-text bg-light"><i class="bi bi-at"></i></span>
-                                        <input type="text" class="form-control" id="username" name="username" value="<?= htmlspecialchars($mhs['username']); ?>" placeholder="Username login" required>
+                                        <span class="input-group-text bg-white"><i class="bi bi-person text-primary"></i></span>
+                                        <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" value="<?= htmlspecialchars($mhs['nama_lengkap']); ?>" placeholder="Nama lengkap Anda" required>
                                     </div>
-                                    <div class="form-text small" style="font-size: 0.75rem;">Digunakan saat masuk ke portal sistem bimbingan.</div>
+                                    <div class="form-text small" style="font-size: 0.75rem;">Nama resmi sesuai kartu mahasiswa.</div>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="nim" class="form-label small fw-semibold text-secondary">
                                         Nomor Induk Mahasiswa (NIM) <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" class="form-control" id="nim" name="nim" value="<?= htmlspecialchars($mhs['nim']); ?>" placeholder="Contoh: 41257158" required>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white"><i class="bi bi-card-text text-primary"></i></span>
+                                        <input type="text" class="form-control" id="nim" name="nim" value="<?= htmlspecialchars($mhs['nim']); ?>" placeholder="Contoh: 41257158" required>
+                                    </div>
                                     <div class="form-text small" style="font-size: 0.75rem;">NIM resmi mahasiswa.</div>
                                 </div>
                             </div>
 
-                            <!-- Baris Nama Lengkap & Kelas -->
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-7">
-                                    <label for="nama_lengkap" class="form-label small fw-semibold text-secondary">
-                                        Nama Lengkap <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" value="<?= htmlspecialchars($mhs['nama_lengkap']); ?>" placeholder="Nama lengkap Anda" required>
+                            <!-- Nomor WhatsApp (DAPAT DIUBAH) -->
+                            <div class="mb-4">
+                                <label for="no_whatsapp" class="form-label small fw-semibold text-secondary">
+                                    Nomor WhatsApp Aktif
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white text-success"><i class="bi bi-whatsapp"></i></span>
+                                    <input type="text" class="form-control" id="no_whatsapp" name="no_whatsapp" value="<?= htmlspecialchars($mhs['no_whatsapp'] ?? ''); ?>" placeholder="Contoh: 081234567890">
                                 </div>
-                                <div class="col-md-5">
-                                    <label for="kelas" class="form-label small fw-semibold text-secondary">
-                                        Kelas Akademik <span class="text-danger">*</span>
-                                    </label>
-                                    <?php $current_kelas = $mhs['kelas'] ?? 'TI-1A-2025'; ?>
-                                    <select class="form-select" id="kelas" name="kelas" required>
-                                        <option value="TI-1A-2025" <?= $current_kelas === 'TI-1A-2025' ? 'selected' : ''; ?>>TI-1A-2025</option>
-                                        <option value="TI-1B-2025" <?= $current_kelas === 'TI-1B-2025' ? 'selected' : ''; ?>>TI-1B-2025</option>
-                                        <option value="TI-1C-2025" <?= $current_kelas === 'TI-1C-2025' ? 'selected' : ''; ?>>TI-1C-2025</option>
-                                    </select>
-                                    <div class="form-text small" style="font-size: 0.75rem;">Pilih rombel / kelas perkuliahan Anda.</div>
-                                </div>
+                                <div class="form-text small" style="font-size: 0.75rem;">Nomor WhatsApp aktif untuk koordinasi bimbingan bersama dosen pembimbing.</div>
                             </div>
 
-                            <!-- Program Studi Mahasiswa -->
-                            <div class="mb-3">
-                                <label for="prodi" class="form-label small fw-semibold text-secondary">
-                                    Program Studi (Jurusan) <span class="text-danger">*</span>
-                                </label>
-                                <?php $current_prodi = $mhs['prodi'] ?? 'Teknik Informatika'; ?>
-                                <select class="form-select" id="prodi" name="prodi" required>
-                                    <?php foreach (get_daftar_prodi() as $prodi_name => $p_data): ?>
-                                        <option value="<?= htmlspecialchars($prodi_name); ?>" <?= ($current_prodi === $prodi_name) ? 'selected' : ''; ?>>
-                                            <?= htmlspecialchars($prodi_name); ?> (<?= $p_data['jenjang']; ?> - <?= $p_data['fakultas']; ?>)
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <div class="form-text small" style="font-size: 0.75rem;">Program studi yang sedang Anda tempuh.</div>
-                            </div>
+                            <!-- DATA AKADEMIK TETAP (HANYA BACA / TIDAK DAPAT DIUBAH) -->
+                            <div class="p-3 bg-light rounded-3 border mb-4">
+                                <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                                    <span class="fw-bold text-secondary small d-flex align-items-center">
+                                        <i class="bi bi-lock-fill text-muted me-1.5"></i>Informasi Akademik & Akun Tetap (Hanya Baca)
+                                    </span>
+                                    <span class="badge bg-secondary-subtle text-secondary border small">Tidak Dapat Diubah</span>
+                                </div>
 
-                            <!-- Judul Skripsi -->
-                            <div class="mb-3">
-                                <label for="judul_skripsi" class="form-label small fw-semibold text-secondary">
-                                    Judul Tugas Akhir / Skripsi
-                                </label>
-                                <textarea class="form-control" id="judul_skripsi" name="judul_skripsi" rows="3" placeholder="Masukkan judul skripsi lengkap..."><?= htmlspecialchars($mhs['judul_skripsi'] ?? ''); ?></textarea>
-                                <div class="form-text small" style="font-size: 0.75rem;">
-                                    Pastikan judul selalu diperbarui sesuai dengan kesepakatan bersama dosen pembimbing.
+                                <div class="row g-3">
+                                    <!-- Username / ID Login (Readonly) -->
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold text-muted mb-1">
+                                            Username / ID Login
+                                        </label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white text-muted"><i class="bi bi-at"></i></span>
+                                            <input type="text" class="form-control bg-white text-dark fw-semibold" value="<?= htmlspecialchars($mhs['username']); ?>" readonly tabindex="-1" style="cursor: not-allowed;">
+                                        </div>
+                                        <div class="text-muted mt-1" style="font-size: 0.7rem;">ID login akun permanen.</div>
+                                    </div>
+
+                                    <!-- Kelas Akademik (Readonly) -->
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold text-muted mb-1">
+                                            Kelas Akademik
+                                        </label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white text-muted"><i class="bi bi-mortarboard"></i></span>
+                                            <input type="text" class="form-control bg-white text-dark fw-semibold" value="<?= htmlspecialchars($mhs['kelas'] ?? 'TI-1A-2025'); ?>" readonly tabindex="-1" style="cursor: not-allowed;">
+                                        </div>
+                                        <div class="text-muted mt-1" style="font-size: 0.7rem;">Rombel perkuliahan resmi.</div>
+                                    </div>
+
+                                    <!-- Program Studi (Readonly) -->
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-semibold text-muted mb-1">
+                                            Program Studi
+                                        </label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white text-muted"><i class="bi bi-building"></i></span>
+                                            <input type="text" class="form-control bg-white text-dark fw-semibold" value="<?= htmlspecialchars($mhs['prodi'] ?? 'Teknik Informatika'); ?>" readonly tabindex="-1" style="cursor: not-allowed;">
+                                        </div>
+                                        <div class="text-muted mt-1" style="font-size: 0.7rem;">Jurusan program studi aktif.</div>
+                                    </div>
+
+                                    <!-- Judul Skripsi (Readonly) -->
+                                    <div class="col-12 mt-2">
+                                        <label class="form-label small fw-semibold text-muted mb-1">
+                                            Judul Tugas Akhir / Skripsi
+                                        </label>
+                                        <div class="p-2.5 bg-white rounded border small text-dark fst-italic">
+                                            <?= !empty($mhs['judul_skripsi']) ? htmlspecialchars($mhs['judul_skripsi']) : 'Belum Ditentukan'; ?>
+                                        </div>
+                                        <div class="text-muted mt-1" style="font-size: 0.7rem;">
+                                            Judul skripsi diajukan dan diperbarui melalui menu <strong>Upload Draft</strong> atau atas persetujuan dosen pembimbing.
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -583,7 +612,7 @@ require_once '../templates/sidebar_mahasiswa.php';
                             </div>
 
                             <button type="submit" class="btn btn-primary px-4 fw-semibold shadow-sm">
-                                <i class="bi bi-save me-1"></i>Simpan Perubahan Akun & Profil
+                                <i class="bi bi-save me-1"></i>Simpan Perubahan Profil
                             </button>
                         </form>
                     </div>
